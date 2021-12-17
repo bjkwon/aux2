@@ -71,7 +71,7 @@ public:
 	void print(const CVar& obj)
 	{
 		echo_object::header();
-		cout << "\"" << obj.string() << "\"" << postscript << endl;
+		cout << "\"" << obj.str() << "\"" << postscript << endl;
 	};
 };
 

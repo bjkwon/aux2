@@ -42,8 +42,8 @@ static SNDFILE* read_wav_info(const string& wavname, SF_INFO& sfinfo, string& er
 
 void _wavwrite(skope* past, const AstNode* pnode, const vector<CVar>& args)
 {
-	string filename = args[0].string();
-	string option = args[1].string();
+	string filename = args[0].str();
+	string option = args[1].str();
 
 	string fullfilename = past->makefullfile(filename, ".wav");
 	char errStr[256];
@@ -61,8 +61,8 @@ void _wave(skope *past, const AstNode *pnode, const vector<CVar>& args)
 	*  Output: audio_signal
 	*/
 	string estr;
-//	string filename = past->makefullfile(past->Sig.string(), ".wav");
-	string filename = past->Sig.string();
+//	string filename = past->makefullfile(past->Sig.str(), ".wav");
+	string filename = past->Sig.str();
 	float beginMs = args[0].value();
 	float durMs = args[1].value();
 	SF_INFO sfinfo; 

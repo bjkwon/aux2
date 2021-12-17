@@ -135,7 +135,7 @@ void _time_freq_manipulate(skope *past, const AstNode *pnode)
 		//else if (fname == "movespec")
 		//	past->Sig.evoke_modsig(&CSignal::movespec, &param);
 		//if (param.IsString())
-		//	throw exception_etc(*this, pnode, string("Error in respeed:") + param.string())).raise();
+		//	throw exception_etc(*this, pnode, string("Error in respeed:") + param.str())).raise();
 	}
 	catch (const skope_exception &e) {
 		throw exception_etc(*past, pnode, e.getErrMsg()).raise(); }

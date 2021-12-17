@@ -2147,7 +2147,7 @@ void CSignal::ReverseTime()
 	*this = temp;
 }
 
-std::string CSignal::string() const
+std::string CSignal::str() const
 {
 	unsigned int k;
 	std::string out;

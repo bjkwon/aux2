@@ -355,7 +355,7 @@ bool CVar::operator==(const CVar & rhs)
 	{ // For GO's, check only the ID's
 		if (nSamples != rhs.nSamples) return false;
 		if (type() & TYPEBIT_STRING ^ rhs.type() & TYPEBIT_STRING) return false;
-		if (type() & TYPEBIT_STRING) return string() == rhs.string();
+		if (type() & TYPEBIT_STRING) return str() == rhs.str();
 		return value() == rhs.value();
 	}
 	if (!singleItem && (!cell.empty() || !strut.empty() || !struts.empty()))

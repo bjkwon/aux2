@@ -215,7 +215,7 @@ public:
 
 	virtual ~CSignal();
 
-	string string() const;
+	string str() const;
 	char *getString(char *str, const int size);
 	CSignal &SetString(const char *str);
 	CSignal &SetString(const char c);
