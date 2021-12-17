@@ -1,2 +1,4 @@
 gcc -std=c++17 -c *.cpp  ====> OK
 gcc *.c  ==> ??? not yet
+
+gcc -std=c++17 -I . -c *.cpp 
