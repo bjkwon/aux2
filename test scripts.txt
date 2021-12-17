@@ -1,0 +1,26 @@
+a=6+3
+b=-a*(5+2)
+a=noise(300)+tone(20,400)>>1050
+b1=tone([400 500],500)>>400
+c1=a+b1
+b2=tone([400 500],1000)>>200
+c2=a+b2
+//6:40 PM 12/11/2021========
+sqrt([3 4 9])
+i=sqrt(-1)
+sqrt([i 2+2*j])
+2^3
+2^[4 1.5]
+[1 2 4]^3
+[1 2 4]^[1 3]  //==> the third one should be ignored
+[2 5]^[1 1.5 2] //==> the third one should be ignored
+pow([1 2 4],[1 3])
+13%10
+[17 22 11] % [10 20] //==> the third one should be ignored
+//10:25 PM 12/13/2021===================
+//done above for 12/11
+x=noise(1)
+y=x.sqrt
+
+
+
