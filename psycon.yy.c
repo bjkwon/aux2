@@ -2361,7 +2361,7 @@ int appendLexString(void)
 		if (LexString == NULL)
 			return 2;
 	}
-	strncpy_s(LexString+LexStringLen, LexStringMax-LexStringLen, yytext, yyleng);
+	strncpy(LexString+LexStringLen, yytext, yyleng);
 	LexStringLen += yyleng;
 	LexString[LexStringLen] = '\0';
 	return 0;
