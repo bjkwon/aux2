@@ -51,6 +51,8 @@ CVar interpreter(skope& sc, const string& instr)
 
 int main()
 {
+	auto ss = (uint16_t)0x0008;
+	auto ss2 = ss * 2;
 	CAstSigEnv* pglobalEnv = new CAstSigEnv(22050);
 	pglobalEnv->AppPath = "";
 	pglobalEnv->InitBuiltInFunctions();

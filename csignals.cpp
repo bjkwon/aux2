@@ -95,24 +95,24 @@ static float quantizetmark(float delta, int fs)
 
 /*bufBlockSize is 1 (for logical, string), sizeof(double) (regular), or sizeof(double)*2 (complex).     4/4/2017 bjkwon */
 body::body()
-	:nSamples(0), bufBlockSize(sizeof(float)), buf(NULL), nGroups(1), ghost(false)
+	: bufType('N'), nSamples(0), bufBlockSize(sizeof(float)), buf(NULL), nGroups(1), ghost(false)
 {
 }
 
 body::body(float value)
-	: nSamples(0), buf(NULL), ghost(false)
+	: bufType('R'), nSamples(0), buf(NULL), ghost(false)
 {
 	SetValue(value);
 }
 
 body::body(complex<float> value)
-	: nSamples(0), buf(NULL), ghost(false)
+	: bufType('C'), nSamples(0), buf(NULL), ghost(false)
 {
 	cbuf[0] = value;
+	bufBlockSize = 2 * sizeof(float);
 }
 
 body::body(const body& src)
-	: nSamples(0), buf(NULL), ghost(false)
 {
 	*this = src;
 }
@@ -362,6 +362,7 @@ void body::SetValue(float v)
 	}
 	nGroups = 1;
 	buf[0] = v;
+	bufType = 'R';
 }
 
 void body::SetValue(complex<float> v)
@@ -460,6 +461,7 @@ void body::SetReal()
 { // This converts a complex array into real (decimating the imaginary part).
   // Must not be used when the buf is properly prepared--in that case just bufBlockSize = 1; is sufficient.
 	unsigned int k = 0;
+	bufType = 'R';
 	if (IsComplex())
 	{
 		bufBlockSize = sizeof(float);
@@ -477,6 +479,7 @@ void body::SetReal()
 
 void body::SetComplex()
 {
+	bufType = 'C';
 	if (bufBlockSize != sizeof(float) * 2)
 	{
 		bufBlockSize = sizeof(float) * 2;
@@ -2169,6 +2172,7 @@ char *CSignal::getString(char *str, const int size)
 CSignal &CSignal::SetString(const char *str)
 {
 	Reset(2);
+	bufType = 'S';
 	bufBlockSize = 1;
 	UpdateBuffer((int)strlen(str) + 1);
 	strcpy(strbuf, str);
@@ -2178,6 +2182,7 @@ CSignal &CSignal::SetString(const char *str)
 CSignal &CSignal::SetString(const char c)
 {
 	Reset(2);
+	bufType = 'S';
 	bufBlockSize = 1;
 	if (c == 0) return *this;
 	UpdateBuffer(2);

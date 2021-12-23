@@ -24,3 +24,18 @@ y=x.sqrt
 
 
 
+//9:54 PM 12/20/2021 to do
+[]
+73
+"bjkwon"
+[3 2 9]
+22:6.3:1000
+noise(400)
+[0 300 1000][500 340 480]
+x=noise(400) + tone(40,222) >> 555
+fx=x.fft
+fd=fopen("file.raw","wb")
+fd.fread("byte")
+fd.fclose
+10==10
+[10==10 4==4 3==-3]

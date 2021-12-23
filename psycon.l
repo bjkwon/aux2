@@ -138,7 +138,7 @@ if|else|elseif|end|while|for|break|continue|switch|case|otherwise|function|stati
 	}
 {ID}	{
 	yylloc.last_column += yyleng;
-	yylval.str = (char*)calloc(strlen(yytext),1);
+	yylval.str = (char*)calloc(strlen(yytext)+1, 1);
 	strcpy(yylval.str, yytext);
     if (str_mirror) strcat(str_mirror, yytext);
 	return T_ID;
@@ -173,7 +173,7 @@ if|else|elseif|end|while|for|break|continue|switch|case|otherwise|function|stati
     if (yy_top_state()==PARENTH)
         unput(')');
 	yy_pop_state();
-	yylval.str = (char*)calloc(strlen(LexString),1);
+	yylval.str = (char*)calloc(strlen(LexString)+1, 1);
 	strcpy(yylval.str, LexString);
 	return T_STRING;
 	}
@@ -187,7 +187,7 @@ if|else|elseif|end|while|for|break|continue|switch|case|otherwise|function|stati
 <STR>\"	{	/* end of a string 26 */
 	yylloc.last_column += yyleng;
 	yy_pop_state();
-	yylval.str = (char*)calloc(strlen(LexString),1);
+	yylval.str = (char*)calloc(strlen(LexString)+1, 1);
 	strcpy(yylval.str, LexString);
     if (str_mirror) strcat(str_mirror, "\"");
 	return T_STRING;

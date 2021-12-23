@@ -11,14 +11,6 @@
 // Date: 5/24/2020
 
 
-// GetType() == CSIG_TSERIES was used many times in the old code
-// This is a poor code that doesn't represent something solid,
-// but it worked (mostly) well, probably not a bullet-proof way, but
-// other code was written around to keep big problems from emerging.
-// Long-term, this should be completely re-done, but for now,
-// it is renamed to chained_scalar or stereo_scalar show what it is.
-// 11/14/2021
-
 #pragma once
 
 using namespace std;
@@ -31,35 +23,37 @@ using namespace std;
 
 typedef void (*fmodify) (float*, uint64_t, uint64_t, void*);
 
-// To check if nSamples is 1, type() & 0x0001
+// temporal means fs is meaningfully big, representing a sampling rate.
 
-#define TYPEBIT_NULL		(uint16_t)0x0000
-#define TYPEBIT_SNAP		(uint16_t)0x0004
-#define TYPEBIT_TEMPORAL	(uint16_t)0x0008
-// The difference between TYPEBIT_AUDIO and TYPEBIT_TSEQ:
-// data in TYPEBIT_AUDIO aligned with time points in grid of 1/fs,
-// data in TYPEBIT_TSEQ are stacked on the same tmark.
-#define TYPEBIT_AUDIO		(TYPEBIT_TEMPORAL + TYPEBIT_NULL)
-#define TYPEBIT_TSEQ		(TYPEBIT_TEMPORAL + TYPEBIT_SNAP)
-#define TYPEBIT_SIZE8		(uint16_t)0x0000 // 4 bytes -- sizeof(float)
-#define TYPEBIT_SIZE1		(uint16_t)0x0010
-#define TYPEBIT_FS2 		(uint16_t)0x0020
-#define TYPEBIT_SIZE16		(uint16_t)0x0040 // 8 bytes -- 4 bytes times 2
-#define TYPEBIT_LOGICAL		(TYPEBIT_SIZE1 + TYPEBIT_NULL) // 0x0010
-// DO NOT MASK THIS WITH type() to detect string; Use IsString() instead.
-#define TYPEBIT_STRING		(TYPEBIT_SIZE1 + TYPEBIT_FS2)
-#define TYPEBIT_COMPLEX		TYPEBIT_SIZE16
-#define TYPEBIT_GO	    	(uint16_t)0x0800
+// nSamples is 1 ?  if (type() & 0x0001)
+// nSamples > 1 ? if (type() & 0x0010)
+// temporal ? if (type() & 0xFF00)
+// audio ? if ( (type() & 0xFF00 == TYPEBIT_TEMPO_ONE || type() & 0xFF00 == TYPEBIT_TEMPO_ONE) && type() & 0x00FF > 1)
+// tseq, no snap ? if ( (type() & 0xFF00 == TYPEBIT_TEMPO_ONE || type() & 0xFF00 == TYPEBIT_TEMPO_ONE) && type() & 0x00FF == 1)
+// tseq, snap ? if ( type() & 0xFF00 == TYPEBIT_TEMPO_CHAINS_SNAP && type() & 0x00FF > 1)
+
+#define TYPEBIT_NULL		(uint16_t)0x0000 // 
+#define TYPEBIT_TEMPO_ONE			(uint16_t)0x0004 // 0b0100 ; temporal, no chain
+#define TYPEBIT_TEMPO_CHAINS		(uint16_t)0x0008 // 0b1000 ; temporal, chain, tseq (nSamples must be always one), OR audio 
+#define TYPEBIT_TEMPO_CHAINS_SNAP	(uint16_t)0x000C // 0b1100 ; temporal, chain, snap (e.g., FFT)
+// The difference between audio and TYPEBIT_TEMPO_CHAINS_SNAP:
+// one object of audio is represented in grid of 1/fs
+// chains of TYPEBIT_TEMPO_CHAINS_SNAP are stacked on the same tmark.
+#define TYPEBIT_REAL		(uint16_t)0x0000 // 4 bytes -- sizeof(float)
+#define TYPEBIT_SIZE1		(uint16_t)0x0010 // use this for boolean
+#define TYPEBIT_STRING 		(uint16_t)0x0030 // 0x0020 + 0x0010
+#define TYPEBIT_BYTE 		(uint16_t)0x0050 // 0x0040 + 0x0010
+#define TYPEBIT_COMPLEX		(uint16_t)0x0080 // 8 bytes -- sizeof(float) times 2
+ // last three binary digits of HIWORD: number of channels minus one
+#define TYPEBIT_MULTICHANS	(uint16_t)0x0100
 #define TYPEBIT_CELL		(uint16_t)0x1000
 #define TYPEBIT_STRUT		(uint16_t)0x2000
 #define TYPEBIT_STRUTS		(uint16_t)0x4000
-
-
-// IsString()
-// ()
+#define TYPEBIT_GO	    	(uint16_t)0x8000
 
 #define FARGS (unsigned int id0=0, unsigned int len=0, void *p = NULL)
 
+// bufType Null Byte String Logic Real Complex  
 #ifndef AUX_CLASSES
 #define AUX_CLASSES
 class body
@@ -74,6 +68,7 @@ public:
 		float *buf;
 		bool *logbuf;
 	};
+	char bufType;
 	unsigned char bufBlockSize;
 	bool ghost;
 
@@ -199,9 +194,9 @@ public:
 	inline bool IsAudio() const {
 		if (fs < 500) return false; 
 		uint16_t tp = type();
-		return (tp & (TYPEBIT_TEMPORAL + 0x0002)) && !(tp & TYPEBIT_SNAP); // nSamples must be > 2
+		return (( (tp & 0xFF00) == TYPEBIT_TEMPO_ONE || (tp & 0xFF00) == TYPEBIT_TEMPO_CHAINS) && (tp & 0x00FF) > 1);
 	}
-	bool IsString() const { return bufBlockSize == 1 && fs == 2; }
+	bool IsString() const { return bufType=='S'; }
 
 	// Constructors
 	CSignal();
@@ -228,8 +223,8 @@ public:
 		uint16_t out = TYPEBIT_NULL;
 		if (IsEmpty())			return out;
 		else if (fs == 1)		out = 0;
-		else if (fs == 0 || fs > 500)		out = TYPEBIT_TEMPORAL;
-		if (snap) out += TYPEBIT_SNAP;
+		else if (fs == 0 || fs > 500)		out = TYPEBIT_TEMPO_ONE;
+		if (snap) out += TYPEBIT_TEMPO_CHAINS; // TYPEBIT_TEMPO_CHAINS_SNAP  = TYPEBIT_TEMPO_ONE + TYPEBIT_TEMPO_CHAINS
 		if (nSamples > 0) out++;
 		if (nSamples > 1) out++;
 		// Data type based on data alignment
@@ -524,7 +519,7 @@ public:
 	uint16_t type() const
 	{
 		uint16_t out = CSignal::type();
-		if (out == TYPEBIT_NULL && next) return ((CVar*)next)->CSignal::type();
+		if (chain) out += TYPEBIT_TEMPO_ONE; // TYPEBIT_TEMPO_CHAINS = TYPEBIT_TEMPO_ONE + TYPEBIT_TEMPO_ONE
 		if (!cell.empty())		out += TYPEBIT_CELL;
 		else if (!strut.empty())
 		{
@@ -532,8 +527,6 @@ public:
 			if (!struts.empty()) out += TYPEBIT_STRUTS;
 		}
 		else if (fs == 3)		out += TYPEBIT_STRUT + TYPEBIT_STRUTS;
-		// fs zero means tseq with relative time, treat it as TYPEBIT_AUDIO
-		else if (out == 1 && fs == 0)	out += TYPEBIT_AUDIO;
 		if (IsGO()) out += TYPEBIT_GO;
 		return out;
 	}

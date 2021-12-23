@@ -12,7 +12,6 @@
 
 #include <string.h> // aux_file
 #include "functions_common.h"
-//#include "..\sigproc_internal.h"
 
 map<float, FILE *> file_ids;
 
@@ -23,7 +22,13 @@ map<float, FILE *> file_ids;
 //#include "lame_bj.h"
 //#include "samplerate.h"
 #include "sndfile.h"
-//#include "..\sigplus_internal.h"
+
+static void EnumAudioVariables(skope* past, vector<string>& var)
+{
+	//var.clear();
+	//for (map<string, CVar>::iterator it = past->Vars.begin(); it != past->Vars.end(); it++)
+	//	if (it->second.GetType() == CSIG_AUDIO) var.push_back(it->first);
+}
 
 static SNDFILE* read_wav_info(const string& wavname, SF_INFO& sfinfo, string& errstr)
 {
@@ -49,6 +54,36 @@ void _wavwrite(skope* past, const AstNode* pnode, const vector<CVar>& args)
 	char errStr[256];
 	if (!past->Sig.Wavwrite(fullfilename.c_str(), errStr, option))
 		throw exception_etc(*past, pnode, errStr).raise();
+}
+
+static void resample_if_fs_different(skope* past, const AstNode* p)
+{ // call this function only if past->Sig still has the active signal
+	vector<string> audiovars;
+	EnumAudioVariables(past, audiovars);
+	if (audiovars.size() > 0)
+	{
+		if (past->Sig.GetFs() != past->GetFs())
+		{
+			//int oldFs = past->GetFs();
+			//CVar ratio(1);
+			//ratio.SetValue(past->Sig.GetFs() / (double)oldFs);
+			//past->Sig.fp_mod(&CSignal::resample, &ratio);
+			//if (ratio.IsString()) // this means there was an error during resample
+			//	throw CAstException(FUNC_SYNTAX, *past, p).proc(ratio.string().c_str());
+			//sformat(past->statusMsg, "(NOTE)File fs=%d Hz. The audio data resampled to %d Hz.", past->Sig.GetFs(), oldFs);
+			//past->Sig.SetFs(oldFs);
+			//if (past->Sig.next)
+			//	past->Sig.next->SetFs(oldFs);
+		}
+	}
+	else
+	{
+		past->pEnv->Fs = past->Sig.GetFs();
+		past->statusMsg = "(NOTE)Sample Rate of AUXLAB Environment is now set to ";
+		char temp[16];
+		sprintf_s(temp, "%d Hz.", past->pEnv->Fs);
+		past->statusMsg += temp;
+	}
 }
 
 void _wave(skope *past, const AstNode *pnode, const vector<CVar>& args)
