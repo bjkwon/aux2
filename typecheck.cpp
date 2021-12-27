@@ -39,20 +39,20 @@ void blockString2(const skope& sc, const AstNode* pnode, const CVar& checkthis, 
 
 void blockLogical1(const skope& sc, const AstNode* pnode, const CVar& checkthis, const string& fname, int id)
 {
-	if (checkthis.type() & TYPEBIT_LOGICAL) {
-		throw exception_func(sc, pnode, "Not valid with a string object; ", fname, id).raise();
+	if (ISSIZE1(checkthis.type())) {
+		throw exception_func(sc, pnode, "Not valid with a byte object; ", fname, id).raise();
 	}
 }
 void blockLogical2(const skope& sc, const AstNode* pnode, const CVar& checkthis, int id)
 {
-	if (checkthis.type() & TYPEBIT_LOGICAL) {
-		throw exception_misuse(sc, pnode, "Not valid with a string object", id).raise();
+	if (ISSIZE1(checkthis.type())) {
+		throw exception_misuse(sc, pnode, "Not valid with a byte object", id).raise();
 	}
 }
 
 void ensureVector1(const skope& sc, const AstNode* pnode, const CVar& checkthis, const string& fname, int id)
 { // Vector must not be temporal; must not be GO, cell, strut
-	if (checkthis.type() & TYPEBIT_TEMPORAL)
+	if (ISTEMPORAL(checkthis.type()))
 	{
 		string msg("Audio or tseq object not allowed.");
 		throw exception_func(sc, pnode, msg, fname, id).raise();
@@ -69,7 +69,7 @@ void ensureVector1(const skope& sc, const AstNode* pnode, const CVar& checkthis,
 
 void ensureVector2(const skope& sc, const AstNode* pnode, const CVar& checkthis, int id)
 { // Vector must not be temporal; must not be GO, cell, strut
-	if (checkthis.type() & TYPEBIT_TEMPORAL)
+	if (ISTEMPORAL(checkthis.type()))
 	{
 		string msg("Audio or tseq object not allowed.");
 		throw exception_misuse(sc, pnode, msg, id).raise();
@@ -86,7 +86,7 @@ void ensureVector2(const skope& sc, const AstNode* pnode, const CVar& checkthis,
 
 void ensureVector3(const skope& sc, const AstNode* pnode, const CVar& checkthis, const string& errormsg)
 {
-	if (checkthis.type() & TYPEBIT_TEMPORAL)
+	if (ISTEMPORAL(checkthis.type()))
 	{
 		string msg = errormsg + " Audio or tseq object not allowed.";
 		throw exception_etc(sc, pnode, msg).raise();
@@ -103,7 +103,7 @@ void ensureVector3(const skope& sc, const AstNode* pnode, const CVar& checkthis,
 
 void ensureScalar1(const skope& sc, const AstNode* pnode, const CVar& checkthis, const string& fname, int id)
 {
-	if (checkthis.type() != 0x0001)
+	if (!ISSCALAR(checkthis.type()))
 	{
 		string msg("must be a scalar.");
 		throw exception_func(sc, pnode, msg, fname, id).raise();
@@ -111,7 +111,7 @@ void ensureScalar1(const skope& sc, const AstNode* pnode, const CVar& checkthis,
 }
 void ensureScalar2(const skope& sc, const AstNode* pnode, const CVar& checkthis, int id)
 {
-	if (checkthis.type() != 0x0001)
+	if (!ISSCALAR(checkthis.type()))
 	{
 		string msg("must be a scalar.");
 		throw exception_misuse(sc, pnode, msg, id).raise();
@@ -120,7 +120,7 @@ void ensureScalar2(const skope& sc, const AstNode* pnode, const CVar& checkthis,
 
 void ensureAudio1(const skope& sc, const AstNode* pnode, const CVar& checkthis, const string& fname = "", int id = 0)
 {
-	if (!checkthis.IsAudio())
+	if (!ISAUDIO(checkthis.type()))
 	{
 		string msg("must be an audio obj.");
 		throw exception_func(sc, pnode, msg, fname, id).raise();
@@ -128,7 +128,7 @@ void ensureAudio1(const skope& sc, const AstNode* pnode, const CVar& checkthis, 
 }
 void ensureAudio2(const skope& sc, const AstNode* pnode, const CVar& checkthis, int id = 0)
 {
-	if (!checkthis.IsAudio())
+	if (!ISAUDIO(checkthis.type()))
 	{
 		string msg("must be an audio obj.");
 		throw exception_misuse(sc, pnode, msg, id).raise();

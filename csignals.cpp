@@ -476,7 +476,10 @@ void body::SetReal()
 		*this = out;
 	}
 }
-
+void body::SetByte()
+{
+	bufType = 'B';
+}
 void body::SetComplex()
 {
 	bufType = 'C';
@@ -512,7 +515,7 @@ void body::SwapContents1node(body &sec)
 	tmp.buf = NULL;
 }
 
-body &body::addmult(char type, body &sec, unsigned int id0, uint64_t len)
+body &body::addmult(char op, body &sec, unsigned int id0, uint64_t len)
 {
 	if (nSamples / nGroups < sec.nSamples / sec.nGroups) SwapContents1node(sec);
 	auto lenL = nSamples / nGroups;
@@ -526,7 +529,7 @@ body &body::addmult(char type, body &sec, unsigned int id0, uint64_t len)
 		{
 			auto rhs = sec.nSamples == 1 ? sec.cbuf[0] : sec.cbuf[vertID];
 			auto len2 = len == 0 ? lenL : len;
-			if (type == '+')
+			if (op == '+')
 				for (auto k = id0; k < id0 + len2; k++)		cbuf[k] += rhs;
 			else
 				for (auto k = id0; k < id0 + len2; k++)		cbuf[k] *= rhs;
@@ -536,7 +539,7 @@ body &body::addmult(char type, body &sec, unsigned int id0, uint64_t len)
 		{
 			auto rhs = sec.nSamples == 1 ? sec.buf[0] : sec.buf[vertID];
 			auto len2 = len == 0 ? lenL : len;
-			if (type == '+')
+			if (op == '+')
 				for (auto k = id0; k < id0 + len2; k++)		buf[k] += rhs;
 			else
 				for (auto k = id0; k < id0 + len2; k++)		buf[k] *= rhs;
@@ -548,14 +551,14 @@ body &body::addmult(char type, body &sec, unsigned int id0, uint64_t len)
 		else			len = min(len, minlen);
 		if (IsComplex())
 		{
-			if (type == '+')
+			if (op == '+')
 				for (auto k = id0; k < id0 + len; k++)		cbuf[k] += sec.cbuf[vertID*lenR + k - id0];
 			else
 				for (auto k = id0; k < id0 + len; k++)		cbuf[k] *= sec.cbuf[vertID*lenR + k - id0];
 		}
 		else
 		{
-			if (type == '+')
+			if (op == '+')
 				for (auto k = id0; k < id0 + len; k++)		buf[k] += sec.buf[vertID*lenR + k - id0];
 			else
 				for (auto k = id0; k < id0 + len; k++)		buf[k] *= sec.buf[vertID*lenR + k - id0];
@@ -1290,13 +1293,14 @@ CTimeSeries& CTimeSeries::evoke_modsig(fmodify fp, void *popt)
 			for (unsigned int k = 0; k < nGroups; k++)
 			{
 				auto len = p->Len();
-				(fp)(p->buf, k * len, len, popt);
+				(fp)(p->buf, len, popt);
+//				(fp)(p->buf, k * len, len, popt);
 			}
 	}
 	return *this;
 }
 
-CTimeSeries CTimeSeries::evoke_getsig(CSignal(*fp)(CSignal&, unsigned int, unsigned int, void*), void *popt)
+CTimeSeries CTimeSeries::evoke_getsig(CTimeSeries(*func) (const CTimeSeries&, void*), void *popt)
 {
 //	parg = popt;
 	int _fs = fs == 2 ? 1 : fs;
@@ -1315,7 +1319,8 @@ CTimeSeries CTimeSeries::evoke_getsig(CSignal(*fp)(CSignal&, unsigned int, unsig
 		unsigned int len = Len();
 		for (unsigned int k = 0; k < nGroups; k++)
 		{
-			CSignal tp = (fp)(*this, k * len, len, popt);
+			CSignal tp = (func)(*this, popt);
+//			CSignal tp = (func)(*this, k * len, len, popt);
 			CTimeSeries tp2 = (CTimeSeries)tp;
 			out += &tp2;
 			//			sbit0 += &sbit;
@@ -1325,7 +1330,7 @@ CTimeSeries CTimeSeries::evoke_getsig(CSignal(*fp)(CSignal&, unsigned int, unsig
 		for (CTimeSeries *p = chain; p; p = p->chain)
 		{
 //			p->parg = popt;
-			tp = (fp)(*this, 0, 0, popt);
+			tp = (func)(*this, popt);
 			tp.tmark = p->tmark;
 			out.AddChain(tp);
 		}
@@ -1356,7 +1361,7 @@ CSignal &CSignal::matrixmult(CSignal *arg)
 	return *this = out;
 }
 
-void CTimeSeries::AddMultChain(char type, CTimeSeries *sec)
+void CTimeSeries::AddMultChain(char op, CTimeSeries *sec)
 {
 	if (fs > 1 && sec->fs > 1 && fs != sec->fs)  throw "The sampling rates of both operands must be the same.";
 
@@ -1365,7 +1370,9 @@ void CTimeSeries::AddMultChain(char type, CTimeSeries *sec)
 	{
 		SetComplex(); sec->SetComplex();
 	}
-	if (type & TYPEBIT_TEMPORAL || sec->chained_scalar()) // Check if the logic is right 11/25/2021
+	auto tp = type();
+	auto sectp = sec->type();
+	if (ISTEMPORAL(tp) || ISTSEQ(sectp)) // Check if the logic is right 11/25/2021
 	{
 		if (chained_scalar()) //special case: point by point operation
 		{
@@ -1378,20 +1385,20 @@ void CTimeSeries::AddMultChain(char type, CTimeSeries *sec)
 			}
 			for (CTimeSeries *p = this, *pp = sec; p; p = p->chain, pp = pp->chain)
 			{
-				if (type == '*')
+				if (op == '*')
 					for (unsigned int k = 0; k < p->nSamples; k++)	p->buf[k] *= pp->buf[k];
 				else
 					for (unsigned int k = 0; k < p->nSamples; k++)	p->buf[k] += pp->buf[k];
 			}
 			return;
 		}
-		else if (type == '+')
+		else if (op == '+')
 			SwapContents1node(*sec); //if sec is tseq and this is not, swap here
 	}
 	if (!IsAudio() || !sec->IsAudio())
 	{
 		//special case: multiplication after interpolation
-		if (type == '*' && (chained_scalar() || sec->chained_scalar()))
+		if (op == '*' && (chained_scalar() || sec->chained_scalar()))
 		{
 			// need to pass down the case of scalar * tseq
 			if ((IsAudio() && sec->chained_scalar()) || (sec->IsAudio() && chained_scalar()))
@@ -1418,7 +1425,7 @@ void CTimeSeries::AddMultChain(char type, CTimeSeries *sec)
 		for (p = this; p; (p = p->chain) && (sec->nSamples > 0))
 		{
 			for (unsigned int k = 0; k < p->nGroups; k++)
-				p->addmult(type, *sec, k*p->Len(), p->Len());
+				p->addmult(op, *sec, k*p->Len(), p->Len());
 		}
 		if (sec->IsAudio())
 			SetFs(sec->fs);
@@ -1495,14 +1502,14 @@ void CTimeSeries::AddMultChain(char type, CTimeSeries *sec)
 					for (k = 0, p = ps; k < is / 2; k++)
 						if (p->chain != NULL) p = p->chain;
 					int id = (int)round((anc0 - p->tmark) / 1000.*fs);
-					if (status & 1) // type=='+' add the two,  type=='*' multiply
+					if (status & 1) // op=='+' add the two,  op=='*' multiply
 					{
-						if (type == '+')
+						if (op == '+')
 						{
 							if (part.IsComplex()) for (unsigned int k = 0; k < count; k++)	part.cbuf[k] += p->cbuf[k + id];
 							else				 for (unsigned int k = 0; k < count; k++)	part.buf[k] += p->buf[k + id];
 						}
-						else if (type == '*')
+						else if (op == '*')
 						{
 							if (part.IsComplex()) for (unsigned int k = 0; k < count; k++)	part.cbuf[k] *= p->cbuf[k + id];
 							else				 for (unsigned int k = 0; k < count; k++)	part.buf[k] *= p->buf[k + id];
@@ -2364,7 +2371,7 @@ void CSignals::SetNextChan(const CSignals& second, bool need2makeghost)
 	if (fs != second.GetFs() && second.nSamples > 0 && nSamples > 0)
 	{
 		// tseq and scalar can be mixed--i.e., if neither of this nor second is tseq throw
-		if (!(type()&TYPEBIT_TSEQ) && !(second.type()&TYPEBIT_TSEQ))
+		if (!ISTSEQ(type()) && !ISTSEQ(second.type()))
 		{
 			char errstr[256];
 			sprintf(errstr, "SetNextChan attempted on different fs: fs1=%d, fs2=%d", GetFs(), second.GetFs());
@@ -2417,11 +2424,11 @@ CSignals& CSignals::evoke_modsig(fmodify fp, void * popt)
 	return *this;
 }
 
-CSignals CSignals::evoke_getsig(CSignal(*fp)(CSignal&, unsigned int, unsigned int, void*), void * popt)
+CSignals CSignals::evoke_getsig(CTimeSeries(*func) (const CTimeSeries&, void*) , void * popt)
 {
-	CSignals newout = CTimeSeries::evoke_getsig(fp, popt);
+	CSignals newout = CTimeSeries::evoke_getsig(func, popt);
 	if (next)
-		newout.SetNextChan(next->evoke_getsig(fp, popt));
+		newout.SetNextChan(next->evoke_getsig(func, popt));
 	return newout;
 }
 

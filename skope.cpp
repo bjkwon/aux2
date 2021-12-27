@@ -388,70 +388,76 @@ CVar* skope::Compute(const AstNode* pnode)
 
 CVar* skope::TSeq(const AstNode* pnode, AstNode* p)
 {
-	////For now (6/12/2018) only [vector1][vector2] where two vectors have the same length.
-	//CVar tsig2, tsig = Compute(p);
-	//int type1 = tsig.GetType();
-	//if (type1 != CSIG_SCALAR && type1 != CSIG_VECTOR)
-	//	strcpy(pnode->str, "TSEQ"), throw CAstException(USAGE, *this, pnode).proc("Invalid tmark array");
-	//if (pnode->child->next) {
-	//	//[tvalues][val] pnode->child->next is N_VECTOR for val
-	//	//[tvalues][val;] pnode->child->next is N_MATRIX for val
-	//	tsig2 = Compute(pnode->child->next);
-	//	checkVector(pnode, tsig2);
-	//	int type2 = tsig2.GetType();
-	//	if (type2 != CSIG_SCALAR && type2 != CSIG_VECTOR)
-	//		strcpy(pnode->str, "TSEQ"), throw CAstException(USAGE, *this, pnode).proc("Invalid t-sequence value array");
-	//	if (tsig2.nGroups == 1)
-	//	{
-	//		//if
-	//		if (pnode->child->next->type == N_VECTOR)
-	//		{
-	//			if (tsig2.nSamples != tsig.nSamples)
-	//				strcpy(pnode->str, "TSEQ"), throw CAstException(USAGE, *this, pnode).proc("Time point and value arrays must have the same length.");
-	//		}
-	//		else //pnode->child->next->type == N_MATRIX
-	//		{
-	//			//ok
-	//		}
-	//	}
-	//	else
-	//	{
-	//		if (tsig2.nGroups != tsig.nSamples)
-	//			strcpy(pnode->str, "TSEQ"), throw CAstException(USAGE, *this, pnode).proc("The number of time points and time sequences must have the same.");
-	//	}
-	//}
-	//Sig.Reset(tsig.GetFs());
-	//CTimeSeries tp, * run(&Sig);
-	//if (pnode->str && pnode->str[0] == 'R') //Relative tmarks
-	//{
-	//	tp.SetFs(0); // new fs is 0.
-	//	Sig.SetFs(0);
-	//}
-	//else // if it is not relative, fs is set from the current system default.
-	//	tp.SetFs(GetFs());
-	//for (unsigned int k = 0; k < tsig.nSamples; k++)
-	//{
-	//	tp.tmark = tsig.buf[k];
-	//	if (tsig2.nSamples > 0)
-	//	{
-	//		if (tsig2.nGroups == 1 && pnode->child->next->type == N_VECTOR)
-	//			tp.SetValue(tsig2.buf[k]);
-	//		else
-	//		{
-	//			unsigned int len = tsig2.Len();
-	//			tp.UpdateBuffer(len);
-	//			memcpy(tp.buf, tsig2.buf + len * k, len * sizeof(float));
-	//		}
-	//	}
-	//	if (k == 0) *run = tp;
-	//	else
-	//	{
-	//		run->chain = new CTimeSeries;
-	//		run = run->chain;
-	//		*run = tp;
-	//	}
-	//}
-	//Sig.setsnap();
+	//For now (6/12/2018) only [vector1][vector2] where two vectors have the same length.
+	CVar tsig2, tsig = Compute(p);
+	auto type1 = tsig.type();
+	if (type1 > 2)
+	{
+		strcpy(pnode->str, "TSEQ"); // what is this? 12/24/2021
+		throw exception_etc(*this, pnode, "Invalid tmark array").raise();
+	}
+	if (pnode->child->next) {
+		//[tvalues][val] pnode->child->next is N_VECTOR for val
+		//[tvalues][val;] pnode->child->next is N_MATRIX for val
+		tsig2 = Compute(pnode->child->next);
+		ensureVector3(*this, pnode, tsig2, "vector expected for tseq");
+		if (tsig2.nGroups == 1)
+		{
+			//if
+			if (pnode->child->next->type == N_VECTOR)
+			{
+				if (tsig2.nSamples != tsig.nSamples)
+				{
+					strcpy(pnode->str, "TSEQ");
+					throw exception_etc(*this, pnode, "Time-point and value arrays must have the same length.").raise();
+				}
+			}
+			else //pnode->child->next->type == N_MATRIX
+			{
+				//ok
+			}
+		}
+		else
+		{
+			if (tsig2.nGroups != tsig.nSamples)
+			{
+				strcpy(pnode->str, "TSEQ");
+				throw exception_etc(*this, pnode, "Time-point and value arrays must have the same length.").raise();
+			}
+		}
+	}
+	Sig.Reset(tsig.GetFs());
+	CTimeSeries tp, * run(&Sig);
+	if (pnode->str && pnode->str[0] == 'R') //Relative tmarks
+	{
+		tp.SetFs(0); // new fs is 0.
+		Sig.SetFs(0);
+	}
+	else // if it is not relative, fs is set from the current system default.
+		tp.SetFs(GetFs());
+	for (unsigned int k = 0; k < tsig.nSamples; k++)
+	{
+		tp.tmark = tsig.buf[k];
+		if (tsig2.nSamples > 0)
+		{
+			if (tsig2.nGroups == 1 && pnode->child->next->type == N_VECTOR)
+				tp.SetValue(tsig2.buf[k]);
+			else
+			{
+				unsigned int len = tsig2.Len();
+				tp.UpdateBuffer(len);
+				memcpy(tp.buf, tsig2.buf + len * k, len * sizeof(float));
+			}
+		}
+		if (k == 0) *run = tp;
+		else
+		{
+			run->chain = new CTimeSeries;
+			run = run->chain;
+			*run = tp;
+		}
+	}
+	Sig.setsnap();
 	return &Sig;
 }
 
@@ -1486,7 +1492,7 @@ CVar* skope::NodeMatrix(const AstNode* pnode)
 	blockCellStruct2(*this, pnode, tsig);
 	int audio(0);
 	if (tsig.IsAudio()) audio = 1;
-	else if (tsig.type() & TYPEBIT_TSEQ) audio = 10;
+	else if (ISTSEQ(tsig.type())) audio = 10;
 	else if (tsig.IsString() || tsig.IsScalar() || tsig.GetType() & 0x0002) audio = -1;
 	if (audio == 0 && !p->next)
 		return &Sig.Reset();
@@ -1505,7 +1511,7 @@ CVar* skope::NodeMatrix(const AstNode* pnode)
 				p->next->alt = NULL;
 			esig = Compute(p->next);
 			blockCellStruct2(*this, pnode, esig);
-			if (audio == 0 && (esig.IsAudio()|| esig.type() & TYPEBIT_TSEQ))
+			if (audio == 0 && (esig.IsAudio()|| ISTSEQ(esig.type())))
 			{
 				if (p->next->next)	throw exception_etc(*this, pnode, "Currently two channels or less for audio signals or t-series are allowed.").raise();
 				tsig.SetNextChan(esig);
@@ -1548,7 +1554,6 @@ void skope::Transpose(const AstNode* pnode, AstNode* p)
 	Compute(p);
 	Sig.transpose();
 }
-
 
 void skope::Concatenate(const AstNode* pnode, AstNode* p)
 {

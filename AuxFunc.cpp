@@ -67,84 +67,6 @@ void _tictoc(skope *past, const AstNode *pnode)
 	}
 }
 
-void _time_freq_manipulate(skope *past, const AstNode *pnode)
-{
-	const AstNode* p = get_first_arg(pnode, (*(past->pEnv->builtin.find(pnode->str))).second.alwaysstatic);
-	//check qualifers
-//	past->checkAudioSig(pnode, past->Sig);
-	CVar param, paramopt;
-	string fname;
-	try {
-		skope tp(past);
-		param = tp.Compute(p);
-		if (p->next)
-		{
-			paramopt = tp.Compute(p->next);
-			if (paramopt.strut.empty())
-				throw exception_func(*past, p, "must be a struct variable", "", 3).raise();
-		}
-		int type = param.GetType();
-		//if (type!= CSIG_TSERIES && type != CSIG_SCALAR)
-		//	throw CAstException(FUNC_SYNTAX, *past, p).proc("parameter must be either a scalar or a time sequence.");
-		// Think about this 11/19/2021
-//		if (param.GetType() == CSIG_TSERIES)
-		{
-			float audioDur = past->Sig.dur();
-			if (param.GetFs() == 0) // relative
-				for (CTimeSeries *p = &param; p; p = p->chain)
-				{
-					p->tmark *= audioDur;
-					p->SetFs(past->Sig.GetFs());
-				}
-			//If the first tmark is not 0, make one with 0 tmark and bring the value at zero
-			if (param.tmark != 0.)
-			{
-				CTimeSeries newParam(past->Sig.GetFs());
-				newParam.tmark = 0.;
-				newParam.SetValue(param.value());
-				newParam.chain = new CTimeSeries;
-				*newParam.chain = param; // this way the copied version goes to chain
-				param = newParam;
-			}
-			//If the last tmark is not the end of the signal, make one with 0 tmark and bring the value at zero
-			CTimeSeries *pLast = NULL;
-			for (CTimeSeries *p = &param; p; p = p->chain)
-				if (!p->chain)
-					pLast = p;
-			if (pLast && pLast->tmark != past->Sig.dur())
-			{
-				CTimeSeries newParam(past->Sig.GetFs());
-				newParam.tmark = past->Sig.dur();
-				newParam.SetValue(pLast->value());
-				pLast->chain = new CTimeSeries;
-				*pLast->chain = newParam; // this way the copied version goes to chain
-			}
-			//IF tsequence goes beyond the audio duration, cut it out.
-			for (CTimeSeries *p = &param; p; p = p->chain)
-				if (p->chain && p->chain->tmark > audioDur)
-				{
-					delete p->chain;
-					p->chain = NULL;
-				}
-		}
-		fname = pnode->str;
-		for (auto it = paramopt.strut.begin(); it != paramopt.strut.end(); it++)
-			param.strut[(*it).first] = (*it).second;
-		//if (fname == "respeed")
-		//	past->Sig.evoke_modsig(&CSignal::resample, &param);
-		//else if (fname == "movespec")
-		//	past->Sig.evoke_modsig(&CSignal::movespec, &param);
-		//if (param.IsString())
-		//	throw exception_etc(*this, pnode, string("Error in respeed:") + param.str())).raise();
-	}
-	catch (const skope_exception &e) {
-		throw exception_etc(*past, pnode, e.getErrMsg()).raise(); }
-	if (fname == "respeed")
-	{ // Take care of overlapping chains after processing
-		past->Sig.MergeChains();
-	}
-}
-
 void _colon(skope *past, const AstNode *pnode)
 {
 	const AstNode* p = get_first_arg(pnode, (*(past->pEnv->builtin.find(pnode->str))).second.alwaysstatic);
@@ -270,157 +192,6 @@ string Cfunction::make_funcsignature()
 	return out;
 }
 
-Cfunction set_builtin_function_tone(fGate fp)
-{
-	Cfunction ft;
-	set<uint16_t> allowedTypes;
-
-	ft.func = fp;
-	ft.alwaysstatic = true;
-	vector<string> desc_arg_req = { "f", "dur", };
-	vector<string> desc_arg_opt = { "phase", };
-	vector<CVar> default_arg = { CVar(0.f), };
-	ft.defaultarg = default_arg;
-	set<uint16_t> allowedTypes1 = { 1, 2, };
-	ft.allowed_arg_types.push_back(allowedTypes1);
-	set<uint16_t> allowedTypes2 = { 1, };
-	ft.allowed_arg_types.push_back(allowedTypes2);
-	ft.allowed_arg_types.push_back(allowedTypes2);
-
-	ft.narg1 = desc_arg_req.size();
-	ft.narg2 = ft.narg1 + default_arg.size();
-	return ft;
-}
-
-Cfunction set_builtin_function_noise(fGate fp)
-{
-	Cfunction ft;
-	set<uint16_t> allowedTypes;
-
-	ft.func = fp;
-	ft.alwaysstatic = true;
-	vector<string> desc_arg_req = { "dur", };
-	vector<string> desc_arg_opt = { };
-	vector<CVar> default_arg = { };
-	ft.defaultarg = default_arg;
-	set<uint16_t> allowedTypes1 = { 1, };
-	ft.allowed_arg_types.push_back(allowedTypes1);
-
-	ft.narg1 = desc_arg_req.size();
-	ft.narg2 = ft.narg1 + default_arg.size();
-	return ft;
-}
-
-Cfunction set_builtin_function_wave(fGate fp)
-{
-	Cfunction ft;
-	set<uint16_t> allowedTypes;
-
-	ft.func = fp;
-	ft.alwaysstatic = true;
-	vector<string> desc_arg_req = { "filename", };
-	vector<string> desc_arg_opt = { "start_time", "end_time", };
-	vector<CVar> default_arg = { CVar(0.f), CVar(-1.f) };
-	ft.defaultarg = default_arg;
-	set<uint16_t> allowedTypes1 = { 50, };
-	ft.allowed_arg_types.push_back(allowedTypes1);
-	set<uint16_t> allowedTypes2 = { 1, };
-	ft.allowed_arg_types.push_back(allowedTypes2);
-	ft.allowed_arg_types.push_back(allowedTypes2);
-
-	ft.narg1 = desc_arg_req.size();
-	ft.narg2 = ft.narg1 + default_arg.size();
-	return ft;
-}
-
-Cfunction set_builtin_function_ramp(fGate fp)
-{
-	Cfunction ft;
-	set<uint16_t> allowedTypes;
-	ft.func = fp;
-	// Edit from this line ==============
-	ft.alwaysstatic = false;
-	vector<string> desc_arg_req = { "audio_obj", "ramp_dur"};
-	vector<string> desc_arg_opt = { };
-	vector<CVar> default_arg = { };
-	set<uint16_t> allowedTypes1 = { TYPEBIT_AUDIO + 2, };
-	ft.allowed_arg_types.push_back(allowedTypes1);
-	set<uint16_t> allowedTypes2 = { 1, };
-	ft.allowed_arg_types.push_back(allowedTypes2);
-	// til this line ==============
-	ft.defaultarg = default_arg;
-	ft.narg1 = desc_arg_req.size();
-	ft.narg2 = ft.narg1 + default_arg.size();
-	return ft;
-}
-
-Cfunction set_builtin_function_pow(fGate fp)
-{
-	Cfunction ft;
-	set<uint16_t> allowedTypes;
-	ft.func = fp;
-	// Edit from this line ==============
-	ft.alwaysstatic = true;
-	vector<string> desc_arg_req = { "value_or_array", "value_or_array" };
-	vector<string> desc_arg_opt = { };
-	vector<CVar> default_arg = { };
-	set<uint16_t> allowedTypes1 = { 1, 2, 10, };
-	ft.allowed_arg_types.push_back(allowedTypes1);
-	ft.allowed_arg_types.push_back(allowedTypes1);
-	set<uint16_t> allowedTypes2 = { };
-	ft.allowed_arg_types.push_back(allowedTypes2);
-	// til this line ==============
-	ft.defaultarg = default_arg;
-	ft.narg1 = desc_arg_req.size();
-	ft.narg2 = ft.narg1 + default_arg.size();
-	return ft;
-}
-
-
-Cfunction set_builtin_function_mod(fGate fp)
-{
-	Cfunction ft;
-	set<uint16_t> allowedTypes;
-	ft.func = fp;
-	// Edit from this line ==============
-	ft.alwaysstatic = true;
-	vector<string> desc_arg_req = { "value_or_array", "value_or_array" };
-	vector<string> desc_arg_opt = { };
-	vector<CVar> default_arg = { };
-	set<uint16_t> allowedTypes1 = { 1, 2, };
-	ft.allowed_arg_types.push_back(allowedTypes1);
-	ft.allowed_arg_types.push_back(allowedTypes1);
-	set<uint16_t> allowedTypes2 = { };
-	ft.allowed_arg_types.push_back(allowedTypes2);
-	// til this line ==============
-	ft.defaultarg = default_arg;
-	ft.narg1 = desc_arg_req.size();
-	ft.narg2 = ft.narg1 + default_arg.size();
-	return ft;
-}
-
-Cfunction set_builtin_function_wavwrite(fGate fp)
-{
-	Cfunction ft;
-	set<uint16_t> allowedTypes;
-	ft.func = fp;
-	// Edit from this line ==============
-	ft.alwaysstatic = false;
-	vector<string> desc_arg_req = { "audio_signal", "filename" };
-	vector<string> desc_arg_opt = { "option" };
-	vector<CVar> default_arg = { CVar(string(""))};
-	set<uint16_t> allowedTypes1 = { TYPEBIT_AUDIO + 2, };
-	ft.allowed_arg_types.push_back(allowedTypes1);
-	set<uint16_t> allowedTypes2 = { 50, };
-	ft.allowed_arg_types.push_back(allowedTypes2);
-	ft.allowed_arg_types.push_back(allowedTypes2);
-	// til this line ==============
-	ft.defaultarg = default_arg;
-	ft.narg1 = desc_arg_req.size();
-	ft.narg2 = ft.narg1 + default_arg.size();
-	return ft;
-}
-
 void CAstSigEnv::InitBuiltInFunctions()
 {
 	//Think about this 11/19/2021
@@ -432,18 +203,21 @@ void CAstSigEnv::InitBuiltInFunctions()
 	vector<string> arg_desc;
 
 	builtin["tone"] = set_builtin_function_tone(&_tone);
-	builtin["noise"] = set_builtin_function_noise(&_tparamonly);
-	builtin["gnoise"] = set_builtin_function_noise(&_tparamonly);
-	builtin["dc"] = set_builtin_function_noise(&_tparamonly);
-	builtin["silence"] = set_builtin_function_noise(&_tparamonly);
+	builtin["noise"] = set_builtin_function_tparamonly(&_tparamonly);
+	builtin["gnoise"] = set_builtin_function_tparamonly(&_tparamonly);
+	builtin["dc"] = set_builtin_function_tparamonly(&_tparamonly);
+	builtin["silence"] = set_builtin_function_tparamonly(&_tparamonly);
 	builtin["wave"] = set_builtin_function_wave(&_wave);
+	builtin["wavwrite"] = set_builtin_function_wavwrite(&_wavwrite);
 	builtin["ramp"] = set_builtin_function_ramp(&_ramp);
 	builtin["pow"] = set_builtin_function_pow(&_pow);
 	builtin["^"] = set_builtin_function_pow(&_pow);
 	builtin["mod"] = set_builtin_function_mod(&_mod);
 	builtin["%"] = set_builtin_function_mod(&_mod);
 	
-	builtin["wavwrite"] = set_builtin_function_wavwrite(&_wavwrite);
+	builtin["group"] = set_builtin_function_group(&_group);
+	builtin["matrix"] = set_builtin_function_group(&_group);
+	builtin["ungroup"] = set_builtin_function_group(&_ungroup);
 
 //	name = "sam";
 //	ft.alwaysstatic = false;

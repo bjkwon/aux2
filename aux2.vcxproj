@@ -162,9 +162,11 @@
     <ClCompile Include="skope_statics.cpp" />
     <ClCompile Include="support.cpp" />
     <ClCompile Include="typecheck.cpp" />
+    <ClCompile Include="_func\movespec.cpp" />
     <ClCompile Include="_func\tone_fm.cpp" />
     <ClCompile Include="_func\windowing.cpp" />
     <ClCompile Include="_func\_file.cpp" />
+    <ClCompile Include="_func\_matrix.cpp" />
     <ClCompile Include="_func\_minmax.cpp" />
     <ClCompile Include="_func\_tparamonly.cpp" />
   </ItemGroup>
@@ -173,6 +175,7 @@
     <ClInclude Include="builtin_functions.h" />
     <ClInclude Include="skope.h" />
     <ClInclude Include="typecheck.h" />
+    <ClInclude Include="_func\functions_common.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

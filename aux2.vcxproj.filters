@@ -84,6 +84,12 @@
     <ClCompile Include="_func\windowing.cpp">
       <Filter>Source Files\_functions</Filter>
     </ClCompile>
+    <ClCompile Include="_func\_matrix.cpp">
+      <Filter>Source Files\_functions</Filter>
+    </ClCompile>
+    <ClCompile Include="_func\movespec.cpp">
+      <Filter>Source Files\_functions</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="skope.h">
@@ -96,6 +102,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="aux_classes.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="_func\functions_common.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

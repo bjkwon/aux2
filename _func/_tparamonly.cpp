@@ -1,5 +1,24 @@
 #include "functions_common.h"
 
+Cfunction set_builtin_function_tparamonly(fGate fp)
+{
+	Cfunction ft;
+	set<uint16_t> allowedTypes;
+
+	ft.func = fp;
+	ft.alwaysstatic = true;
+	vector<string> desc_arg_req = { "dur", };
+	vector<string> desc_arg_opt = { };
+	vector<CVar> default_arg = { };
+	ft.defaultarg = default_arg;
+	set<uint16_t> allowedTypes1 = { 1, };
+	ft.allowed_arg_types.push_back(allowedTypes1);
+
+	ft.narg1 = desc_arg_req.size();
+	ft.narg2 = ft.narg1 + default_arg.size();
+	return ft;
+}
+
 static inline void __noise(float* buf, unsigned int length, int fs)
 {
 	auto k = (unsigned int)0;

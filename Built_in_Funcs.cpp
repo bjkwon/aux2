@@ -19,6 +19,8 @@
 #include "skope.h"
 using namespace std;
 
+typedef void(*fGate) (skope* past, const AstNode* pnode, const vector<CVar>& args);
+
 static map<string, string> builtin_fnsigs;
 static map<string, bool> builtin_staticfn;
 static map<string, int> builtin_fn_nArg1, builtin_fn_nArg2;
@@ -40,6 +42,49 @@ complex<float> cmpconj(complex<float> x) { return conj(x); }
 complex<float> cmpsqrt(complex<float> x) { return sqrt(x); }
 //float cmpnorm(complex<float> x) { return norm(x); }
 float cmpangle(complex<float> x) { return arg(x); }
+
+Cfunction set_builtin_function_pow(fGate fp)
+{
+	Cfunction ft;
+	set<uint16_t> allowedTypes;
+	ft.func = fp;
+	// Edit from this line ==============
+	ft.alwaysstatic = true;
+	vector<string> desc_arg_req = { "value_or_array", "value_or_array" };
+	vector<string> desc_arg_opt = { };
+	vector<CVar> default_arg = { };
+	set<uint16_t> allowedTypes1 = { 1, 2, ALL_AUDIO_TYPES, TYPEBIT_COMPLEX + 1, TYPEBIT_COMPLEX + 2 };
+	ft.allowed_arg_types.push_back(allowedTypes1);
+	set<uint16_t> allowedTypes2 = { 1, 2, TYPEBIT_COMPLEX + 1, TYPEBIT_COMPLEX + 2 };
+	ft.allowed_arg_types.push_back(allowedTypes2);
+	// til this line ==============
+	ft.defaultarg = default_arg;
+	ft.narg1 = desc_arg_req.size();
+	ft.narg2 = ft.narg1 + default_arg.size();
+	return ft;
+}
+
+Cfunction set_builtin_function_mod(fGate fp)
+{
+	Cfunction ft;
+	set<uint16_t> allowedTypes;
+	ft.func = fp;
+	// Edit from this line ==============
+	ft.alwaysstatic = true;
+	vector<string> desc_arg_req = { "value_or_array", "value_or_array" };
+	vector<string> desc_arg_opt = { };
+	vector<CVar> default_arg = { };
+	set<uint16_t> allowedTypes1 = { 1, 2, };
+	ft.allowed_arg_types.push_back(allowedTypes1);
+	ft.allowed_arg_types.push_back(allowedTypes1);
+	set<uint16_t> allowedTypes2 = { };
+	ft.allowed_arg_types.push_back(allowedTypes2);
+	// til this line ==============
+	ft.defaultarg = default_arg;
+	ft.narg1 = desc_arg_req.size();
+	ft.narg2 = ft.narg1 + default_arg.size();
+	return ft;
+}
 
 float aux_db(float x)
 {
@@ -69,53 +114,53 @@ complex<float> aux_pow_comp(complex<float> base, float exponent)
 	return pow(base, exponent);
 }
 
-CSignal aux_pow(CSignal& base, unsigned int id0, unsigned int len, void* p)
+CTimeSeries aux_pow(const CTimeSeries& base, void* p)
 {
+	CTimeSeries out(base);
 	body operand = *(body*)p;
-	if (len == 0) len = base.nSamples;
 	if (base.IsAudio())
 	{
-		base.each_sym2(powf, operand);
+		out.each_sym2(powf, operand);
 	}
-	else if (base._min(id0, len) < 0)
+	else if (base._min() < 0)
 	{
-		base.SetComplex();
+		out.SetComplex();
 		if (operand.nSamples == 1)
 		{
-			for (auto k = id0; k < id0 + len; k++) base.cbuf[k] = pow(base.cbuf[k], operand.value());
+			for (auto k = 0; k < base.nSamples; k++) out.cbuf[k] = pow(base.cbuf[k], operand.value());
 		}
-		else if (len == 1)
+		else if (base.nSamples == 1)
 		{
 			auto baseval = base.value();
-			base.UpdateBuffer(operand.nSamples);
-			for (auto k = id0; k < id0 + len; k++) base.cbuf[k] = pow(baseval, operand.buf[k]);
+			out.UpdateBuffer(operand.nSamples);
+			for (auto k = 0; k < operand.nSamples; k++) out.cbuf[k] = pow(baseval, operand.buf[k]);
 		}
 		else
 		{
-			len = min(len, (unsigned int)operand.nSamples);
-			for (auto k = id0; k < id0 + len; k++) base.cbuf[k] = pow(base.cbuf[k], operand.buf[k]);
+			for (auto k = 0; k < operand.nSamples; k++) out.cbuf[k] = pow(base.cbuf[k], operand.buf[k]);
 		}
 	}
 	else
 	{
-		base.each(powf, operand);
+		out.each(powf, operand);
 	}
-	return base;
+	return out;
 }
 
 void _pow(skope* past, const AstNode* pnode, const vector<CVar>& args)
 {
-	CVar base = past->Sig;
-	CVar exponent = args[0];
-	past->Sig = past->Sig.evoke_getsig(&aux_pow, (void*)&exponent);
+//	CVar base = past->Sig;
+//	CVar exponent = args[0];
+	CVar *p[2] = { &past->Sig, (CVar*)&args[0]};
+	past->Sig = past->Sig.evoke_getsig(&aux_pow, (void*)&p);
 }
 
-CSignal aux_mod(CSignal& base, unsigned int id0, unsigned int len, void* p)
+CTimeSeries aux_mod(const CTimeSeries& base, void* p)
 {
+	CTimeSeries out(base);
 	body operand = *(body*)p;
-	if (len == 0) len = base.nSamples;
-	base.each_sym2(fmod, operand);
-	return base;
+	out.each_sym2(fmod, operand);
+	return out;
 }
 
 void _mod(skope* past, const AstNode* pnode, const vector<CVar>& args)

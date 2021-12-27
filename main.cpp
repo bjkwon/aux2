@@ -16,24 +16,12 @@ static void show_result(skope& sc)
 	{
 		echo_object().print(sc.node->type == T_ID ? sc.node->str : "", sc.Sig, 1);
 	}
-	else
-	{
-		switch (tp)
-		{
-		case 0:
-			cout << "(null)";
-			break;
-		case 1:
-			cout << sc.Sig.value();
-			break;
-		case 2:
-		case TYPEBIT_AUDIO + 2: // Ideally IsAudio() should be used, but this is best for switch
-		case TYPEBIT_SIZE16 + 1:
-		case TYPEBIT_SIZE16 + 2:
-			echo_object().print(sc.node->type == T_ID ? sc.node->str : "", sc.Sig, 1);
-			break;
-		}
-	}
+	else if (ISNULL(tp))
+		cout << "(null)";
+	else if (ISSCALAR(tp))
+		cout << sc.Sig.value();
+	else if (ISVECTOR(tp) || ISAUDIO(tp))
+		echo_object().print(sc.node->type == T_ID ? sc.node->str : "", sc.Sig, 1);
 	cout << endl;
 }
 

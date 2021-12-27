@@ -23,6 +23,50 @@ map<float, FILE *> file_ids;
 //#include "samplerate.h"
 #include "sndfile.h"
 
+Cfunction set_builtin_function_wave(fGate fp)
+{
+	Cfunction ft;
+	set<uint16_t> allowedTypes;
+
+	ft.func = fp;
+	ft.alwaysstatic = true;
+	vector<string> desc_arg_req = { "filename", };
+	vector<string> desc_arg_opt = { "start_time", "end_time", };
+	vector<CVar> default_arg = { CVar(0.f), CVar(-1.f) };
+	ft.defaultarg = default_arg;
+	set<uint16_t> allowedTypes1 = { TYPEBIT_STRING + 2, };
+	ft.allowed_arg_types.push_back(allowedTypes1);
+	set<uint16_t> allowedTypes2 = { 1, };
+	ft.allowed_arg_types.push_back(allowedTypes2);
+	ft.allowed_arg_types.push_back(allowedTypes2);
+
+	ft.narg1 = desc_arg_req.size();
+	ft.narg2 = ft.narg1 + default_arg.size();
+	return ft;
+}
+
+Cfunction set_builtin_function_wavwrite(fGate fp)
+{
+	Cfunction ft;
+	set<uint16_t> allowedTypes;
+	ft.func = fp;
+	// Edit from this line ==============
+	ft.alwaysstatic = false;
+	vector<string> desc_arg_req = { "audio_signal", "filename" };
+	vector<string> desc_arg_opt = { "option" };
+	vector<CVar> default_arg = { CVar(string("")) };
+	set<uint16_t> allowedTypes1 = { ALL_AUDIO_TYPES };
+	ft.allowed_arg_types.push_back(allowedTypes1);
+	set<uint16_t> allowedTypes2 = { TYPEBIT_STRING + 2, };
+	ft.allowed_arg_types.push_back(allowedTypes2);
+	ft.allowed_arg_types.push_back(allowedTypes2);
+	// til this line ==============
+	ft.defaultarg = default_arg;
+	ft.narg1 = desc_arg_req.size();
+	ft.narg2 = ft.narg1 + default_arg.size();
+	return ft;
+}
+
 static void EnumAudioVariables(skope* past, vector<string>& var)
 {
 	//var.clear();

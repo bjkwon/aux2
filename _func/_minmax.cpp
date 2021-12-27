@@ -25,7 +25,7 @@ void _minmax(skope* past, const AstNode* pnode, const vector<CVar>& args)
 		unique_ptr<CVar*> pt = make_unique<CVar*>(popt); // popt carries maximum/minimum indices
 		past->SigExt.push_back(move(pt));
 	}
-	if (past->Sig.type() & TYPEBIT_TEMPORAL) past->Sig.setsnap();
+	if ( ISTEMPORAL(past->Sig.type())) past->Sig.setsnap();
 }
 
 // DO NOT CALL this function with empty buf

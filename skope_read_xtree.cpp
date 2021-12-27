@@ -13,7 +13,7 @@ void CNodeProbe::tree_NARGS(const AstNode* ptree, AstNode* ppar)
 	{
 		if (psigBase->type() & TYPEBIT_CELL && ppar->type == T_ID)
 			throw exception_misuse(*pbase, ppar, string("A cell array ") + string(ppar->str) + " cannot be accessed with().").raise();
-		if (psigBase->type() & TYPEBIT_AUDIO && ptree->child->next)
+		if ( ISAUDIO(psigBase->type()) && ptree->child->next)
 		{ // 2-D style notation for audio
 			if (ptree->child->type == T_FULLRANGE)
 				throw exception_misuse(*pbase, ppar, string("For audio object ") + string(ppar->str) + " The first arg in () cannot be :").raise();

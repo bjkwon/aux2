@@ -8,9 +8,6 @@
 * TYPEBIT_SIZE1 + TYPEBIT_FS2 string
 */
 
-typedef void(*fGate) (skope* past, const AstNode* pnode, const vector<CVar>& args);
-
-
 //these functions are defined in _file.cpp
 void _fopen(skope* past, const AstNode* pnode, const vector<CVar>& args);
 void _fclose(skope* past, const AstNode* pnode, const vector<CVar>& args);
@@ -18,8 +15,8 @@ void _fprintf(skope* past, const AstNode* pnode, const vector<CVar>& args);
 void _fread(skope* past, const AstNode* pnode, const vector<CVar>& args);
 void _fwrite(skope* past, const AstNode* pnode, const vector<CVar>& args);
 void _write(skope* past, const AstNode* pnode, const vector<CVar>& args);
-void _wavwrite(skope* past, const AstNode* pnode, const vector<CVar>& args);
-void _wave(skope* past, const AstNode* pnode, const vector<CVar>& args);
+DECL_GATE(_wavwrite)
+DECL_GATE(_wave)
 void _file(skope* past, const AstNode* pnode, const vector<CVar>& args);
 
 //string CAstSigEnv::AppPath = "";
@@ -43,11 +40,12 @@ void _repaint(skope* past, const AstNode* pnode, const vector<CVar>& args);
 void _showrms(skope* past, const AstNode* pnode, const vector<CVar>& args);
 void _replicate(skope* past, const AstNode* pnode, const vector<CVar>& args);
 
+DECL_GATE(_movespec)
 
 void _minmax(skope* past, const AstNode* pnode, const vector<CVar>& args);
 void _filt(skope* past, const AstNode* pnode, const vector<CVar>& args);
 void _iir(skope* past, const AstNode* pnode, const vector<CVar>& args);
-void _tparamonly(skope* past, const AstNode* pnode, const vector<CVar>& args);
+DECL_GATE(_tparamonly)
 void _rand(skope* past, const AstNode* pnode, const vector<CVar>& args);
 void _irand(skope* past, const AstNode* pnode, const vector<CVar>& args);
 void _randperm(skope* past, const AstNode* pnode, const vector<CVar>& args);
@@ -68,16 +66,16 @@ void _eval(skope* past, const AstNode* pnode, const vector<CVar>& args);
 void _zeros(skope* past, const AstNode* pnode, const vector<CVar>& args);
 void _ones(skope* past, const AstNode* pnode, const vector<CVar>& args);
 void _cell(skope* past, const AstNode* pnode, const vector<CVar>& args);
-void _group(skope* past, const AstNode* pnode, const vector<CVar>& args);
-void _ungroup(skope* past, const AstNode* pnode, const vector<CVar>& args);
-void _buffer(skope* past, const AstNode* pnode, const vector<CVar>& args);
+DECL_GATE(_group)
+DECL_GATE(_ungroup)
+//DECL_GATE(_buffer)
 void _interp1(skope* past, const AstNode* pnode, const vector<CVar>& args);
 void _fdelete(skope* past, const AstNode* pnode, const vector<CVar>& args);
 void _ismember(skope* past, const AstNode* pnode, const vector<CVar>& args);
 void _isaudioat(skope* past, const AstNode* pnode, const vector<CVar>& args);
 void _fft(skope* past, const AstNode* pnode, const vector<CVar>& args);
 void _ifft(skope* past, const AstNode* pnode, const vector<CVar>& args);
-void _tone(skope* past, const AstNode* pnode, const vector<CVar>& args);
+DECL_GATE(_tone)
 void _fm(skope* past, const AstNode* pnode, const vector<CVar>& args);
 void _tsq_getvalues(skope* past, const AstNode* pnode, const vector<CVar>& args);
 void _tsq_setvalues(skope* past, const AstNode* pnode, const vector<CVar>& args);
@@ -98,7 +96,7 @@ void _blackman(skope* past, const AstNode* pnode, const vector<CVar>& args);
 void _envelope(skope* past, const AstNode* pnode, const vector<CVar>& args);
 void _hilbert(skope* past, const AstNode* pnode, const vector<CVar>& args);
 void _sam(skope* past, const AstNode* pnode, const vector<CVar>& args);
-void _ramp(skope* past, const AstNode* pnode, const vector<CVar>& args);
+DECL_GATE(_ramp)
 void _audio(skope* past, const AstNode* pnode, const vector<CVar>& args);
 void _vector(skope* past, const AstNode* pnode, const vector<CVar>& args);
 void _left(skope* past, const AstNode* pnode, const vector<CVar>& args);
@@ -118,9 +116,9 @@ void _imaginary_unit(skope* past, const AstNode* pnode, const vector<CVar>& args
 void _pi(skope* past, const AstNode* pnode, const vector<CVar>& args);
 void _natural_log_base(skope* past, const AstNode* pnode, const vector<CVar>& args);
 
-void _pow(skope* past, const AstNode* pnode, const vector<CVar>& args);
-void _mod(skope* past, const AstNode* pnode, const vector<CVar>& args);
+DECL_GATE(_pow)
+DECL_GATE(_mod)
 void _sqrt(skope* past, const AstNode* pnode, const vector<CVar>& args);
 void _sin(skope* past, const AstNode* pnode, const vector<CVar>& args);
 
-void _wavwrite(skope* past, const AstNode* pnode, const vector<CVar>& args);
+//void _wavwrite(skope* past, const AstNode* pnode, const vector<CVar>& args);

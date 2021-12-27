@@ -2,6 +2,8 @@
 #include "skope.h"
 #include <sstream>
 
+typedef void(*fGate) (skope* past, const AstNode* pnode, const vector<CVar>& args);
+
 /* Error message must be on of the following patterns:
 * 1) 2nd arg must be ______ in func()
 * 2) >> requires a scalar operand

@@ -1,6 +1,40 @@
 #include "functions_common.h"
 
-void dramp(float* buf, uint64_t id0, uint64_t len, void* parg);
+Cfunction set_builtin_function_ramp(fGate fp)
+{
+	Cfunction ft;
+	set<uint16_t> allowedTypes;
+	ft.func = fp;
+	// Edit from this line ==============
+	ft.alwaysstatic = false;
+	vector<string> desc_arg_req = { "audio_obj", "ramp_dur" };
+	vector<string> desc_arg_opt = { };
+	vector<CVar> default_arg = { };
+	set<uint16_t> allowedTypes1 = { ALL_AUDIO_TYPES };
+	ft.allowed_arg_types.push_back(allowedTypes1);
+	set<uint16_t> allowedTypes2 = { 1, };
+	ft.allowed_arg_types.push_back(allowedTypes2);
+	// til this line ==============
+	ft.defaultarg = default_arg;
+	ft.narg1 = desc_arg_req.size();
+	ft.narg2 = ft.narg1 + default_arg.size();
+	return ft;
+}
+
+void dramp(float* buf, uint64_t len, void* parg)
+{
+	float dur_ms = *(float*)parg;
+	int fs = (int)*((float*)parg + 1);
+	float drampFs = 1.e3 / (4. * dur_ms);
+	uint64_t nSamplesNeeded = (uint64_t)round(dur_ms / 1000. * fs);
+	nSamplesNeeded = min(len, nSamplesNeeded);
+	for (uint64_t k = 0; k < nSamplesNeeded; k++)
+	{
+		float x = sin(2.f * PI * drampFs * k / fs);
+		buf[k] *= x * x;
+		buf[len - k - 1] *= x * x;
+	}
+}
 
 //void _hamming(skope* past, const AstNode* pnode, const vector<CVar>& args)
 //{
@@ -86,21 +120,6 @@ void _ramp(skope* past, const AstNode* pnode, const vector<CVar>& args)
 //		buf[id0 + k] *= (1 - alpha) / 2 - 0.5 * cos(2.0 * PI * k / (len - 1.0)) + alpha / 2 * cos(4.0 * PI * k / (len - 1.0));
 //	return *this;
 //}
-
-void dramp(float *buf, uint64_t id0, uint64_t len, void *parg)
-{
-	float dur_ms = *(float*)parg;
-	int fs = (int)(*(float*)parg + 1);
-	float drampFs = 1.e3 / (4. * dur_ms);
-	uint64_t nSamplesNeeded = (uint64_t)round(dur_ms / 1000. * fs);
-	nSamplesNeeded = min(len, nSamplesNeeded);
-	for (uint64_t i = 0; i < nSamplesNeeded; i++)
-	{
-		float x = sin(2.f * PI * drampFs * i / fs);
-		buf[id0 + i] *= x * x;
-		buf[id0 + len - i - 1] *= x * x;
-	}
-}
 
 //CSignal& CSignal::SAM(double modRate, double modDepth, double initPhase)
 //{

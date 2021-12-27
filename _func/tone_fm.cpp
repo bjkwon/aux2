@@ -1,5 +1,27 @@
 #include "functions_common.h"
 
+Cfunction set_builtin_function_tone(fGate fp)
+{
+	Cfunction ft;
+	set<uint16_t> allowedTypes;
+
+	ft.func = fp;
+	ft.alwaysstatic = true;
+	vector<string> desc_arg_req = { "f", "dur", };
+	vector<string> desc_arg_opt = { "phase", };
+	vector<CVar> default_arg = { CVar(0.f), };
+	ft.defaultarg = default_arg;
+	set<uint16_t> allowedTypes1 = { 1, 2, };
+	ft.allowed_arg_types.push_back(allowedTypes1);
+	set<uint16_t> allowedTypes2 = { 1, };
+	ft.allowed_arg_types.push_back(allowedTypes2);
+	ft.allowed_arg_types.push_back(allowedTypes2);
+
+	ft.narg1 = desc_arg_req.size();
+	ft.narg2 = ft.narg1 + default_arg.size();
+	return ft;
+}
+
 // DOCUMENT initPhase --- 1 coresponds to PI (180 degrees)
 // If you want to make 1 corresponding to 360 degrees.... go ahead, change and document it 12/10/2020
 // CHECK!!!!!!!!!!!!!!! 1/22/2021

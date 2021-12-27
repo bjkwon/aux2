@@ -682,6 +682,9 @@ CVar &CNodeProbe::eval_indexing(const AstNode *pInd, CVar &isig)
 	return isig;
 }
 
+// As of 12/23/2021, I cannot track this down. What is it?
+// Maybe it became obsolete when x(whatever_including_conditional) = (something) always uses N_ARGS for HLS???
+
 CVar * CNodeProbe::TID_condition(const AstNode *pnode, AstNode *pLHS, AstNode *pRHS)
 {
 	unsigned int id = 0;
@@ -708,18 +711,18 @@ CVar * CNodeProbe::TID_condition(const AstNode *pnode, AstNode *pLHS, AstNode *p
 		CTimeSeries *pisig = &isig;
 		while (p)
 		{
-			if (p->type() & TYPEBIT_TEMPORAL) // Check this part 9/4/2018, 11/22/2021
-			{
-				// consolidate chained rhs with lhs
-				for (CTimeSeries *cts = prhs; cts; cts = cts->chain)
-				{
-					// id translated from tmark for each chain
-					int fs = cts->GetFs();
-					id = (unsigned int)(cts->tmark / 1000. * fs + .5);
-					memcpy(p->buf + id, cts->buf, cts->nSamples * sizeof(double));
-				}
-			}
-			else
+			//if (p->type() & TYPEBIT_TEMPORAL) // Check this part 9/4/2018, 11/22/2021
+			//{
+			//	// consolidate chained rhs with lhs
+			//	for (CTimeSeries *cts = prhs; cts; cts = cts->chain)
+			//	{
+			//		// id translated from tmark for each chain
+			//		int fs = cts->GetFs();
+			//		id = (unsigned int)(cts->tmark / 1000. * fs + .5);
+			//		memcpy(p->buf + id, cts->buf, cts->nSamples * sizeof(double));
+			//	}
+			//}
+			//else
 			{
 				for (unsigned k = 0; k < pisig->nSamples; k++)
 					p->buf[(int)pisig->buf[k] - 1] = prhs->buf[k];

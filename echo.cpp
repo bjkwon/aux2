@@ -217,14 +217,13 @@ void echo_object::print(const string& name, const CVar& obj, int offset)
 {
 	auto type = obj.type();
 	//What about TYPEBIT_STRUTS?
-	auto res = type & (TYPEBIT_TEMPORAL + 0x0002);
 	if (type & TYPEBIT_STRUT)
 		echo_struct(name, offset).print(obj);
 	else if (type & TYPEBIT_CELL)
 		echo_cell(name, offset).print(obj);
 	else if (obj.IsAudio())
 		echo_object_audio(name, offset).print(obj);
-	else if (type & TYPEBIT_TEMPORAL)
+	else if (ISTEMPORAL(type))
 		echo_object_naudio(name, offset).print(obj);
 	else if (!type) // Don't do (type & TYPEBIT_NULL) unless you want to be funny!
 		echo_object_null(name, offset).print(obj);

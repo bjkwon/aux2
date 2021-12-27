@@ -1,0 +1,23 @@
+1.
+#include "functions_common.h"
+
+2. Replace CAstSig with skope
+
+3. Delete get_first_arg line
+
+4. Change 
+   (skope* past, const AstNode* pnode)
+--> (skope* past, const AstNode* pnode)
+
+5. 
+	past->blockCell(pnode, past->Sig);
+	blockString
+	checkVector.... etc probably not necessary
+
+6. Change 
+	throw CAstException(FUNC_SYNTAX, *past, pnode).proc("argument must be an integer.");
+==> exception_func(*past, pnode, "argument must be an integer.", "group", 1).raise();
+
+
+In AuxFunc.cpp
+
