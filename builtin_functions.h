@@ -73,8 +73,8 @@ void _interp1(skope* past, const AstNode* pnode, const vector<CVar>& args);
 void _fdelete(skope* past, const AstNode* pnode, const vector<CVar>& args);
 void _ismember(skope* past, const AstNode* pnode, const vector<CVar>& args);
 void _isaudioat(skope* past, const AstNode* pnode, const vector<CVar>& args);
-void _fft(skope* past, const AstNode* pnode, const vector<CVar>& args);
-void _ifft(skope* past, const AstNode* pnode, const vector<CVar>& args);
+DECL_GATE(_fft)
+DECL_GATE(_ifft)
 DECL_GATE(_tone)
 void _fm(skope* past, const AstNode* pnode, const vector<CVar>& args);
 void _tsq_getvalues(skope* past, const AstNode* pnode, const vector<CVar>& args);

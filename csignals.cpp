@@ -95,7 +95,7 @@ static float quantizetmark(float delta, int fs)
 
 /*bufBlockSize is 1 (for logical, string), sizeof(double) (regular), or sizeof(double)*2 (complex).     4/4/2017 bjkwon */
 body::body()
-	: bufType('N'), nSamples(0), bufBlockSize(sizeof(float)), buf(NULL), nGroups(1), ghost(false)
+	: bufType(' '), nSamples(0), bufBlockSize(sizeof(float)), buf(NULL), nGroups(1), ghost(false)
 {
 }
 
@@ -228,6 +228,7 @@ CVar& CVar::operator=(const CVar& rhs)
 	if (this != &rhs)
 	{
 		CSignals::operator=(rhs);
+		bufType = rhs.bufType;
 		cell = rhs.cell;
 		strut = rhs.strut;
 		struts = rhs.struts;
@@ -376,6 +377,7 @@ void body::SetValue(complex<float> v)
 	}
 	nGroups = 1;
 	cbuf[0] = v;
+	bufType = 'C';
 }
 
 body& body::UpdateBuffer(uint64_t length, uint64_t offset)	// Set nSamples. Re-allocate buf if necessary to accommodate new length.
@@ -408,6 +410,7 @@ void body::Reset()
 	if (!ghost && buf)
 		delete[] buf;
 	buf = NULL;
+	bufType = ' ';
 	nSamples = 0;
 	nGroups = 1;
 	ghost = false;
@@ -697,29 +700,6 @@ body &body::each(complex<float >(*fn)(complex<float >, complex<float >), const b
 		nSamples = min(nSamples, arg.nSamples);
 		for (unsigned int k = 0; k < nSamples; k++) cbuf[k] = fn(cbuf[k], arg.buf[k]);
 	}
-	return *this;
-}
-
-body &body::mathFunForbidNegative(float(*fn)(float), complex<float>(*cfn)(complex<float>))
-{
-	if (IsComplex())
-		each(cfn);
-	else
-		each(fn);
-	return *this;
-}
-
-body &body::mathFunForbidNegative(float(*fn)(float, float), complex<float>(*cfn)(complex<float>, complex<float>), const body &param)
-{
-	if (IsComplex() || param.IsComplex())
-	{
-		SetComplex();
-		body tp(param);
-		tp.SetComplex();
-		each(cfn, tp);
-	}
-	else
-		each(fn, param);
 	return *this;
 }
 
@@ -1302,39 +1282,11 @@ CTimeSeries& CTimeSeries::evoke_modsig(fmodify fp, void *popt)
 
 CTimeSeries CTimeSeries::evoke_getsig(CTimeSeries(*func) (const CTimeSeries&, void*), void *popt)
 {
-//	parg = popt;
-	int _fs = fs == 2 ? 1 : fs;
-	CTimeSeries out(_fs);
-	//	if (GetType() == CSIG_TSERIES)
+	CTimeSeries out(fs);
+	for (CTimeSeries* p = this, *q = &out; p; p = p->chain, q=q->chain)
 	{
-		//out.Reset(1); // 1 means new fs
-		//CSignal tp = TSeries2CSignal();
-		//out.SetValue((tp.*fp)(0, 0));
-	}
-//	else
-	{
-		CSignal sbit0, sbit(_fs);
-		sbit.tmark = tmark;
-		out.tmark = tmark;
-		unsigned int len = Len();
-		for (unsigned int k = 0; k < nGroups; k++)
-		{
-			CSignal tp = (func)(*this, popt);
-//			CSignal tp = (func)(*this, k * len, len, popt);
-			CTimeSeries tp2 = (CTimeSeries)tp;
-			out += &tp2;
-			//			sbit0 += &sbit;
-		}
-		out.nGroups = nGroups;
-		CTimeSeries tp(sbit);
-		for (CTimeSeries *p = chain; p; p = p->chain)
-		{
-//			p->parg = popt;
-			tp = (func)(*this, popt);
-			tp.tmark = p->tmark;
-			out.AddChain(tp);
-		}
-		//		out = tp;
+		q->AddChain(func(*p, popt));
+		q->tmark = p->tmark;
 	}
 	return out;
 }
@@ -1592,6 +1544,12 @@ CTimeSeries& CTimeSeries::ConnectChains()
 CTimeSeries& CTimeSeries::operator/=(CTimeSeries &scaleArray)
 {
 	operate(scaleArray, '/');
+	return *this;
+}
+
+CTimeSeries& CTimeSeries::operator/=(float con)
+{ // used in fft.cpp
+	operate(CTimeSeries(con), '/');
 	return *this;
 }
 
@@ -2199,34 +2157,19 @@ CSignal &CSignal::SetString(const char c)
 	return *this;
 }
 
-// To do 12/14/2021 and later---
-// Clean these CTimeSeries::each()
-// and verify
-
 CTimeSeries& CTimeSeries::each(float(*fn)(float))
 {
-	if (IsAudio())
-	{
-		for (CTimeSeries* p = this; p; p = p->chain)
-			p->body::each_sym(fn);
-	}
-	else
-	{
-		for (CTimeSeries* p = this; p; p = p->chain)
-			p->body::each(fn);
-	}
-	return *this;
-}
-
-CTimeSeries & CTimeSeries::each(float(*fn)(float, float), complex<float>(*cfn)(complex<float>, complex<float>), const CTimeSeries &param)
-{
-	if (nSamples == 0) return *this;
 	for (CTimeSeries* p = this; p; p = p->chain)
-		body::each(fn, param);
-
+		p->body::each(fn);
 	return *this;
 }
 
+CTimeSeries& CTimeSeries::each_allownegative(float(*fn)(float))
+{
+	for (CTimeSeries* p = this; p; p = p->chain)
+		p->body::each_sym(fn);
+	return *this;
+}
 
 CTimeSeries& CTimeSeries::each(complex<float>(*fn)(complex<float>))
 {
@@ -2249,7 +2192,7 @@ CTimeSeries& CTimeSeries::each(float(*fn)(complex<float>))
 	return *this;
 }
 
-CTimeSeries& CTimeSeries::each(float(*fn)(float, float), const body &arg2)
+CTimeSeries& CTimeSeries::each(float(*fn)(float, float), const CSignal &arg2)
 {
 	if (IsAudio())
 	{
@@ -2265,7 +2208,7 @@ CTimeSeries& CTimeSeries::each(float(*fn)(float, float), const body &arg2)
 	return *this;
 }
 
-CTimeSeries& CTimeSeries::each(complex<float>(*fn)(complex<float>, complex<float>), const body &arg2)
+CTimeSeries& CTimeSeries::each(complex<float>(*fn)(complex<float>, complex<float>), const CSignal&arg2)
 {
 	if (IsComplex())
 		body::each(fn, arg2);
@@ -2451,6 +2394,11 @@ CSignals& CSignals::operator+=(float con)
 CSignals& CSignals::operator*=(float con)
 {
 	operate(CSignals(con), '*');
+	return *this;
+}
+CSignals& CSignals::operator/=(float con)
+{
+	operate(CSignals(con), '/');
 	return *this;
 }
 
@@ -2641,6 +2589,13 @@ CSignals &CSignals::each(float(*fn)(float))
 	return *this;
 }
 
+CSignals& CSignals::each_allownegative(float(*fn)(float))
+{
+	CTimeSeries::each_allownegative(fn);
+	if (next) 	next->each(fn);
+	return *this;
+}
+
 CSignals &CSignals::each(complex<float>(*fn)(complex<float>))
 {
 	CTimeSeries::each(fn);
@@ -2654,31 +2609,6 @@ CSignals &CSignals::each(float(*fn)(complex<float>))
 	if (next) 	next->each(fn);
 	return *this;
 }
-
-CSignals &CSignals::each(float(*fn)(float, float), const body &arg2)
-{
-	CTimeSeries::each(fn, arg2);
-	if (next) 	next->each(fn, arg2);
-	return *this;
-}
-
-CSignals &CSignals::each(complex<float>(*fn)(complex<float>, complex<float>), const body &arg2)
-{
-	CTimeSeries::each(fn, arg2);
-	if (next) 	next->each(fn, arg2);
-	return *this;
-}
-
-CSignals & CSignals::each(float(*fn)(float, float), complex<float>(*cfn)(complex<float>, complex<float>), const CSignals &param)
-{
-	CTimeSeries::each(fn, cfn, param);
-	if (next) 	next->each(fn, cfn, param);
-	return *this;
-}
-#ifndef NO_SF
-
-
-#endif // NO_SF
 
 #ifdef _WINDOWS
 

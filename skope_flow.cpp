@@ -80,16 +80,16 @@ CVar* skope::Try_here(const AstNode* pnode, AstNode* p)
 			auto pnode_try = get_try_node(baseudf);
 			const char* name = pnode_try->alt->child->str; // the variable name of catch (as "catchme" in catch "catchme")
 //			SetVar(name, &CVar()); // new temporary variable; OK this way, the temp. var. is deep-copied
-			string emsg = e.outstr;
-			size_t id = emsg.find("[GOTO_BASE]");
-			if (id != string::npos) emsg = emsg.substr(id + string("[GOTO_BASE]").size());
-			CVar msg(emsg);
+			string errmsg = e.outstr;
+			size_t id = errmsg.find("[GOTO_BASE]");
+			if (id != string::npos) errmsg = errmsg.substr(id + string("[GOTO_BASE]").size());
+			CVar msg(errmsg);
 			SetVar("full", &msg, &Vars[name]);
 			msg = e.basemsg;
 			SetVar("base", &msg, &Vars[name]);
-			emsg = e.msgonly;
-			if (id != string::npos) emsg = emsg.substr(id + string("[GOTO_BASE]").size());
-			msg = emsg;
+			errmsg = e.msgonly;
+			if (id != string::npos) errmsg = errmsg.substr(id + string("[GOTO_BASE]").size());
+			msg = errmsg;
 			SetVar("body", &msg, &Vars[name]);
 			msg = e.sourceloc;
 			SetVar("source", &msg, &Vars[name]);

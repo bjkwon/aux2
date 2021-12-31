@@ -15,6 +15,8 @@ Cfunction set_builtin_function_ramp(fGate fp)
 	set<uint16_t> allowedTypes2 = { 1, };
 	ft.allowed_arg_types.push_back(allowedTypes2);
 	// til this line ==============
+	ft.desc_arg_req = desc_arg_req;
+	ft.desc_arg_opt = desc_arg_opt;
 	ft.defaultarg = default_arg;
 	ft.narg1 = desc_arg_req.size();
 	ft.narg2 = ft.narg1 + default_arg.size();

@@ -21,10 +21,6 @@ using namespace std;
 
 typedef void(*fGate) (skope* past, const AstNode* pnode, const vector<CVar>& args);
 
-static map<string, string> builtin_fnsigs;
-static map<string, bool> builtin_staticfn;
-static map<string, int> builtin_fn_nArg1, builtin_fn_nArg2;
-
 complex<float> cmpexp(complex<float> x) { return exp(x); }
 complex<float> cmpcos(complex<float> x) { return cos(x); }
 complex<float> cmpcosh(complex<float> x) { return cosh(x); }
@@ -42,49 +38,6 @@ complex<float> cmpconj(complex<float> x) { return conj(x); }
 complex<float> cmpsqrt(complex<float> x) { return sqrt(x); }
 //float cmpnorm(complex<float> x) { return norm(x); }
 float cmpangle(complex<float> x) { return arg(x); }
-
-Cfunction set_builtin_function_pow(fGate fp)
-{
-	Cfunction ft;
-	set<uint16_t> allowedTypes;
-	ft.func = fp;
-	// Edit from this line ==============
-	ft.alwaysstatic = true;
-	vector<string> desc_arg_req = { "value_or_array", "value_or_array" };
-	vector<string> desc_arg_opt = { };
-	vector<CVar> default_arg = { };
-	set<uint16_t> allowedTypes1 = { 1, 2, ALL_AUDIO_TYPES, TYPEBIT_COMPLEX + 1, TYPEBIT_COMPLEX + 2 };
-	ft.allowed_arg_types.push_back(allowedTypes1);
-	set<uint16_t> allowedTypes2 = { 1, 2, TYPEBIT_COMPLEX + 1, TYPEBIT_COMPLEX + 2 };
-	ft.allowed_arg_types.push_back(allowedTypes2);
-	// til this line ==============
-	ft.defaultarg = default_arg;
-	ft.narg1 = desc_arg_req.size();
-	ft.narg2 = ft.narg1 + default_arg.size();
-	return ft;
-}
-
-Cfunction set_builtin_function_mod(fGate fp)
-{
-	Cfunction ft;
-	set<uint16_t> allowedTypes;
-	ft.func = fp;
-	// Edit from this line ==============
-	ft.alwaysstatic = true;
-	vector<string> desc_arg_req = { "value_or_array", "value_or_array" };
-	vector<string> desc_arg_opt = { };
-	vector<CVar> default_arg = { };
-	set<uint16_t> allowedTypes1 = { 1, 2, };
-	ft.allowed_arg_types.push_back(allowedTypes1);
-	ft.allowed_arg_types.push_back(allowedTypes1);
-	set<uint16_t> allowedTypes2 = { };
-	ft.allowed_arg_types.push_back(allowedTypes2);
-	// til this line ==============
-	ft.defaultarg = default_arg;
-	ft.narg1 = desc_arg_req.size();
-	ft.narg2 = ft.narg1 + default_arg.size();
-	return ft;
-}
 
 float aux_db(float x)
 {
@@ -108,87 +61,9 @@ float aux_fix(float x)
 {
 	return (float)(int)x;
 }
-
-complex<float> aux_pow_comp(complex<float> base, float exponent)
-{
-	return pow(base, exponent);
-}
-
-CTimeSeries aux_pow(const CTimeSeries& base, void* p)
-{
-	CTimeSeries out(base);
-	body operand = *(body*)p;
-	if (base.IsAudio())
-	{
-		out.each_sym2(powf, operand);
-	}
-	else if (base._min() < 0)
-	{
-		out.SetComplex();
-		if (operand.nSamples == 1)
-		{
-			for (auto k = 0; k < base.nSamples; k++) out.cbuf[k] = pow(base.cbuf[k], operand.value());
-		}
-		else if (base.nSamples == 1)
-		{
-			auto baseval = base.value();
-			out.UpdateBuffer(operand.nSamples);
-			for (auto k = 0; k < operand.nSamples; k++) out.cbuf[k] = pow(baseval, operand.buf[k]);
-		}
-		else
-		{
-			for (auto k = 0; k < operand.nSamples; k++) out.cbuf[k] = pow(base.cbuf[k], operand.buf[k]);
-		}
-	}
-	else
-	{
-		out.each(powf, operand);
-	}
-	return out;
-}
-
-void _pow(skope* past, const AstNode* pnode, const vector<CVar>& args)
-{
-//	CVar base = past->Sig;
-//	CVar exponent = args[0];
-	CVar *p[2] = { &past->Sig, (CVar*)&args[0]};
-	past->Sig = past->Sig.evoke_getsig(&aux_pow, (void*)&p);
-}
-
-CTimeSeries aux_mod(const CTimeSeries& base, void* p)
-{
-	CTimeSeries out(base);
-	body operand = *(body*)p;
-	out.each_sym2(fmod, operand);
-	return out;
-}
-
-void _mod(skope* past, const AstNode* pnode, const vector<CVar>& args)
-{
-	CVar base = past->Sig;
-	CVar oper = args[0];
-	past->Sig = past->Sig.evoke_getsig(&aux_mod, (void*)&oper);
-}
-
-void _sqrt(skope* past, const AstNode* pnode, const vector<CVar>& args)
-{
-//	past->Sig.evoke_getval();
-}
-
-//void _sin(skope* past, const AstNode* pnode, const vector<CVar>& args)
-//{
-//	// need arg check
-//	past->Sig.evoke_getval(sinf);
-//}
-
 complex<float> aux_cexp(complex<float> base, complex<float> exponent)
 {
 	return pow(base, exponent);
-}
-
-float aux_mod(float numer, float denom)
-{
-	return fmod(numer, denom);
 }
 
 float aux_passthru(float number)
@@ -209,8 +84,6 @@ float aux_angle_4_real(float number)
 static inline complex<float> r2c_sqrt(complex<float> x) { return sqrt(x); }
 static inline complex<float> r2c_log(complex<float> x) { return log(x); }
 static inline complex<float> r2c_log10(complex<float> x) { return log10(x); }
-static inline complex<float> r2c_pow(complex<float> x, complex<float> y) { return pow(x, y); }
-
 
 void skope::HandleMathFunc(string& fname, const body& arg)
 {
@@ -238,6 +111,16 @@ void skope::HandleMathFunc(string& fname, const body& arg)
 	else if (fname == "sin")	if (Sig.IsComplex())	cfn1 = cmpsin; else fn1 = sinf;
 	else if (fname == "cos")	if (Sig.IsComplex())	cfn1 = cmpcos; else fn1 = cosf;
 	else if (fname == "tan")	if (Sig.IsComplex())	cfn1 = cmptan; else fn1 = tanf;
+	else if (fname == "exp")	if (Sig.IsComplex())	cfn1 = cmpexp; else fn1 = expf;
+	else if (fname == "db")		fn1 = aux_db;
+	else if (fname == "sign")	fn1 = aux_sign;
+	else if (fname == "asin")	fn1 = asinf;
+	else if (fname == "acos")	fn1 = acosf;
+	else if (fname == "atan")	fn1 = atanf;
+	else if (fname == "round")	fn1 = aux_round;
+	else if (fname == "fix")	fn1 = aux_fix;
+	else if (fname == "ceil")	fn1 = ceilf;
+	else if (fname == "floor")	fn1 = floorf;
 	else if (fname == "log")
 	{
 		fn1 = logf, cfn1 = r2c_log;
@@ -250,53 +133,19 @@ void skope::HandleMathFunc(string& fname, const body& arg)
 	{
 		fn1 = sqrtf; cfn1 = r2c_sqrt;
 	}
-	else if (fname == "pow" || fname == "^")
-	{
-		fn2 = powf, cfn2 = r2c_pow;
-	}
-	else if (fname == "mod" || fname == "%")
-	{
-		fn2 = fmodf, cfn2 = NULL; // do this
-	}
-	else if (fname == "exp")	if (Sig.IsComplex())	cfn1 = cmpexp; else fn1 = expf;
-	else if (fname == "db")		fn1 = aux_db;
-	else if (fname == "sign")	fn1 = aux_sign;
-	else if (fname == "asin")	fn1 = asinf;
-	else if (fname == "acos")	fn1 = acosf;
-	else if (fname == "atan")	fn1 = atanf;
-	else if (fname == "round")	fn1 = aux_round;
-	else if (fname == "fix")	fn1 = aux_fix;
-	else if (fname == "ceil")	fn1 = ceilf;
-	else if (fname == "floor")	fn1 = floorf;
 
 	if (fname == "sqrt" || fname == "log10" || fname == "log")
 	{
-		if (Sig.IsComplex() || Sig._min() < 0)
+		if (Sig.IsComplex())
 		{
-			Sig.SetComplex();
 			Sig.each(cfn1);
+			return;
 		}
-		else
-			Sig.each(fn1);
-	}
-	else if (fname == "pow" || fname == "^" || fname == "mod" || fname == "%")
-	{
-		if (Sig.IsComplex() || Sig._min() < 0)
+		else if (Sig._min() < 0)
 		{
-			Sig.SetComplex();
-			Sig.each(cfn2, arg);
+			Sig.each_allownegative(fn1);
+			return;
 		}
-		else
-			Sig.each(fn2, arg);
 	}
-	else
-	{
-		if (Sig.IsComplex() || Sig._min() < 0)
-		{
-			Sig.SetComplex();
-			Sig.each(cfn1);
-		}
-		else
-			Sig.each(fn1);
-	}
+	Sig.each(fn1);
 }

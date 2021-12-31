@@ -215,20 +215,20 @@ void echo_cell::print(const CVar& obj)
 
 void echo_object::print(const string& name, const CVar& obj, int offset)
 {
-	auto type = obj.type();
+	auto tp = obj.type();
 	//What about TYPEBIT_STRUTS?
-	if (type & TYPEBIT_STRUT)
+	if (tp & TYPEBIT_STRUT)
 		echo_struct(name, offset).print(obj);
-	else if (type & TYPEBIT_CELL)
+	else if (tp & TYPEBIT_CELL)
 		echo_cell(name, offset).print(obj);
-	else if (obj.IsAudio())
+	else if (ISAUDIO(tp))
 		echo_object_audio(name, offset).print(obj);
-	else if (ISTEMPORAL(type))
+	else if (ISTEMPORAL(tp))
 		echo_object_naudio(name, offset).print(obj);
-	else if (!type) // Don't do (type & TYPEBIT_NULL) unless you want to be funny!
+	else if (!tp) // Don't do (type & TYPEBIT_NULL) unless you want to be funny!
 		echo_object_null(name, offset).print(obj);
-	else if (obj.IsString())
+	else if (ISSTRING(tp))
 		echo_object_string(name, offset).print(obj);
-	else if (type & 2 || type & 1)
+	else if (ISSCALAR(tp) || ISVECTOR(tp) || IS2D (tp))
 		echo_object_vector(name, offset).print(obj);
 }

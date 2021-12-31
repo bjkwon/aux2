@@ -36,6 +36,73 @@ CAstSigEnv::~CAstSigEnv()
 {
 
 }
+/*
+const AstNode* skope::findDadNode(const AstNode* p, const AstNode* pME)
+{
+	if (!p) return NULL;
+	if (p == pME) return p;
+	if (p->type == N_BLOCK)
+	{
+		p = p->next;
+		const AstNode* res = findDadNode(p, pME);
+		while (!res)
+		{
+			if (!p) break;
+			p = p->next;
+			res = findDadNode(p, pME);
+		}
+		return res;
+	}
+	if (!p->child && !p->alt) return NULL;
+	if (p->child == pME) return p;
+	const AstNode* res = NULL;
+	do
+	{
+		if (p->child)
+			res = findParentNode(p->child, res);
+		else
+			res = findParentNode(p->alt, res);
+		if (!res) break;
+	} while (res->type == N_STRUCT);
+	if (res) return res;
+	if (p->type == N_VECTOR)
+	{
+		auto pp = (const AstNode*)(p->str);
+		if (!pp)
+		{// p is "true" N_VECTOR -- where p->alt and the success on nexts are actual elements
+			for (auto p2 = p->alt; p2; p2 = p2->next)
+			{
+				if (p2 == pME) return p;
+			}
+			return NULL;
+		}
+		else
+		{
+			if (pp == pME) return p;
+			res = findDadNode(pp, pME);
+			if (res) return res;
+		}
+	}
+	return NULL;
+}
+
+const AstNode* skope::findParentNode(const AstNode* p, const AstNode* pME, bool altonly)
+{
+	if (p)
+	{
+		if (!p->child && !p->alt) return NULL;
+		if (!altonly && p->child == pME) return p;
+		if (p->alt == pME) return p;
+		if (!altonly && p->child)
+			return findParentNode(p->child, pME, altonly);
+		else
+			return findParentNode(p->alt, pME, altonly);
+	}
+	return NULL;
+}
+*/
+
+
 void skope::outputbinding(const AstNode *pnode, size_t nArgout)
 {
 	auto count = 0;
@@ -109,14 +176,13 @@ AstNode* skope::makenodes(const string& instr)
 	reset_stack_ptr();
 	if ((res = yysetNewStringToScan(instr.c_str(), NULL /*str_autocorrect*/)))
 	{
-		emsg = "yysetNewStringToScan() failed!";
-		return NULL;
+		throw "[INTERNAL ERROR] yysetNewStringToScan() failed!";
 	}
 	res = yyparse(&out, &errmsg);
 	nodeAllocated = out ? true : false;
 	if (!errmsg && res == 2)
 	{
-		emsg = "Out of memory!";
+		throw "[INTERNAL ERROR] Out of memory!";
 		return NULL;
 	}
 	if (errmsg) {
@@ -126,7 +192,7 @@ AstNode* skope::makenodes(const string& instr)
 			out = NULL;
 		}
 		emsg = errmsg;
-		return NULL;
+		throw emsg.c_str();
 	}
 	script = instr;
 	return out;
@@ -136,252 +202,244 @@ CVar* skope::Compute(const AstNode* pnode)
 {
 	CVar tsig, isig;
 	if (!pnode) return &Sig;
-	try {
-		AstNode* p = pnode->child;
-		switch (pnode->type) {
-		case T_ID:
+	AstNode* p = pnode->child;
+	switch (pnode->type) {
+	case T_ID:
+		return TID((AstNode*)pnode, p);
+	case T_TRY:
+		inTryCatch++;
+		Try_here(pnode, p);
+		break;
+	case T_CATCH:
+		inTryCatch--; //???? Maybe no longer needed?? 3/7/2020
+		// p is T_ID for ME (exception message caught)
+		// continue here............1/12/2020
+		Compute(pnode->next);
+		break;
+	case N_HOOK:
+		return TID((AstNode*)pnode, p);
+	case N_TSEQ:
+		return TSeq(pnode, p);
+	case N_IDLIST:
+		tsig = Compute(p);
+		if (p && pnode->alt && !pnode->tail && !pnode->str)
+		{    // LHS is x(tp1~tp2)
+			Compute(pnode->alt);
+			Sig += &tsig;
+		}
+	return &Sig;
+	case T_NUMBER:
+		Sig.SetValue(pnode->dval);
+		return TID(pnode->alt, p, &Sig);
+	case T_STRING:
+		Sig.SetString(pnode->str);
+		return TID(pnode->alt, p, &Sig);
+	case N_MATRIX:
+		if (p) throw_LHS_lvalue(pnode, false);
+		NodeMatrix(pnode);
+		return Dot(pnode->alt);
+	case N_VECTOR:
+		if (p)
+		{ // if p (RHS exists), evaluate RHS first; then go to LHS (different from usual ways)
+			string emsg;
+			string funcname;
+			if (p->type == T_ID)
+				funcname = p->str;
+			if (p->alt && p->alt->type == N_STRUCT)
+				funcname = p->alt->str;
+			// Now, evaluate RHS
+			// why not TID(((AstNode*)pnode->str), p), which might be more convenient? (that's the "inner" N_VECTOR node)
+			// Because then there's no way to catch [out1 out2].sqrt = func
 			return TID((AstNode*)pnode, p);
-		case T_TRY:
-			inTryCatch++;
-			Try_here(pnode, p);
-			break;
-		case T_CATCH:
-			inTryCatch--; //???? Maybe no longer needed?? 3/7/2020
-			// p is T_ID for ME (exception message caught)
-			// continue here............1/12/2020
-			Compute(pnode->next);
-			break;
-		case N_HOOK:
-			return TID((AstNode*)pnode, p);
-		case N_TSEQ:
-			return TSeq(pnode, p);
-		case N_IDLIST:
-			tsig = Compute(p);
-			if (p && pnode->alt && !pnode->tail && !pnode->str)
-			{    // LHS is x(tp1~tp2)
-				Compute(pnode->alt);
-				Sig += &tsig;
-			}
-		return &Sig;
-		case T_NUMBER:
-			Sig.SetValue(pnode->dval);
-			return TID(pnode->alt, p, &Sig);
-		case T_STRING:
-			Sig.SetString(pnode->str);
-			return TID(pnode->alt, p, &Sig);
-		case N_MATRIX:
-			if (p) throw_LHS_lvalue(pnode, false);
-			NodeMatrix(pnode);
-			return Dot(pnode->alt);
-		case N_VECTOR:
-			if (p)
-			{ // if p (RHS exists), evaluate RHS first; then go to LHS (different from usual ways)
-				string emsg;
-				string funcname;
-				if (p->type == T_ID)
-					funcname = p->str;
-				if (p->alt && p->alt->type == N_STRUCT)
-					funcname = p->alt->str;
-				// Now, evaluate RHS
-				// why not TID(((AstNode*)pnode->str), p), which might be more convenient? (that's the "inner" N_VECTOR node)
-				// Because then there's no way to catch [out1 out2].sqrt = func
-				return TID((AstNode*)pnode, p);
-			}
-			else
-			{
-				NodeVector(pnode);
-				return Dot(pnode->alt);
-			}
-			break;
-		case T_REPLICA:
-			return TID((AstNode*)pnode, NULL, &replica); //Make sure replica has been prepared prior to this
-		case T_ENDPOINT:
-			tsig.SetValue(endpoint);
-			return TID((AstNode*)pnode, NULL, &tsig); //Make sure endpoint has been prepared prior to this
-		case '+':
-		case '-':
-			if (pnode->type == '+')	tsig = Compute(p->next);
-			else					tsig = -*Compute(p->next);
-			blockCellStruct2(*this, pnode, Sig);
-			blockString2(*this, pnode, Sig);
-			Compute(p);
-			blockCellStruct2(*this, pnode, Sig);
-			blockString2(*this, pnode, Sig);
-			if (Sig.type() == 0) Sig.SetValue(0.);
-			if (tsig.type() == 0) tsig.SetValue(0.);
-			Sig += tsig;
-			return TID((AstNode*)pnode->alt, NULL, &Sig);
-		case '*':
-		case '/':
-		case T_MATRIXMULT: // "**"
-			tsig = Compute(p);
-			blockCellStruct2(*this, pnode, Sig);
-			blockString2(*this, pnode, Sig);
-			if (pnode->type == '*' || pnode->type == '/')	Compute(p->next);
-			else
-			{
-				ensureVector1(*this, pnode, tsig);
-				Compute(p->next);
-				ensureVector1(*this, pnode, Sig);
-				Sig = (CSignals)tsig.matrixmult(&Sig);
-				return TID((AstNode*)pnode, NULL, &Sig);
-			}
-			blockCellStruct2(*this, pnode, Sig);
-			blockString2(*this, pnode, Sig);
-			if (Sig.type() == 0) Sig.SetValue(0.f);
-			if (tsig.type() == 0) tsig.SetValue(0.f);
-			// reciprocal should be after blocking string (or it would corrupt the heap) 6/3/2020
-			if (pnode->type == '/') Sig.reciprocal();
-			Sig *= tsig;
-			return TID((AstNode*)pnode->alt, NULL, &Sig);
-		case '%':
-			//only in the format of A %= B
-			((AstNode*)pnode)->type = N_CALL;
-			((AstNode*)pnode)->str = strdup("mod");
-			((AstNode*)pnode)->alt = p->next;
-			p->next = NULL;
-			Sig = replica;
-			HandleAuxFunctions(pnode); // Assuming that current body content (Sig) is already prepared...is it true? 8/23/2018
-			break;
-		case T_TRANSPOSE:
-			Transpose(pnode, p);
-			return TID((AstNode*)pnode->alt, NULL, &Sig);
-			break;
-		case T_NEGATIVE:
-			-*Compute(p);
-			blockString2(*this, pnode, Sig);
-			return TID((AstNode*)pnode->alt, NULL, &Sig);
-		case T_OP_SHIFT:
-			tsig = Compute(p->next);
-			blockCellStruct2(*this, pnode, Sig);
-			ensureScalar1(*this, pnode, Sig, ">>");
-			Compute(p);
-			ensureAudio1(*this, pnode, Sig, ">>");
-			Sig >>= tsig.value();
-			return TID((AstNode*)pnode, NULL, &Sig);
-			break;
-		case T_OP_CONCAT:
-			Concatenate(pnode, p);
-			return TID((AstNode*)pnode->alt, NULL, &Sig);
-			break;
-		case T_LOGIC_OR:
-		case T_LOGIC_AND:
-		case '<':
-		case '>':
-		case T_LOGIC_LE:
-		case T_LOGIC_GE:
-		case T_LOGIC_EQ:
-		case T_LOGIC_NE:
-		case T_LOGIC_NOT:
-			ConditionalOperation(pnode, p);
-			return TID((AstNode*)pnode, NULL, &Sig);
-		case '@':
-			SetLevel(pnode, p);
-			return TID((AstNode*)pnode->alt, NULL, &Sig);
-		case N_INITCELL:
-			return InitCell(pnode, p);
-		case N_BLOCK:
-			for (p = pnode->next; p && !fExit && !fBreak; p = p->next)
-			{
-				pLast = p;
-//				hold_at_break_point(p);
-				Compute(p);
-				//			pgo = NULL; // without this, go lingers on the next line 2/9/2019
-				Sig.Reset(1); // without this, fs=3 lingers on the next line 2/9/2019
-			}
-			break;
-		case T_IF:
-			if (!p) break;
-			pLast = p;
-			if (checkcond(p))
-				Compute(p->next);
-			else if (pnode->alt)
-				Compute(pnode->alt);
-			break;
-		case T_SWITCH:
+		}
+		else
 		{
-			switch_case_handler(pnode);
-			tsig = Compute(p);
-			auto fd = find(pEnv->udf[u.base].switch_case_undefined.begin(), pEnv->udf[u.base].switch_case_undefined.end(), p->line);
-			if (fd != pEnv->udf[u.base].switch_case_undefined.end())
-			{ // update switch_case
-				CVar tsig2 = Compute(p->alt);
-				pEnv->udf[u.base].switch_case.emplace(tsig2, p->next);
-			}
-			if (pEnv->udf[u.base].switch_case.find(tsig) == pEnv->udf[u.base].switch_case.end())
-			{
-				Compute(pnode->tail->next);
-			}
-			else
-			{
-				auto ret = pEnv->udf[u.base].switch_case.equal_range(tsig);
-				auto it = ret.first;
-				for (; it != ret.second; it++)
-				{
-					int endline = (*it).second->line + 1;
-					if (pnode->next)
-						endline = pnode->next->line;
-					if ((*it).second->line > pnode->line && (*it).second->line < endline)
-					{
-						Compute((*it).second);
-						break;
-					}
-				}
-				if (it == ret.second)
-					Compute(pnode->tail->next);
-			}
+			NodeVector(pnode);
+			return Dot(pnode->alt);
 		}
 		break;
-		case T_WHILE:
-			fExit = fBreak = false;
-			while (checkcond(p) && !fExit && !fBreak)
-				Compute(pnode->alt);
-			fBreak = false;
-			break;
-		case T_FOR:
-			fExit = fBreak = false;
-			isig = Compute(p->child);
-			//isig must be a vector
-			ensureVector3(*this, p, isig, "For-loop index variable must be a vector.");
-			//If index variable already exists in the scope, throw
-			if (GetVariable(p->str, NULL))
-				exception_etc(*this, p, " ""for"" Index variable already exists outside the for loop").raise();
-			for (unsigned int i = 0; i < isig.nSamples && !fExit && !fBreak; i++)
+	case T_REPLICA:
+		return TID((AstNode*)pnode, NULL, &replica); //Make sure replica has been prepared prior to this
+	case T_ENDPOINT:
+		tsig.SetValue(endpoint);
+		return TID((AstNode*)pnode, NULL, &tsig); //Make sure endpoint has been prepared prior to this
+	case '+':
+	case '-':
+		if (pnode->type == '+')	tsig = Compute(p->next);
+		else					tsig = -*Compute(p->next);
+		blockCellStruct2(*this, pnode, Sig);
+		blockString2(*this, pnode, Sig);
+		Compute(p);
+		blockCellStruct2(*this, pnode, Sig);
+		blockString2(*this, pnode, Sig);
+		if (Sig.type() == 0) Sig.SetValue(0.);
+		if (tsig.type() == 0) tsig.SetValue(0.);
+		Sig += tsig;
+		return TID((AstNode*)pnode->alt, NULL, &Sig);
+	case '*':
+	case '/':
+	case T_MATRIXMULT: // "**"
+		tsig = Compute(p);
+		blockCellStruct2(*this, pnode, Sig);
+		blockString2(*this, pnode, Sig);
+		if (pnode->type == '*' || pnode->type == '/')	Compute(p->next);
+		else
+		{
+			ensureVector1(*this, pnode, tsig);
+			Compute(p->next);
+			ensureVector1(*this, pnode, Sig);
+			Sig = (CSignals)tsig.matrixmult(&Sig);
+			return TID((AstNode*)pnode, NULL, &Sig);
+		}
+		blockCellStruct2(*this, pnode, Sig);
+		blockString2(*this, pnode, Sig);
+		if (Sig.type() == 0) Sig.SetValue(0.f);
+		if (tsig.type() == 0) tsig.SetValue(0.f);
+		// reciprocal should be after blocking string (or it would corrupt the heap) 6/3/2020
+		if (pnode->type == '/') Sig.reciprocal();
+		Sig *= tsig;
+		return TID((AstNode*)pnode->alt, NULL, &Sig);
+	case '%':
+		//only in the format of A %= B
+		((AstNode*)pnode)->type = N_CALL;
+		((AstNode*)pnode)->str = strdup("mod");
+		((AstNode*)pnode)->alt = p->next;
+		p->next = NULL;
+		Sig = replica;
+		HandleAuxFunctions(pnode); // Assuming that current body content (Sig) is already prepared...is it true? 8/23/2018
+		break;
+	case T_TRANSPOSE:
+		Transpose(pnode, p);
+		return TID((AstNode*)pnode->alt, NULL, &Sig);
+		break;
+	case T_NEGATIVE:
+		-*Compute(p);
+		blockString2(*this, pnode, Sig);
+		return TID((AstNode*)pnode->alt, NULL, &Sig);
+	case T_OP_SHIFT:
+		tsig = Compute(p->next);
+		blockCellStruct2(*this, pnode, Sig);
+		ensureScalar1(*this, pnode, Sig, ">>");
+		Compute(p);
+		ensureAudio1(*this, pnode, Sig, ">>");
+		Sig >>= tsig.value();
+		return TID((AstNode*)pnode, NULL, &Sig);
+		break;
+	case T_OP_CONCAT:
+		Concatenate(pnode, p);
+		return TID((AstNode*)pnode->alt, NULL, &Sig);
+		break;
+	case T_LOGIC_OR:
+	case T_LOGIC_AND:
+	case '<':
+	case '>':
+	case T_LOGIC_LE:
+	case T_LOGIC_GE:
+	case T_LOGIC_EQ:
+	case T_LOGIC_NE:
+	case T_LOGIC_NOT:
+		ConditionalOperation(pnode, p);
+		return TID((AstNode*)pnode, NULL, &Sig);
+	case '@':
+		SetLevel(pnode, p);
+		return TID((AstNode*)pnode->alt, NULL, &Sig);
+	case N_INITCELL:
+		return InitCell(pnode, p);
+	case N_BLOCK:
+		for (p = pnode->next; p && !fExit && !fBreak; p = p->next)
+		{
+			pLast = p;
+//				hold_at_break_point(p);
+			Compute(p);
+			//			pgo = NULL; // without this, go lingers on the next line 2/9/2019
+			Sig.Reset(1); // without this, fs=3 lingers on the next line 2/9/2019
+		}
+		break;
+	case T_IF:
+		if (!p) break;
+		pLast = p;
+		if (checkcond(p))
+			Compute(p->next);
+		else if (pnode->alt)
+			Compute(pnode->alt);
+		break;
+	case T_SWITCH:
+	{
+		switch_case_handler(pnode);
+		tsig = Compute(p);
+		auto fd = find(pEnv->udf[u.base].switch_case_undefined.begin(), pEnv->udf[u.base].switch_case_undefined.end(), p->line);
+		if (fd != pEnv->udf[u.base].switch_case_undefined.end())
+		{ // update switch_case
+			CVar tsig2 = Compute(p->alt);
+			pEnv->udf[u.base].switch_case.emplace(tsig2, p->next);
+		}
+		if (pEnv->udf[u.base].switch_case.find(tsig) == pEnv->udf[u.base].switch_case.end())
+		{
+			Compute(pnode->tail->next);
+		}
+		else
+		{
+			auto ret = pEnv->udf[u.base].switch_case.equal_range(tsig);
+			auto it = ret.first;
+			for (; it != ret.second; it++)
 			{
-				CVar tp(isig.buf[i]);
-				SetVar(p->str, &tp); // This is OK, SetVar of non-GO object always makes a duplicate object (as opposed to SetVar of Go obj grabbing the reference)
-				//	assuming that (pnode->alt->type == N_BLOCK)
-				// Now, not going through N_BLOCK 1/4/2020
-				// 1) When running in a debugger, it must go through N_BLOCK
-				// 2) check if looping through pa->next is bullet-proof
-				for (AstNode* pa = pnode->alt->next; pa; pa = pa->next)
+				int endline = (*it).second->line + 1;
+				if (pnode->next)
+					endline = pnode->next->line;
+				if ((*it).second->line > pnode->line && (*it).second->line < endline)
 				{
-					pLast = pa;
-//					hold_at_break_point(pa);
-					Compute(pa);
+					Compute((*it).second);
+					break;
 				}
 			}
-			fBreak = false;
-			break;
-		case T_BREAK:
-			fBreak = true;
-			break;
-		case T_RETURN:
-			fExit = true;
-			break;
-		default:
-		{
-			ostringstream oss;
-			oss << "TYPE=" << pnode->type << "Unknown node type";
-			throw exception_etc(*this, pnode, oss.str()).raise();
-		}
+			if (it == ret.second)
+				Compute(pnode->tail->next);
 		}
 	}
-	catch (const skope_exception& e) {
-		char errmsg[2048];
-		strncpy(errmsg, e.getErrMsg().c_str(), sizeof(errmsg) / sizeof(*errmsg));
-		errmsg[sizeof(errmsg) / sizeof(*errmsg) - 1] = '\0';
-		throw errmsg;
+	break;
+	case T_WHILE:
+		fExit = fBreak = false;
+		while (checkcond(p) && !fExit && !fBreak)
+			Compute(pnode->alt);
+		fBreak = false;
+		break;
+	case T_FOR:
+		fExit = fBreak = false;
+		isig = Compute(p->child);
+		//isig must be a vector
+		ensureVector3(*this, p, isig, "For-loop index variable must be a vector.");
+		//If index variable already exists in the scope, throw
+		if (GetVariable(p->str, NULL))
+			exception_etc(*this, p, " ""for"" Index variable already exists outside the for loop").raise();
+		for (unsigned int i = 0; i < isig.nSamples && !fExit && !fBreak; i++)
+		{
+			CVar tp(isig.buf[i]);
+			SetVar(p->str, &tp); // This is OK, SetVar of non-GO object always makes a duplicate object (as opposed to SetVar of Go obj grabbing the reference)
+			//	assuming that (pnode->alt->type == N_BLOCK)
+			// Now, not going through N_BLOCK 1/4/2020
+			// 1) When running in a debugger, it must go through N_BLOCK
+			// 2) check if looping through pa->next is bullet-proof
+			for (AstNode* pa = pnode->alt->next; pa; pa = pa->next)
+			{
+				pLast = pa;
+//					hold_at_break_point(pa);
+				Compute(pa);
+			}
+		}
+		fBreak = false;
+		break;
+	case T_BREAK:
+		fBreak = true;
+		break;
+	case T_RETURN:
+		fExit = true;
+		break;
+	default:
+	{
+		ostringstream oss;
+		oss << "TYPE=" << pnode->type << "Unknown node type";
+		throw exception_etc(*this, pnode, oss.str()).raise();
+	}
 	}
 	return &Sig;
 }
@@ -1487,13 +1545,15 @@ CVar* skope::NodeMatrix(const AstNode* pnode)
 { //[x1; x2]  if for a stereo audio signal, both x1 and x2 must be audio
 	// if none of these elements are audio, it can have multiple rows [x1; x2; x3; .... xn]. But these elements must be the same length.
 	AstNode* p = ((AstNode*)pnode->str)->alt;
-	CVar esig, tsig = Compute(p);
-	if (!p) return &(Sig = tsig);
+	CVar esig, tsig;
+	if (!p) return &(Sig = CVar());
+	tsig = Compute(p);
 	blockCellStruct2(*this, pnode, tsig);
-	int audio(0);
-	if (tsig.IsAudio()) audio = 1;
-	else if (ISTSEQ(tsig.type())) audio = 10;
-	else if (tsig.IsString() || tsig.IsScalar() || tsig.GetType() & 0x0002) audio = -1;
+	auto tp = tsig.type();
+	int audio = 0;
+	if (ISAUDIO(tp)) audio = 1;
+	else if (ISTSEQ(tp)) audio = 10;
+	else if (ISSTRING(tp) || ISSCALAR(tp) || ISVECTOR(tp)) audio = -1;
 	if (audio == 0 && !p->next)
 		return &Sig.Reset();
 	CVar* psig = &tsig;
@@ -1761,6 +1821,56 @@ CVar* skope::SetLevel(const AstNode* pnode, AstNode* p)
 	//sigRMS = dB - sigRMS;
 	//Sig | sigRMS;
 	return &Sig;
+}
+
+void skope::prepare_endpoint(const AstNode* p, CVar* pvar)
+{  // p is the node the indexing starts (e.g., child of N_ARGS... wait is it also child of conditional p?
+	if (p->next) // first index in 2D
+		endpoint = (float)pvar->nGroups;
+	else
+		endpoint = (float)pvar->nSamples;
+}
+
+void skope::interweave_indices(CVar& isig, CVar& isig2, unsigned int len)
+{
+	CVar out;
+	out.UpdateBuffer(isig.nSamples * isig2.nSamples);
+	out.nGroups = isig.nGroups;
+	for (size_t p = 0; p < isig.nSamples; p++)
+		for (unsigned int q = 0; q < isig2.nSamples; q++)
+		{
+			out.buf[p * isig2.nSamples + q] = (isig.buf[p] - 1) * len + isig2.buf[q];
+		}
+	isig = out;
+}
+
+void skope::index_array_satisfying_condition(CVar& isig)
+{ // input: isig, logical array
+  // output: isig, a new array of indices satisfying the condition
+	CTimeSeries* p = &isig;
+	CVar out;
+	CTimeSeries* p_out = &out;
+	while (p)
+	{
+		int count = 0;
+		for (unsigned int k = 0; k < p->nSamples; k++)
+			if (p->logbuf[k]) count++;
+		CSignal part;
+		part.UpdateBuffer(count);
+		part.nGroups = p->nGroups;
+		part.tmark = p->tmark;
+		count = 0;
+		for (unsigned int k = 0; k < p->nSamples; k++)
+			if (p->logbuf[k]) part.buf[count++] = k + 1;
+		*p_out = part;
+		p = p->chain;
+		if (p)
+		{
+			p_out->chain = new CTimeSeries;
+			p_out = p_out->chain;
+		}
+	}
+	isig = out;
 }
 
 CVar* skope::InitCell(const AstNode* pnode, AstNode* p)

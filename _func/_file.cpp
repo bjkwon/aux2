@@ -27,7 +27,6 @@ Cfunction set_builtin_function_wave(fGate fp)
 {
 	Cfunction ft;
 	set<uint16_t> allowedTypes;
-
 	ft.func = fp;
 	ft.alwaysstatic = true;
 	vector<string> desc_arg_req = { "filename", };
@@ -39,7 +38,8 @@ Cfunction set_builtin_function_wave(fGate fp)
 	set<uint16_t> allowedTypes2 = { 1, };
 	ft.allowed_arg_types.push_back(allowedTypes2);
 	ft.allowed_arg_types.push_back(allowedTypes2);
-
+	ft.desc_arg_req = desc_arg_req;
+	ft.desc_arg_opt = desc_arg_opt;
 	ft.narg1 = desc_arg_req.size();
 	ft.narg2 = ft.narg1 + default_arg.size();
 	return ft;
@@ -61,6 +61,8 @@ Cfunction set_builtin_function_wavwrite(fGate fp)
 	ft.allowed_arg_types.push_back(allowedTypes2);
 	ft.allowed_arg_types.push_back(allowedTypes2);
 	// til this line ==============
+	ft.desc_arg_req = desc_arg_req;
+	ft.desc_arg_opt = desc_arg_opt;
 	ft.defaultarg = default_arg;
 	ft.narg1 = desc_arg_req.size();
 	ft.narg2 = ft.narg1 + default_arg.size();

@@ -67,28 +67,43 @@ void _tictoc(skope *past, const AstNode *pnode)
 	}
 }
 
-void _colon(skope *past, const AstNode *pnode)
+Cfunction set_builtin_function_colon(fGate fp)
 {
-	const AstNode* p = get_first_arg(pnode, (*(past->pEnv->builtin.find(pnode->str))).second.alwaysstatic);
-	CVar first = past->Sig;
-	if (!first.IsScalar()) throw exception_etc(*past, pnode, "Colon: All arguments must be scalars (check 1st arg).").raise();
-	float val1, val2, step;
-	CVar third, second = past->Compute(p->next);
-	if (!second.IsScalar()) throw exception_etc(*past, pnode, "Colon: All arguments must be scalars (check 2nd arg).").raise();
-	val1 = first.value();
-	val2 = second.value();
-	if (p->next->next) {
-		third = past->Compute(p->next->next);
-		if (!third.IsScalar()) throw exception_etc(*past, pnode, "Colon: All arguments must be scalars (check 3rd arg).").raise();
-		step = third.value();
-	}
+	Cfunction ft;
+	set<uint16_t> allowedTypes;
+	ft.func = fp;
+	// The count of default_arg: same as desc_arg_opt.size()
+	// Each of allowedTypes_n should list all allowed types
+	// ft.allowed_arg_types.push_back(allowedTypes_n) should be called as many times as desc_arg_req.size() + desc_arg_opt.size()
+	// Edit from this line ==============
+	ft.alwaysstatic = true;
+	vector<string> desc_arg_req = { "(scalar:scalar) or (scalar:scalar:scalar)", "(scalar:scalar) or (scalar:scalar:scalar)" };
+	vector<string> desc_arg_opt = { "(scalar:scalar) or (scalar:scalar:scalar)" };
+	vector<CVar> default_arg = { CVar(string("doesn't matter")), /*CVar(default_value), CVar(string("default_str")), same number of desc_arg_opt*/};
+	set<uint16_t> allowedTypes1 = { 1, };
+	ft.allowed_arg_types.push_back(allowedTypes1);
+	ft.allowed_arg_types.push_back(allowedTypes1);
+	ft.allowed_arg_types.push_back(allowedTypes1);
+	// til this line ==============
+	ft.defaultarg = default_arg;
+	ft.narg1 = desc_arg_req.size();
+	ft.narg2 = ft.narg1 + default_arg.size();
+	return ft;
+}
+
+void _colon(skope* past, const AstNode* pnode, const vector<CVar>& args)
+{
+	float val1 = past->Sig.value();
+	float val2 = args[0].value();
+	float step;
+	if (ISSCALAR(args.back().type()))
+		step = args[1].value();
 	else
-		step = (val1>val2) ? -1.f : 1.f;
-	past->Sig.Reset(1);
+		step = (val1 > val2) ? -1.f : 1.f;
 	int nItems = max(1, (int)((val2-val1)/step)+1);
 	past->Sig.UpdateBuffer(nItems);
-	for (int i=0; i<nItems; i++)
-		past->Sig.buf[i] = val1 + step*i;
+	for (int k=0; k<nItems; k++)
+		past->Sig.buf[k] = val1 + step*k;
 }
 
 //void _clear(skope *past, const AstNode *pnode)
@@ -192,6 +207,8 @@ string Cfunction::make_funcsignature()
 	return out;
 }
 
+#define SET_BUILTIN_FUNC(NAME) set_builtin_function_##NAME(&_##NAME);
+
 void CAstSigEnv::InitBuiltInFunctions()
 {
 	//Think about this 11/19/2021
@@ -217,7 +234,12 @@ void CAstSigEnv::InitBuiltInFunctions()
 	
 	builtin["group"] = set_builtin_function_group(&_group);
 	builtin["matrix"] = set_builtin_function_group(&_group);
-	builtin["ungroup"] = set_builtin_function_group(&_ungroup);
+	builtin["ungroup"] = set_builtin_function_ungroup(&_ungroup);
+	builtin["fft"] = SET_BUILTIN_FUNC(fft);
+	builtin["ifft"] = SET_BUILTIN_FUNC(ifft);
+
+	builtin[":"] = SET_BUILTIN_FUNC(colon);
+
 
 //	name = "sam";
 //	ft.alwaysstatic = false;
@@ -877,7 +899,8 @@ void check(const skope& ths, const AstNode* pnode, const vector<CVar>& args, con
 }
 
 vector<CVar> skope::make_check_args(const AstNode* pnode, const Cfunction& func)
-{ // make arg vector for the function gate
+{ // Goal: make args vector for the function gate
+  // the first arg is always Sig. The second arg is the first output vector.
   // check the arg types; if a type of a given arg is not one of allowed ones, throw.
   // check minimum, maximum number of args; if the number of given args is outside the range, throw. 
   // fill default arguments in the arg vector if not specified
@@ -888,8 +911,13 @@ vector<CVar> skope::make_check_args(const AstNode* pnode, const Cfunction& func)
 	// Just get the 
 
 	bool struct_call = pnode->type == N_STRUCT;
-	const AstNode* p2 = get_second_arg(pnode, struct_call);
 	string fname = pnode->str;
+	if (func.alwaysstatic && struct_call)
+	{
+		ostr << "function " << fname << " does not allow . (dot) notation call.";
+		throw exception_func(*this, pnode, ostr.str(), fname).raise();
+	}
+	const AstNode* p2 = get_second_arg(pnode, struct_call);
 	uint16_t thistype;
 	int count = 1;
 	auto allowedset = func.allowed_arg_types.begin();
@@ -915,32 +943,43 @@ vector<CVar> skope::make_check_args(const AstNode* pnode, const Cfunction& func)
 			ostr << fname << "(): too many args; maximum number of args is " << func.narg2 << ".";
 			throw exception_etc(*this, pnode, ostr.str()).raise();
 		}
-		skope smallskope(this);
-		smallskope.Compute(pn);
-		thistype = smallskope.Sig.type();
-		bool pass = false;
-		for (auto it = allowedset->begin(); it != allowedset->end(); it++)
-		{
-			pass = thistype == *it;
-			if (pass)
+		try {
+			skope smallskope(this);
+			smallskope.Compute(pn);
+			thistype = smallskope.Sig.type();
+			bool pass = false;
+			for (auto it = allowedset->begin(); it != allowedset->end(); it++)
 			{
-				out.push_back(smallskope.Sig);
-				break;
+				pass = thistype == *it;
+				if (pass)
+				{
+					out.push_back(smallskope.Sig);
+					break;
+				}
 			}
+			if (!pass)
+			{
+				ostr << "type " << thistype;
+				throw exception_func(*this, pnode, ostr.str(), fname, count).raise();
+			}
+			allowedset++;
 		}
-		if (!pass)
+		catch (skope_exception e)
 		{
-			ostr << "type " << thistype;
-			throw exception_func(*this, pnode, ostr.str(), fname, count).raise();
+			ostr << " for arg " << count << " of " + fname + "()";
+			e.outstr += ostr.str();
+//			throw errmsg.c_str();
+			throw e;
 		}
-		allowedset++;
 	}
 	count--;
-	if (count > func.narg2)
+	if (count < func.narg1)
 	{
-		ostr << fname << "(): minimum number of args " << func.narg1 << "; only " << count << " given.";
+		ostr << fname << "(): the number of arg should be at least " << func.narg1 << "; Only " << count << " given.";
 		throw exception_etc(*this, pnode, ostr.str()).raise();
 	}
+//	if (out.empty())
+//		out.push_back(Sig);
 	for (; count < func.narg2; count++)
 		out.push_back(CVar(func.defaultarg[count - func.narg1]));
 	return out;

@@ -479,155 +479,166 @@ CNodeProbe::CNodeProbe(skope *past, AstNode *pnode, CVar *psig)
 }
 
 CVar &CNodeProbe::ExtractByIndex(const AstNode *pnode, AstNode *p)
-{ // pnode->type should be N_ARGS
-	//CVar tsig, isig;
-	//if (!p->child)	throw CAstException(USAGE, *pbase, pnode).proc("A variable index should be provided.");
-	//if (p->child->type == T_FULLRANGE && (pbase->Sig.type() & TYPEBIT_TEMPORAL))
-	//{
-	//	// nothing 
-	//}
-	//else
-	//{
-	//	eval_indexing(p->child, isig);
-	//	if (!(isig.type() & 1)) // has more than one element. 
-	//		lhsref_single = false;
-	//	if (isig._max() > pbase->Sig.nSamples) // can be replaced with psigBase->nSamples
-	//		throw CAstException(RANGE, *pbase, pnode).proc("", varname.c_str(), (int)isig._max(), -1);
-	//	pbase->Sig = extract(pnode, isig);
-	//}
+{
+	CVar tsig, isig;
+	if (!p->child)	
+		throw exception_etc(*pbase, pnode, string(pnode->str) + string(" variable index missing")).raise();
+	if (p->child->type == T_FULLRANGE && ISTEMPORAL(pbase->Sig.type()))
+	{
+		// nothing 
+	}
+	else
+	{
+		eval_indexing(p->child, isig);
+		if (!(isig.type() & 1)) // has more than one element. 
+			lhsref_single = false;
+		if (isig._max() > pbase->Sig.nSamples) // can be replaced with psigBase->nSamples
+		{
+			ostringstream oss;
+			oss << isig._max();
+			throw exception_range(*pbase, pnode, oss.str().c_str(), varname);
+		}
+		pbase->Sig = extract(pnode, isig);
+	}
 	return pbase->Sig;
 }
 
+
+
 CVar * CNodeProbe::extract(const AstNode *pnode, CTimeSeries &isig)
 {
-	//CSignals out((psigBase)->GetFs());
-	//CTimeSeries *p = &out;
-	//out.UpdateBuffer(isig.nSamples);
-	//if (isig._min() <= 0.)
-	//{
-	//	ostringstream outstream;
-	//	outstream << "Invalid index " << "for " << varname << " : " << (int)isig._min() << " (must be positive)";
-	//	throw CAstException(USAGE, *pbase, pnode).proc(outstream.str().c_str());
-	//}
-	//if (psigBase->IsComplex())
-	//{
-	//	out.SetComplex();
-	//	for (unsigned int i = 0; i < isig.nSamples; i++)
-	//		out.cbuf[i] = (psigBase)->cbuf[(int)isig.buf[i] - 1];
-	//}
-	//else if (psigBase->IsLogical())
-	//{
-	//	out.MakeLogical();
-	//	for (unsigned int i = 0; i < isig.nSamples; i++)
-	//		out.logbuf[i] = (psigBase)->logbuf[(int)isig.buf[i] - 1];
-	//}
-	//else if (psigBase->IsString())
-	//{
-	//	out.UpdateBuffer(isig.nSamples + 1); // make room for null 
-	//	for (unsigned int i = 0; i < isig.nSamples; i++)
-	//		out.strbuf[i] = (psigBase)->strbuf[(int)isig.buf[i] - 1];
-	//	out.strbuf[out.nSamples - 1] = 0;
-	//}
-	//else
-	//{
-	//	if (psigBase->IsGO())
-	//	{
-	//		if (isig._max() > psigBase->nSamples)
-	//			throw CAstException(RANGE, *pbase, pnode).proc("", "", (int)isig._max());
-	//		if (isig.nSamples == 1)
-	//		{
-	//			size_t did = (size_t)isig.value() - 1;
-	//			if (!psigBase->buf[did]) {
-	//				// if Reset() resets a GO into a NULL, the next two lines are not necessary 10/1/2020
-	//				psigBase->strut.clear();
-	//				psigBase->struts.clear();
-	//				psigBase->Reset(1);
-	//			}
-	//			else
-	//			{
-	//				CVar* tp = (CVar*)(INT_PTR)(psigBase)->buf[did];
-	//				pbase->pgo = psigBase = tp;
-	//				pbase->Sig = *psigBase;
-	//			}
-	//			return psigBase;
-	//		}
-	//		else
-	//		{
-	//			vector<INT_PTR> gos;
-	//			for (unsigned int k = 0; k < isig.nSamples; k++)
-	//			{
-	//				size_t did = (size_t)isig.buf[k] - 1;
-	//				CVar *tp = (CVar*)(INT_PTR)(psigBase)->buf[did];
-	//				gos.push_back((INT_PTR)tp);
-	//			}
-	//			psigBase = pbase->MakeGOContainer(gos);
-	//			pbase->Sig = *psigBase;
-	//			return psigBase;
-	//		}
-	//	}
-	//	out.SetReal();
-	//	if (pbase->Sig.type() & TYPEBIT_AUDIO)
-	//	{
-	//		CTimeSeries *_pisig = &isig;
-	//		while (_pisig)
-	//		{
-	//			int cum(0), id(0), lastid = -2;
-	//			vector<int> size2reserve;
-	//			for (unsigned int k = 0; k < _pisig->nSamples; k++)
-	//			{
-	//				id = (int)_pisig->buf[k];
-	//				if (id - lastid > 1)
-	//				{
-	//					if (lastid > 0) size2reserve.push_back(lastid);
-	//					size2reserve.push_back(id);
-	//				}
-	//				lastid = id;
-	//			}
-	//			size2reserve.push_back((int)_pisig->buf[_pisig->nSamples - 1]);
-	//			auto it = size2reserve.begin();
-	//			p->UpdateBuffer(*(it + 1) - *it + 1);
-	//			id = (int)_pisig->buf[0] - 1;
-	//			p->tmark = (double)id / pbase->Sig.GetFs() * 1000.;
-	//			it++; it++;
-	//			lastid = (int)_pisig->buf[0] - 1;
-	//			for (unsigned int i = 0; i < _pisig->nSamples; i++)
-	//			{
-	//				id = (int)_pisig->buf[i] - 1;
-	//				if (id - lastid > 1)
-	//				{
-	//					cum = 0;
-	//					CSignals *pchain = new CSignals(pbase->Sig.GetFs());
-	//					pchain->UpdateBuffer(*(it + 1) - *it + 1);
-	//					pchain->tmark = (double)id / pbase->Sig.GetFs() * 1000.;
-	//					p->chain = pchain;
-	//					p = pchain;
-	//					it++; it++;
-	//				}
-	//				p->buf[cum++] = psigBase->buf[id];
-	//				lastid = id;
-	//			}
-	//			_pisig = _pisig->chain;
-	//			if (_pisig)
-	//			{
-	//				p->chain = new CTimeSeries;
-	//				p = p->chain;
-	//			}
-	//		}
-	//	}
-	//	else if (pbase->Sig.type() >= TYPEBIT_GO)
-	//		throw CAstException(USAGE, *pbase, pnode).proc("Invalid object type to extract based on index.");
-	//	else // should be non-audio, non-time sequence data such as vector
-	//	{
-	//		int id = 0;
-	//		for (unsigned int k = 0; k < isig.nSamples; k++)
-	//		{
-	//			auto ind = (unsigned int)isig.buf[k];
-	//			out.buf[id++] = (psigBase)->buf[ind - 1];
-	//		}
-	//	}
-	//}
-	//out.nGroups = isig.nGroups;
-	//pbase->Sig = out;
+	CSignals out((psigBase)->GetFs());
+	CTimeSeries *p = &out;
+	out.UpdateBuffer(isig.nSamples);
+	if (isig._min() <= 0.)
+	{
+		ostringstream outstream;
+		outstream << "Invalid index " << "for " << varname << " : " << (int)isig._min() << " (must be positive)";
+		throw exception_etc(*pbase, pnode, outstream.str()).raise();
+	}
+	if (psigBase->IsComplex())
+	{
+		out.SetComplex();
+		for (unsigned int i = 0; i < isig.nSamples; i++)
+			out.cbuf[i] = (psigBase)->cbuf[(int)isig.buf[i] - 1];
+	}
+	else if (psigBase->IsLogical())
+	{
+		out.MakeLogical();
+		for (unsigned int i = 0; i < isig.nSamples; i++)
+			out.logbuf[i] = (psigBase)->logbuf[(int)isig.buf[i] - 1];
+	}
+	else if (psigBase->IsString())
+	{
+		out.UpdateBuffer(isig.nSamples + 1); // make room for null 
+		for (unsigned int i = 0; i < isig.nSamples; i++)
+			out.strbuf[i] = (psigBase)->strbuf[(int)isig.buf[i] - 1];
+		out.strbuf[out.nSamples - 1] = 0;
+	}
+	else
+	{
+		if (psigBase->IsGO())
+		{
+			if (isig._max() > psigBase->nSamples)
+			{
+				ostringstream oss;
+				oss << isig._max();
+				throw exception_range(*pbase, pnode, oss.str().c_str(), "");
+			}
+			if (isig.nSamples == 1)
+			{
+				size_t did = (size_t)isig.value() - 1;
+				if (!psigBase->buf[did]) {
+					// if Reset() resets a GO into a NULL, the next two lines are not necessary 10/1/2020
+					psigBase->strut.clear();
+					psigBase->struts.clear();
+					psigBase->Reset(1);
+				}
+				else
+				{
+					CVar* tp = (CVar*)(INT_PTR)(psigBase)->buf[did];
+					pbase->pgo = psigBase = tp;
+					pbase->Sig = *psigBase;
+				}
+				return psigBase;
+			}
+			else
+			{
+				vector<INT_PTR> gos;
+				for (unsigned int k = 0; k < isig.nSamples; k++)
+				{
+					size_t did = (size_t)isig.buf[k] - 1;
+					CVar *tp = (CVar*)(INT_PTR)(psigBase)->buf[did];
+					gos.push_back((INT_PTR)tp);
+				}
+//				psigBase = pbase->MakeGOContainer(gos);
+				pbase->Sig = *psigBase;
+				return psigBase;
+			}
+		}
+		out.SetReal();
+		if (ISAUDIO(pbase->Sig.type()))
+		{
+			CTimeSeries *_pisig = &isig;
+			while (_pisig)
+			{
+				int cum(0), id(0), lastid = -2;
+				vector<int> size2reserve;
+				for (unsigned int k = 0; k < _pisig->nSamples; k++)
+				{
+					id = (int)_pisig->buf[k];
+					if (id - lastid > 1)
+					{
+						if (lastid > 0) size2reserve.push_back(lastid);
+						size2reserve.push_back(id);
+					}
+					lastid = id;
+				}
+				size2reserve.push_back((int)_pisig->buf[_pisig->nSamples - 1]);
+				auto it = size2reserve.begin();
+				p->UpdateBuffer(*(it + 1) - *it + 1);
+				id = (int)_pisig->buf[0] - 1;
+				p->tmark = (double)id / pbase->Sig.GetFs() * 1000.;
+				it++; it++;
+				lastid = (int)_pisig->buf[0] - 1;
+				for (unsigned int i = 0; i < _pisig->nSamples; i++)
+				{
+					id = (int)_pisig->buf[i] - 1;
+					if (id - lastid > 1)
+					{
+						cum = 0;
+						CSignals *pchain = new CSignals(pbase->Sig.GetFs());
+						pchain->UpdateBuffer(*(it + 1) - *it + 1);
+						pchain->tmark = (double)id / pbase->Sig.GetFs() * 1000.;
+						p->chain = pchain;
+						p = pchain;
+						it++; it++;
+					}
+					p->buf[cum++] = psigBase->buf[id];
+					lastid = id;
+				}
+				_pisig = _pisig->chain;
+				if (_pisig)
+				{
+					p->chain = new CTimeSeries;
+					p = p->chain;
+				}
+			}
+		}
+//		else if (pbase->Sig.type() >= TYPEBIT_GO)
+//			throw CAstException(USAGE, *pbase, pnode).proc("Invalid object type to extract based on index.");
+		else // should be non-audio, non-time sequence data such as vector
+		{
+			int id = 0;
+			for (unsigned int k = 0; k < isig.nSamples; k++)
+			{
+				auto ind = (unsigned int)isig.buf[k];
+				out.buf[id++] = (psigBase)->buf[ind - 1];
+			}
+		}
+	}
+	out.nGroups = isig.nGroups;
+	pbase->Sig = out;
 	return &pbase->Sig;
 }
 
@@ -637,48 +648,53 @@ CVar &CNodeProbe::eval_indexing(const AstNode *pInd, CVar &isig)
 	// output: isig -- sig holding all indices
 
 	// process the first index
-	//unsigned int len;
-	//pbase->prepare_endpoint(pInd, psigBase);
-	//try {
-	//	CAstSig tp(pbase);
-	//	if (pInd->type == T_FULLRANGE)
-	//	{ // x(:,ids) or x(:)
-	//		isig.UpdateBuffer((unsigned int)pbase->endpoint);
-	//		for (int k = 0; k < (int)isig.nSamples; k++)	isig.buf[k] = k + 1;
-	//	}
-	//	else
-	//		isig = tp.Compute(pInd);
-	//	if (isig.IsLogical()) pbase->index_array_satisfying_condition(isig);
-	//	// process the second index, if it exists
-	//	if (pInd->next)
-	//	{
-	//		if (psigBase->nGroups > 1 && isig.nSamples > 1)
-	//			isig.nGroups = isig.nSamples;
-	//		AstNode *p = pInd->next;
-	//		CVar isig2;
-	//		if (p->type == T_FULLRANGE)
-	//		{// x(ids,:)
-	//			len = psigBase->Len();
-	//			isig2.UpdateBuffer(len);
-	//			for (unsigned int k = 0; k < len; k++)	isig2.buf[k] = k + 1;
-	//		}
-	//		else // x(ids1,ids2)
-	//		{
-	//			//endpoint for the second arg in 2D is determined here.
-	//			tp.endpoint = (double)psigBase->Len();
-	//			isig2 = tp.Compute(p);
-	//		}
-	//		auto mx = isig2._max();
-	//		auto nx = psigBase->Len();
-	//		if (isig2.IsLogical()) pbase->index_array_satisfying_condition(isig2);
-	//		else if (isig2._max() > (double)psigBase->Len())
-	//			throw CAstException(RANGE, *pbase, pInd).proc("2nd index ", "", psigBase->Len(), (int)isig2._max());
-	//		pbase->interweave_indices(isig, isig2, psigBase->Len());
-	//	}
-	//}
-	//catch (const CAstException &e) {
-	//	throw CAstException(USAGE, *pbase, pInd).proc(e.getErrMsg().c_str());
-	//}
+	unsigned int len;
+	pbase->prepare_endpoint(pInd, psigBase);
+	try {
+		skope tp(pbase);
+		if (pInd->type == T_FULLRANGE)
+		{ // x(:,ids) or x(:)
+			isig.UpdateBuffer((unsigned int)pbase->endpoint);
+			for (int k = 0; k < (int)isig.nSamples; k++)	isig.buf[k] = k + 1;
+		}
+		else
+			isig = tp.Compute(pInd);
+		if (isig.IsLogical()) pbase->index_array_satisfying_condition(isig);
+		// process the second index, if it exists
+		if (pInd->next)
+		{
+			if (psigBase->nGroups > 1 && isig.nSamples > 1)
+				isig.nGroups = isig.nSamples;
+			AstNode *p = pInd->next;
+			CVar isig2;
+			if (p->type == T_FULLRANGE)
+			{// x(ids,:)
+				len = psigBase->Len();
+				isig2.UpdateBuffer(len);
+				for (unsigned int k = 0; k < len; k++)	isig2.buf[k] = k + 1;
+			}
+			else // x(ids1,ids2)
+			{
+				//endpoint for the second arg in 2D is determined here.
+				tp.endpoint = (double)psigBase->Len();
+				isig2 = tp.Compute(p);
+			}
+			auto mx = isig2._max();
+			auto nx = psigBase->Len();
+			if (isig2.IsLogical()) pbase->index_array_satisfying_condition(isig2);
+			else if (isig2._max() > (double)psigBase->Len())
+			{
+				ostringstream oss;
+				oss << "max of 2nd index " << isig2._max() << " exceeds" << psigBase->Len() << ".";
+				throw exception_range(*pbase, pInd, oss.str().c_str(), "");
+			}
+			pbase->interweave_indices(isig, isig2, psigBase->Len());
+		}
+	}
+	catch (skope_exception e) {
+		e.outstr += "invalid indexing... code to be refactored";
+		throw e;
+	}
 	return isig;
 }
 

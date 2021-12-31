@@ -4,7 +4,6 @@ Cfunction set_builtin_function_tone(fGate fp)
 {
 	Cfunction ft;
 	set<uint16_t> allowedTypes;
-
 	ft.func = fp;
 	ft.alwaysstatic = true;
 	vector<string> desc_arg_req = { "f", "dur", };
@@ -16,7 +15,8 @@ Cfunction set_builtin_function_tone(fGate fp)
 	set<uint16_t> allowedTypes2 = { 1, };
 	ft.allowed_arg_types.push_back(allowedTypes2);
 	ft.allowed_arg_types.push_back(allowedTypes2);
-
+	ft.desc_arg_req = desc_arg_req;
+	ft.desc_arg_opt = desc_arg_opt;
 	ft.narg1 = desc_arg_req.size();
 	ft.narg2 = ft.narg1 + default_arg.size();
 	return ft;

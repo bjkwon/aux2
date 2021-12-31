@@ -9,6 +9,7 @@
    (skope* past, const AstNode* pnode)
 --> (skope* past, const AstNode* pnode)
 
+4.1 Change double to float
 5. 
 	past->blockCell(pnode, past->Sig);
 	blockString
@@ -17,6 +18,27 @@
 6. Change 
 	throw CAstException(FUNC_SYNTAX, *past, pnode).proc("argument must be an integer.");
 ==> exception_func(*past, pnode, "argument must be an integer.", "group", 1).raise();
+
+7. Change 
+GATENAME(skope* past, const AstNode* pnode)
+==> GATENAME(skope* past, const AstNode* pnode, const vector<CVar>& args)
+
+for example _fft(skope* past, const AstNode* pnode) --> _fft(skope* past, const AstNode* pnode, const vector<CVar>& args)
+
+8. The first argument is always past->Sig, the second arg begins at args[0]
+
+9. [For audio or temporal] Inside the gate function, call one of the following:
+
+past->Sig = past->Sig.evoke_getval(GENERIC_FUNCTION, (void*)arg...)
+past->Sig.evoke_modsig(GENERIC_FUNCTION, (void*)arg...)
+past->Sig = past->Sig.evoke_getsig(GENERIC_FUNCTION, (void*)arg...)
+
+10. Define (use one of the following, corresponding to the type above)
+void GENERIC_FUNCTION(float* buf, uint64_t len, void* parg)
+void GENERIC_FUNCTION(float* buf, uint64_t len, void* parg)
+CTimeSeries GENERIC_FUNCTION(const CTimeSeries& base, void* parg)
+
+
 
 
 In AuxFunc.cpp

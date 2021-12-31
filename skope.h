@@ -170,6 +170,9 @@ public:
 	void Concatenate(const AstNode* pnode, AstNode* p);
 	CVar* ConditionalOperation(const AstNode* pnode, AstNode* p);
 	CVar* SetLevel(const AstNode* pnode, AstNode* p);
+	void prepare_endpoint(const AstNode* p, CVar* pvar);
+	void interweave_indices(CVar& isig, CVar& isig2, unsigned int len);
+	void index_array_satisfying_condition(CVar& isig);
 	CVar* InitCell(const AstNode* pnode, AstNode* p);
 	bool checkcond(const AstNode* p);
 	void switch_case_handler(const AstNode* pnode);
