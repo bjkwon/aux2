@@ -52,8 +52,6 @@ void echo(int depth, skope& ctx, const AstNode* pnode, CVar* pvar)
 //[ 5  3 2 -1 9 83 7 62 9 7 6 8 9 7 3 2 -1]
 static void show_result(skope& sc)
 {
-	auto tp = sc.Sig.type();
-	cout << "type = " << tp << ", ";
 	int dt = 1;
 	if (sc.node->type == N_BLOCK)
 	{

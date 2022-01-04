@@ -90,17 +90,7 @@ void _varcheck(skope* past, const AstNode* pnode, const vector<CVar>& args);
 void _and(skope* past, const AstNode* pnode, const vector<CVar>& args);
 void _or(skope* past, const AstNode* pnode, const vector<CVar>& args);
 void _sort(skope* past, const AstNode* pnode, const vector<CVar>& args);
-void _arraybasic(skope* past, const AstNode* pnode, const vector<CVar>& args);
-void _hamming(skope* past, const AstNode* pnode, const vector<CVar>& args);
-void _blackman(skope* past, const AstNode* pnode, const vector<CVar>& args);
-void _envelope(skope* past, const AstNode* pnode, const vector<CVar>& args);
-void _hilbert(skope* past, const AstNode* pnode, const vector<CVar>& args);
-void _sam(skope* past, const AstNode* pnode, const vector<CVar>& args);
 DECL_GATE(_ramp)
-void _audio(skope* past, const AstNode* pnode, const vector<CVar>& args);
-void _vector(skope* past, const AstNode* pnode, const vector<CVar>& args);
-void _left(skope* past, const AstNode* pnode, const vector<CVar>& args);
-void _right(skope* past, const AstNode* pnode, const vector<CVar>& args);
 void _std(skope* past, const AstNode* pnode, const vector<CVar>& args);
 void _size(skope* past, const AstNode* pnode, const vector<CVar>& args);
 void _mostleast(skope* past, const AstNode* pnode, const vector<CVar>& args);
@@ -118,6 +108,18 @@ void _natural_log_base(skope* past, const AstNode* pnode, const vector<CVar>& ar
 
 DECL_GATE(_pow)
 DECL_GATE(_mod)
+DECL_GATE(_minmax)
+DECL_GATE(_sums)
+DECL_GATE(_lens)
+DECL_GATE(_rmsetc)
+DECL_GATE(_sam)
+DECL_GATE(_blackman)
+DECL_GATE(_hamming)
+DECL_GATE(_audio)
+DECL_GATE(_vector)
+DECL_GATE(_leftright)
+DECL_GATE(_hilbenvlope)
+
 void _sqrt(skope* past, const AstNode* pnode, const vector<CVar>& args);
 void _sin(skope* past, const AstNode* pnode, const vector<CVar>& args);
 

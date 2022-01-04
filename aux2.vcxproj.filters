@@ -96,6 +96,18 @@
     <ClCompile Include="_func\specialmath.cpp">
       <Filter>Source Files\_functions</Filter>
     </ClCompile>
+    <ClCompile Include="_func\sums.cpp">
+      <Filter>Source Files\_functions</Filter>
+    </ClCompile>
+    <ClCompile Include="_func\rmsandothers.cpp">
+      <Filter>Source Files\_functions</Filter>
+    </ClCompile>
+    <ClCompile Include="_func\lr_aud_vec.cpp">
+      <Filter>Source Files\_functions</Filter>
+    </ClCompile>
+    <ClCompile Include="_func\hilb_env.cpp">
+      <Filter>Source Files\_functions</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="skope.h">

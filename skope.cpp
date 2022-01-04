@@ -103,6 +103,32 @@ const AstNode* skope::findParentNode(const AstNode* p, const AstNode* pME, bool 
 */
 
 
+void skope::outputbinding(const AstNode* plhs)
+{
+	assert(plhs->type == N_VECTOR);
+	if (SigExt.empty())
+	{
+		AstNode* p = ((AstNode*)plhs->str)->alt;
+		if (p->next)
+			throw exception_etc(*this, p, "Too many output arguments.").raise();
+		bind_psig(p, &Sig);
+	}
+	else
+	{
+		vector<unique_ptr<CVar*>>::iterator it = SigExt.begin();
+		for (AstNode* p = ((AstNode*)plhs->str)->alt; p; p = p->next)
+		{
+			auto pp = *it->release();
+			bind_psig(p, pp);
+			if (it != SigExt.begin())
+				delete pp; // most likely pp was created in _func() in _functions
+			it++;
+			if (it == SigExt.end() && p->next)
+				throw exception_etc(*this, p, "Too many output arguments.").raise();
+		}
+	}
+}
+
 void skope::outputbinding(const AstNode *pnode, size_t nArgout)
 {
 	auto count = 0;
@@ -232,6 +258,7 @@ CVar* skope::Compute(const AstNode* pnode)
 		Sig.SetValue(pnode->dval);
 		return TID(pnode->alt, p, &Sig);
 	case T_STRING:
+		Sig.Reset();
 		Sig.SetString(pnode->str);
 		return TID(pnode->alt, p, &Sig);
 	case N_MATRIX:

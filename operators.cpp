@@ -661,7 +661,6 @@ CSignals& CSignals::operator<=(CSignals* rhs)
 	return *this;
 }
 
-//from _arraybasic.cpp
 float CSignal::begint(unsigned int id0, unsigned int len, void* p) const
 {
 	return tmark + id0 * 1000.f / fs;

@@ -177,6 +177,7 @@ public:
 	bool checkcond(const AstNode* p);
 	void switch_case_handler(const AstNode* pnode);
 	int GetFs(void) { return pEnv->Fs; }
+	void outputbinding(const AstNode* pnode);
 	void outputbinding(const AstNode* pnode, size_t nArgout);
 	void bind_psig(AstNode* pn, CVar* psig);
 	string makefullfile(const string& fname, string extension = "");

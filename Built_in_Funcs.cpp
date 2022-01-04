@@ -139,13 +139,18 @@ void skope::HandleMathFunc(string& fname, const body& arg)
 		if (Sig.IsComplex())
 		{
 			Sig.each(cfn1);
-			return;
 		}
 		else if (Sig._min() < 0)
 		{
-			Sig.each_allownegative(fn1);
-			return;
+			if (ISAUDIO(Sig.type()))
+				Sig.each_allownegative(fn1);
+			else
+			{
+				Sig.SetComplex();
+				Sig.each(cfn1);
+			}
 		}
+		return;
 	}
 	Sig.each(fn1);
 }

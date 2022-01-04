@@ -24,7 +24,7 @@ Cfunction set_builtin_function_movespec(fGate fp)
 	return ft;
 }
 
-void __movespec(float* buf, uint64_t len, void* parg)
+void __movespec(float* buf, uint64_t len, void* parg, void* parg2)
 {
 	float shift = *(float*)parg;
 	float fs = *((float*)parg + 1);

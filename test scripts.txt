@@ -40,4 +40,20 @@ fd.fclose
 10==10
 [10==10 4==4 3==-3]
 
-//12:21 AM 12/24/2021
+//11:08 PM 1/1/2022
+a=[4 2 -1 3; 9 2 19 0];
+[b,c]=a.max
+a=(10:34).group(4)
+[b,c]=a.max
+x=noise(10)
+y=x.group(4)
+fx=x.fft
+fy=y.fft
+z=fx.ifft // fail
+zz=fy.ifft // fail
+[z,cc]=y.max
+x=noise(10) + noise(20)>>50
+y=x.group(4)
+fx=x.fft 
+fy=y.fft
+[z,cc]=y.max

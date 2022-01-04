@@ -227,6 +227,7 @@ void CAstSigEnv::InitBuiltInFunctions()
 	builtin["wave"] = set_builtin_function_wave(&_wave);
 	builtin["wavwrite"] = set_builtin_function_wavwrite(&_wavwrite);
 	builtin["ramp"] = set_builtin_function_ramp(&_ramp);
+	builtin["sam"] = SET_BUILTIN_FUNC(sam);
 	builtin["pow"] = set_builtin_function_pow(&_pow);
 	builtin["^"] = set_builtin_function_pow(&_pow);
 	builtin["mod"] = set_builtin_function_mod(&_mod);
@@ -240,29 +241,35 @@ void CAstSigEnv::InitBuiltInFunctions()
 
 	builtin[":"] = SET_BUILTIN_FUNC(colon);
 
+	builtin["min"] = SET_BUILTIN_FUNC(minmax);
+	builtin["max"] = SET_BUILTIN_FUNC(minmax);
 
-//	name = "sam";
-//	ft.alwaysstatic = false;
-//	ft.funcsignature = "(signal, AM_rate[, AM_depth_m = 1, initial_phase_between_0 & 1 = 0])";
-//	ft.narg1 = 2;	ft.narg2 = 4;
-//	ft.func =  &_sam;
-//	builtin[name] = ft;
-//
+	builtin["sum"] = SET_BUILTIN_FUNC(sums);
+	builtin["mean"] = SET_BUILTIN_FUNC(sums);
+	builtin["stdev"] = SET_BUILTIN_FUNC(sums);
+	builtin["length"] = SET_BUILTIN_FUNC(lens);
+	builtin["size"] = SET_BUILTIN_FUNC(lens);
 
-//	ft.narg1 = 2;	ft.narg2 = 3;
-//	ft.alwaysstatic = true;
-//	name = ":";
-//	ft.funcsignature = "(scalar:scalar) or (scalar:scalar:scalar)";
-//	ft.func =  &_colon;
-//	builtin[name] = ft;
-//
-//	name = "wavwrite";
-//	ft.alwaysstatic = false;
-//	ft.funcsignature = "(audio_signal, filename[, option])";
-//	ft.narg1 = 2;	ft.narg2 = 3;
-//	ft.func =  &_wavwrite;
-//	builtin[name] = ft;
-//
+	builtin["rms"] = SET_BUILTIN_FUNC(rmsetc);
+	builtin["begint"] = SET_BUILTIN_FUNC(rmsetc);
+	builtin["rmsall"] = SET_BUILTIN_FUNC(rmsetc);
+	builtin["dur"] = SET_BUILTIN_FUNC(rmsetc);
+	builtin["endt"] = SET_BUILTIN_FUNC(rmsetc);
+
+	builtin["hamming"] = SET_BUILTIN_FUNC(hamming);
+	builtin["blackman"] = SET_BUILTIN_FUNC(blackman);
+	builtin["hann"] = SET_BUILTIN_FUNC(blackman);
+
+
+	builtin["audio"] = SET_BUILTIN_FUNC(audio);
+	builtin["vector"] = SET_BUILTIN_FUNC(vector);
+	builtin["left"] = SET_BUILTIN_FUNC(leftright);
+	builtin["right"] = SET_BUILTIN_FUNC(leftright);
+	builtin["hilbert"] = SET_BUILTIN_FUNC(hilbenvlope);
+	builtin["envelope"] = SET_BUILTIN_FUNC(hilbenvlope);
+
+	
+
 //	name = "write";
 //	ft.alwaysstatic = false;
 //	ft.funcsignature = "(audio_signal, filename[, option])";
@@ -383,32 +390,6 @@ void CAstSigEnv::InitBuiltInFunctions()
 //	builtin[name] = ft;
 //
 //	ft.narg1 = 1;	ft.narg2 = 1;
-//	const char *f5[] = { "min", "max", 0 };
-//	ft.funcsignature = "(vector) or (scalar1, scalar2, ...)";
-//	for (int k = 0; f5[k]; k++)
-//	{
-//		name = f5[k];
-//		ft.func =  &_minmax;
-//	builtin[name] = ft;
-//	}
-//
-//	ft.narg1 = 1;	ft.narg2 = 1;
-//	ft.funcsignature = "(array)";
-//	const char *f6[] = { "sum", "mean", "length", 0 };
-//	for (int k = 0; f6[k]; k++)
-//	{
-//		name = f6[k];
-//		ft.func = _arraybasic;
-//	builtin[name] = ft;
-//	}
-//
-//	ft.narg1 = 1;	ft.narg2 = 2;
-//	ft.funcsignature = "(array [, dimension_either_1_or_2])";
-//	name = "size";
-//	ft.func = &_size;
-//	builtin[name] = ft;
-//
-//	ft.narg1 = 1;	ft.narg2 = 1;
 //	ft.funcsignature = "(graphic_handle)";
 //	name = "replicate";
 //	ft.func = &_replicate;
@@ -458,24 +439,6 @@ void CAstSigEnv::InitBuiltInFunctions()
 ////	name = "clear";
 ////	ft.func = &_clear;
 ////	builtin[name] = ft;
-//
-//	ft.narg1 = 2;	ft.narg2 = 2;
-//	name = "group";
-//	ft.funcsignature = "(array, nGroups)";
-//	ft.func =  &_group;
-//	builtin[name] = ft;
-//	name = "matrix"; // kept for backward compatibility
-//	builtin[name] = ft; // kept for backward compatibility
-//	name = "ungroup";
-//	ft.funcsignature = "(array, overlap)";
-//	ft.func = &_ungroup;
-//	builtin[name] = ft;
-//	ft.narg1 = 2;	ft.narg2 = 3;
-//	name = "buffer";
-//	ft.funcsignature = "(array, blocklen[, overlap=0])";
-//	ft.func = &_buffer;
-//	builtin[name] = ft;
-//
 //
 //	ft.narg1 = 2;	ft.narg2 = 2;
 //	name = "respeed";

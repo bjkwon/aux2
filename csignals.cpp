@@ -170,6 +170,17 @@ body& body::operator=(const body & rhs)
 	return *this;
 }
 
+// DO NOT CALL this function with empty buf
+float body::_max(unsigned int id, int unsigned len, void* pind) const
+{
+	return *max_element(buf + id, buf + id + len);
+}
+
+float body::_min(unsigned int id, unsigned int len, void* pind) const
+{
+	return *min_element(buf + id, buf + id + len);
+}
+
 body& body::MakeLogical()
 {
 	if (bufBlockSize == 1) return *this;
@@ -1257,36 +1268,100 @@ CTimeSeries CTimeSeries::evoke_getval(float (CSignal::*fp)(unsigned int, unsigne
 	return out;
 }
 
-CTimeSeries& CTimeSeries::evoke_modsig(fmodify fp, void *popt)
+CSignal& CSignal::evoke_modsig(fmodify fp, void* pargin, void* pargout)
 {
-//	if (GetType() == CSIG_TSERIES)
-//	{
-		//out.Reset(1); // 1 means new fs
-		//CSignal tp = TSeries2CSignal();
-		//out.SetValue((tp.*fp)(0, 0));
-//	}
-//	else
-	{ 
-		// must re-work with popt to accommodate the output from *fp
-		// 12/20/2020
-		for (CTimeSeries* p = this; p; p = p->chain)
-			for (unsigned int k = 0; k < nGroups; k++)
-			{
-				auto len = p->Len();
-				(fp)(p->buf, len, popt);
-//				(fp)(p->buf, k * len, len, popt);
-			}
+	for (unsigned int k = 0; k < nGroups; k++)
+	{
+		(fp)((float*)(strbuf + k * bufBlockSize * Len()), Len(), pargin, pargout);
 	}
 	return *this;
 }
 
-CTimeSeries CTimeSeries::evoke_getsig(CTimeSeries(*func) (const CTimeSeries&, void*), void *popt)
+CTimeSeries& CTimeSeries::evoke_modsig(fmodify fp, void* pargin, void* pargout)
+{
+	for (CTimeSeries* p = this; p; p = p->chain)
+		p->CSignal::evoke_modsig(fp, pargin, pargout);
+	return *this;
+}
+
+CSignal CSignal::evoke_getsig2(CSignal(*func) (float*, unsigned int, void*, void*), void* pargin, void* pargout)
+{
+	auto len = Len();
+	CSignal extra, extra0;
+	void* temp = &extra0;
+	CSignal out0 = func(buf, len, pargin, temp);
+	auto len0 = out0.nSamples;
+	CSignal out = out0;
+	uint64_t extralen0;
+	if (pargout)
+	{
+		extralen0 = extra0.nSamples;
+		extra.UpdateBuffer(extralen0 * nGroups);
+		memcpy(extra.buf, extra0.buf, extralen0 * bufBlockSize);
+	}
+
+	// assumption1: output of (func) does not change its characteristics while looping.
+	// assumption2: additional output of (func), temp above, does not change its characteristics while looping.
+	// therefore, the outputs of (func) are simply stacked thru the loop and make the final output
+	auto newLength = out0.nSamples * nGroups;
+	if (newLength > out.nSamples)
+		out.UpdateBuffer(newLength);
+	for (unsigned int k = 1; k < nGroups; k++)
+	{
+		auto sss = func((float*)(strbuf + len * k * bufBlockSize), len, pargin, temp);
+		memcpy(out.strbuf + len0 * k * sss.bufBlockSize, sss.buf, len0 * sss.bufBlockSize);
+		if (pargout)
+			memcpy(extra.strbuf + extralen0 * k * sss.bufBlockSize, extra0.buf, extralen0 * sss.bufBlockSize);
+	}
+	out.nSamples = out0.nSamples * nGroups; // necessary for [b,c]=a.max
+//	out.nGroups = out0.nGroups; //  correct for y=noise(10).group(4)--- nGroups for group should be adjusted inside of _group, not here
+	out.nGroups = nGroups; // correct for necessary for [b,c]=a.max; ---nGroups should just follow nGroups, if adjustment overall is needed, should be done inside the gate function
+	if (pargout) 
+	{
+		extra.nGroups = nGroups;
+		*(CSignal*)pargout = extra;
+	}
+	return out;
+} 
+
+CTimeSeries CTimeSeries::evoke_getsig2(CSignal(*func) (float*, unsigned int, void*, void*), void* pargin, void* pargout)
 {
 	CTimeSeries out(fs);
-	for (CTimeSeries* p = this, *q = &out; p; p = p->chain, q=q->chain)
+	CTimeSeries outExt(fs);
+	for (CTimeSeries* p = this; p; p = p->chain)
 	{
-		q->AddChain(func(*p, popt));
-		q->tmark = p->tmark;
+		void* _pargin = NULL;
+		void* _pargout = NULL;
+		if (pargin)
+			_pargin = pargin;
+		if (pargout)
+			_pargout = (void*)&outExt;
+		CTimeSeries outtp = p->CSignal::evoke_getsig2(func, _pargin, _pargout);
+		if (pargout) 
+		{
+			outExt.tmark = p->tmark;
+			((CTimeSeries*)pargout)->AddChain(*(CTimeSeries*)_pargout);
+		}
+		outtp.tmark = p->tmark;
+		out.AddChain(outtp);
+	}
+	return out;
+}
+
+CTimeSeries CTimeSeries::evoke_getsig(CTimeSeries(*func) (const CTimeSeries&, void*), void* popt)
+{
+	CTimeSeries out(fs);
+	for (CTimeSeries* p = this, *q = &out, *r = (CTimeSeries*)popt; p; p = p->chain)
+	{
+		void* tp = NULL;
+		if (r)
+		{
+			tp = r;
+			r = r->chain;
+		}
+		CTimeSeries outtp = func(*p, tp);
+		outtp.tmark = p->tmark;
+		out.AddChain(outtp);
 	}
 	return out;
 }
@@ -1605,7 +1680,8 @@ CTimeSeries& CTimeSeries::operator>>=(float delta)
 
 CTimeSeries& CTimeSeries::AddChain(const CTimeSeries &sec)
 { // MAKE SURE sec is not empty
-	if (nSamples == 0)
+	auto tp = type();
+	if ( tp == TYPEBIT_NULL || tp == TYPEBIT_SIZE1) // NULL or empty string
 		return *this = sec;
 	if (chain == NULL)
 		return *(chain = new CTimeSeries(sec));
@@ -2309,7 +2385,6 @@ CSignals::CSignals(std::string str)
 
 void CSignals::SetNextChan(const CSignals& second, bool need2makeghost)
 {
-	if (!next) return;
 	if (next == &second) return; // Check if this is valid. &second ?
 	if (fs != second.GetFs() && second.nSamples > 0 && nSamples > 0)
 	{
@@ -2359,12 +2434,32 @@ CSignals CSignals::evoke_getval(float (CSignal::*fp)(unsigned int, unsigned int,
 	return newout;
 }
 
-CSignals& CSignals::evoke_modsig(fmodify fp, void * popt)
+CSignals& CSignals::evoke_modsig(fmodify fp, void* pargin, void* pargout)
 {
-	CTimeSeries::evoke_modsig(fp, popt);
+	CTimeSeries::evoke_modsig(fp, pargin, pargout);
 	if (next)
-		next->evoke_modsig(fp, popt);
+		next->evoke_modsig(fp, pargin, pargout);
 	return *this;
+}
+
+CSignals CSignals::evoke_getsig2(CSignal(*func) (float*, unsigned int, void*, void*), void* pargin, void* pargout)
+{
+	CSignals newout = CTimeSeries::evoke_getsig2(func, pargin, pargout);
+	if (next)
+		newout.SetNextChan(next->evoke_getsig2(func, pargin, pargout));
+	return newout;
+}
+
+CSignals CVar::evoke_getsig2(CSignal(*func) (float*, unsigned int, void*, void*), void* pargin, void* pargout)
+{
+	CSignals newout = CSignals::evoke_getsig2(func, pargin, pargout);
+	auto tp = type();
+	if (ISTEMPORAL(tp) && !ISAUDIO(tp))
+	{
+		newout.setsnap();
+		if (pargout) ((CVar*)pargout)->setsnap();
+	}
+	return newout;
 }
 
 CSignals CSignals::evoke_getsig(CTimeSeries(*func) (const CTimeSeries&, void*) , void * popt)
@@ -2834,4 +2929,39 @@ void CSignals::nextCSignals(float lasttp, float lasttp_with_silence, CSignals& g
 		ghcopy.SetNextChan(*q2, true);
 	if (!q1 && !q2)
 		ghcopy.Reset();
+}
+
+static double RMS_concatenated(const CTimeSeries& sig)
+{
+	// Compute the "overall" RMS of entire chain as if all chains were concatenated.
+	// input sig represents RMS value of each chain (nSamples of each chain is 1)
+	// nGroups information is ignored.
+	auto cum = 0.;
+	unsigned int len = 0;
+	for (auto p = &sig; p; p = p->chain)
+	{
+		cum += pow(10, (p->value() - 3.0103) / 10.) * p->nSamples;
+		len += p->nSamples;
+	}
+	return 10. * log10(cum / len) + 3.0103;
+}
+
+CSignal __rms(float* buf, unsigned int len, void* pargin, void* pargout); // from rmsandothers.cpp
+
+CSignals& CSignals::RMS()
+{ // calculating the RMS of the entire CSignals as if all chain's were concatenated.
+	// CAUTION--This function will replace the existing data with computed RMS.
+	CSignals rmsComputed = evoke_getsig2(__rms);
+	// at this point rmsComputed is chain'ed with next (also possibly chain'ed) and nSamples = 1 for each of them 
+	CSignals out(1);
+	float rmsnow, rmsnow2;
+	rmsnow = RMS_concatenated(rmsComputed);
+	out.SetValue(rmsnow);
+	if (rmsComputed.next)
+	{
+		rmsnow2 = RMS_concatenated(*rmsComputed.next);
+		CSignals tp(rmsnow2);
+		out.SetNextChan(tp);
+	}
+	return *this = out;
 }

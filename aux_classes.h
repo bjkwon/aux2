@@ -21,7 +21,7 @@ using namespace std;
 #include <map>
 #include <functional>
 
-typedef void (*fmodify) (float*, uint64_t, void*);
+typedef void (*fmodify) (float*, uint64_t, void*, void*);
 
 // fs : 1 for non-temporal 
 //      0 for relative timemarks tseq 
@@ -41,7 +41,7 @@ typedef void (*fmodify) (float*, uint64_t, void*);
 
 #define TYPEBIT_NULL		(uint16_t)0x0000 // 
 // Don't do any logical operations between the following three, & | !
-#define TYPEBIT_TEMPO_ONE			(uint16_t)0x0004 // 0b0100 ; temporal, no chain
+#define TYPEBIT_TEMPO_ONE			(uint16_t)0x0004 // 0b0100 ; temporal no chain, OR single-chain audio
 #define TYPEBIT_TEMPO_CHAINS		(uint16_t)0x0008 // 0b1000 ; temporal, chain, tseq (nSamples must be always one), OR audio 
 #define TYPEBIT_TEMPO_CHAINS_SNAP	(uint16_t)0x000C // 0b1100 ; temporal, chain, snap (e.g., FFT)
 // 
@@ -49,26 +49,25 @@ typedef void (*fmodify) (float*, uint64_t, void*);
 // one object of audio is represented in grid of 1/fs
 // chains of TYPEBIT_TEMPO_CHAINS_SNAP are stacked on the same tmark.
 #define TYPEBIT_REAL		(uint16_t)0x0000 // 4 bytes -- sizeof(float)
-#define TYPEBIT_SIZE1		(uint16_t)0x0010 // use this for boolean
-#define TYPEBIT_STRING 		(uint16_t)0x0030 // 0x0020 + 0x0010
-#define TYPEBIT_BYTE 		(uint16_t)0x0050 // 0x0040 + 0x0010
-#define TYPEBIT_COMPLEX		(uint16_t)0x0080 // 8 bytes -- sizeof(float) times 2
+#define TYPEBIT_SIZE1		(uint16_t)0x0010 // use this for boolean  0b001
+#define TYPEBIT_STRING 		(uint16_t)0x0030 // 0x0020 + 0x0010  0b011
+#define TYPEBIT_BYTE 		(uint16_t)0x0050 // 0x0040 + 0x0010  0b101
+#define TYPEBIT_COMPLEX		(uint16_t)0x0060 // 0b110 8 bytes -- sizeof(float) times 2
  // last three binary digits of HIWORD: number of channels minus one
 #define TYPEBIT_MULTICHANS	(uint16_t)0x0100
 #define TYPEBIT_CELL		(uint16_t)0x1000
 #define TYPEBIT_STRUT		(uint16_t)0x2000
 #define TYPEBIT_STRUTS		(uint16_t)0x4000
-#define TYPEBIT_GO	    	(uint16_t)0x8000
 
 #define TYPEBIT_LOGICAL		TYPEBIT_SIZE1	
 // type & TYPEBIT_TEMPORAL ==> type | TYPEBIT_TEMPO_CHAINS_SNAP 
 
 #define ISNULL(X)           ((X) == TYPEBIT_NULL)
-#define ISNULLG(X)                   (!((X) & 3))
-#define ISSCALAR(X)                  ( ((X) & 0b01111111) == 1) // An actual number, including a complex number; 0b01111111 is  compliment of TYPEBIT_COMPLEX 0b10000000 
-#define ISSCALARG(X)        (((((X) & 0b01111111) & 0xF003)) == 1) // struct or cell with a surface CSignals object
-#define ISVECTOR(X)         (((X) & 0b01111111) == 2) // An actual number array
-#define ISVECTORG(X)        (((((X) & 0b01111111) & 0xF003)) == 2) // struct or cell with a surface CSignals object
+#define ISNULLG(X)          (!((X) & 3))
+#define ISSCALAR(X)         ( ((X) & 0b1111) == 1) // An actual number, including a complex number; 0b01111111 is  compliment of TYPEBIT_COMPLEX 0b10000000 
+#define ISSCALARG(X)        (((((X) & 0b1111) & 0xF003)) == 1) // struct or cell with a surface CSignals object
+#define ISVECTOR(X)         (((X) & 0b1111) == 2) // An actual number array
+#define ISVECTORG(X)        (((((X) & 0b1111) & 0xF003)) == 2) // struct or cell with a surface CSignals object
 #define IS2D(X)             (((X) & 0xFF0F) == 3)
 #define IS2DG(X)            (((X) & 0x000F) == 3)
 #define ISSIZE1(X)          (((X) & 0xFFF0) & TYPEBIT_SIZE1) // An actual logical array, regardless of length 
@@ -79,10 +78,10 @@ typedef void (*fmodify) (float*, uint64_t, void*);
 #define ISBYTEG(X)          (((X) & 0x00F0) == TYPEBIT_BYTE) // struct or cell with a surface CSignals object
 #define ISBOOL(X)           (((X) & 0xFFF0) == TYPEBIT_SIZE1) // An actual logical array, regardless of length 
 #define ISBOOLG(X)          (((X) & 0x00F0) == TYPEBIT_SIZE1) // struct or cell with a surface CSignals object
-#define ISCOMPLEX(X)        (((X) & 0xFF80) == TYPEBIT_COMPLEX) // An actual complex array, regardless of length 
-#define ISCOMPLEXG(X)       (((X) & 0x0080) == TYPEBIT_COMPLEX) // struct or cell with a surface CSignals object
-#define ISAUDIO(X)          (((X) & 0xF0FF) == TYPEBIT_TEMPO_ONE + 2 || ((X) & 0xF0FF) == TYPEBIT_TEMPO_CHAINS + 2) // An actual audio array
-#define ISAUDIOG(X)         (((X) & 0x00FF) == TYPEBIT_TEMPO_ONE + 2 || ((X) & 0x00FF) == TYPEBIT_TEMPO_CHAINS + 2) // An actual audio array
+#define ISCOMPLEX(X)        (((X) & 0b01100000) == TYPEBIT_COMPLEX) // An actual complex array, regardless of length 
+#define ISCOMPLEXG(X)       (((X) & (0xFF00+0b01100000)) == TYPEBIT_COMPLEX) // struct or cell with a surface CSignals object
+#define ISAUDIO(X)          (((X) & 0xF0FF) == TYPEBIT_TEMPO_ONE + 2 || ((X) & 0xF0FF) == TYPEBIT_TEMPO_CHAINS + 2 || ((X) & 0xF0FF) == TYPEBIT_TEMPO_ONE + 3 || ((X) & 0xF0FF) == TYPEBIT_TEMPO_CHAINS + 3) // An actual audio array
+#define ISAUDIOG(X)         (((X) & 0x00FF) == TYPEBIT_TEMPO_ONE + 2 || ((X) & 0x00FF) == TYPEBIT_TEMPO_CHAINS + 2 || ((X) & 0x00FF) == TYPEBIT_TEMPO_ONE + 3 || ((X) & 0x00FF) == TYPEBIT_TEMPO_CHAINS + 3) // An actual audio array
 // tseq means chained scalars, including an unchanged timed value (customarily a value timed at zero is not considered a tseq, but it is not prohibited)
 #define ISTSEQ(X)           (((X) & 0xF0FF) == TYPEBIT_TEMPO_ONE + 1 || ((X) & 0xF0FF) == TYPEBIT_TEMPO_CHAINS + 1) // An actual audio array
 #define ISTSEQG(X)          (((X) & 0x00FF) == TYPEBIT_TEMPO_ONE + 1 || ((X) & 0x00FF) == TYPEBIT_TEMPO_CHAINS + 1) // An actual audio array
@@ -98,25 +97,31 @@ typedef void (*fmodify) (float*, uint64_t, void*);
 #define ISTEMPORALG(X)      (((X) & 0x000C) == TYPEBIT_TEMPO_ONE || ((X) & 0x000C) == TYPEBIT_TEMPO_CHAINS || ((X) & 0x000C) == TYPEBIT_TEMPO_CHAINS_SNAP)
 
 
-#define ALL_AUDIO_TYPES \
-TYPEBIT_TEMPO_ONE + 2, TYPEBIT_TEMPO_ONE + 3, TYPEBIT_TEMPO_CHAINS + 2, TYPEBIT_TEMPO_CHAINS + 3, \
-TYPEBIT_MULTICHANS + TYPEBIT_TEMPO_ONE + 2, TYPEBIT_MULTICHANS + TYPEBIT_TEMPO_ONE + 3, \
-TYPEBIT_MULTICHANS + TYPEBIT_TEMPO_CHAINS + 2, TYPEBIT_MULTICHANS + TYPEBIT_TEMPO_CHAINS + 3
+#define ALL_AUDIO_TYPES AUDIO_TYPES_1D, AUDIO_TYPES_2D
 
 #define AUDIO_TYPES_1D \
 TYPEBIT_TEMPO_ONE + 2,  TYPEBIT_TEMPO_CHAINS + 2, \
 TYPEBIT_MULTICHANS + TYPEBIT_TEMPO_ONE + 2, TYPEBIT_MULTICHANS + TYPEBIT_TEMPO_CHAINS + 2
 
 #define AUDIO_TYPES_2D \
-TYPEBIT_TEMPO_ONE + 3,  TYPEBIT_TEMPO_CHAINS + 3, \
-TYPEBIT_MULTICHANS + TYPEBIT_TEMPO_ONE + 3, TYPEBIT_MULTICHANS + TYPEBIT_TEMPO_CHAINS + 3
+TYPEBIT_TEMPO_ONE + 3,  TYPEBIT_TEMPO_CHAINS + 3, TYPEBIT_TEMPO_CHAINS_SNAP + 3, \
+TYPEBIT_MULTICHANS + TYPEBIT_TEMPO_ONE + 3, TYPEBIT_MULTICHANS + TYPEBIT_TEMPO_CHAINS + 3, TYPEBIT_MULTICHANS + TYPEBIT_TEMPO_CHAINS_SNAP + 3
 
-#define FFT_RESULTS_TYPES \
-2, 3, TYPEBIT_COMPLEX + 2, TYPEBIT_COMPLEX + 3, \
+#define FFT_RESULTS_TYPES FFT_RESULTS_TYPES_NONAUDIO, FFT_RESULTS_TYPES_ONECHANNEL, FFT_RESULTS_TYPES_MULTICHANNELS
+
+#define FFT_RESULTS_TYPES_NONAUDIO 2, 3
+
+#define FFT_RESULTS_TYPES_ONECHANNEL \
+TYPEBIT_COMPLEX + 2, TYPEBIT_COMPLEX + 3, \
 TYPEBIT_TEMPO_ONE + 2, TYPEBIT_TEMPO_CHAINS_SNAP + 2, TYPEBIT_TEMPO_ONE + 3, TYPEBIT_TEMPO_CHAINS_SNAP + 3, \
 TYPEBIT_COMPLEX + TYPEBIT_TEMPO_ONE + 2, TYPEBIT_COMPLEX + TYPEBIT_TEMPO_CHAINS_SNAP + 2, \
 TYPEBIT_COMPLEX + TYPEBIT_TEMPO_ONE + 3, TYPEBIT_COMPLEX + TYPEBIT_TEMPO_CHAINS_SNAP + 3 \
 
+#define FFT_RESULTS_TYPES_MULTICHANNELS \
+TYPEBIT_MULTICHANS + TYPEBIT_COMPLEX + 2, TYPEBIT_MULTICHANS + TYPEBIT_COMPLEX + 3, \
+TYPEBIT_MULTICHANS + TYPEBIT_TEMPO_ONE + 2, TYPEBIT_MULTICHANS + TYPEBIT_TEMPO_CHAINS_SNAP + 2, TYPEBIT_MULTICHANS + TYPEBIT_TEMPO_ONE + 3, TYPEBIT_MULTICHANS + TYPEBIT_TEMPO_CHAINS_SNAP + 3, \
+TYPEBIT_MULTICHANS + TYPEBIT_COMPLEX + TYPEBIT_TEMPO_ONE + 2, TYPEBIT_MULTICHANS + TYPEBIT_COMPLEX + TYPEBIT_TEMPO_CHAINS_SNAP + 2, \
+TYPEBIT_MULTICHANS + TYPEBIT_COMPLEX + TYPEBIT_TEMPO_ONE + 3, TYPEBIT_MULTICHANS + TYPEBIT_COMPLEX + TYPEBIT_TEMPO_CHAINS_SNAP + 3 \
 
 #define NONAUDIO_TEMPORAL_COMPLEX_TYPES \
 TYPEBIT_COMPLEX + TYPEBIT_TEMPO_ONE + 1, TYPEBIT_COMPLEX + TYPEBIT_TEMPO_CHAINS + 1, \
@@ -227,6 +232,8 @@ public:
 	uint64_t Len() const { if (fs == 2) return (nSamples-1) / nGroups; else  return nSamples / nGroups; }
 	bool operator < (const CSignal &rhs) const;
 
+	CSignal evoke_getsig2(CSignal(*fp) (float*, unsigned int, void*, void*), void* popt1 = NULL, void* popt = NULL);
+	CSignal& evoke_modsig(fmodify, void* popt1 = NULL, void* popt2 = NULL);
 
 	CSignal &matrixmult(CSignal *arg);
 	CSignal & Hilbert FARGS;
@@ -265,8 +272,8 @@ public:
 	CSignal & resample FARGS;
 	CSignal& _filter(const vector<float>& num, const vector<float>& den, vector<float>& initialfinal, unsigned int id0 = 0, unsigned int len = 0);
 
+	inline bool IsEmpty() const { return fs == 1 && nSamples == 0 && tmark == 0.; }
 	/*Don't use these Is___() functions. Backward compatible only*/
-	inline bool IsEmpty() const { return nSamples == 0 && tmark == 0.; }
 	inline bool IsScalar() const { return nSamples == 1; }
 	inline bool IsVector() const { return nSamples > 1; }
 	inline bool IsAudio() const {
@@ -352,8 +359,9 @@ public:
 	bool operator < (const CTimeSeries & rhs) const;
 
 	CTimeSeries evoke_getval(float (CSignal::*)(unsigned int, unsigned int, void *) const, void *popt = NULL);
-	CTimeSeries & evoke_modsig(fmodify, void *popt = NULL);
-	CTimeSeries evoke_getsig(CTimeSeries(*fgetCSignals) (const CTimeSeries&, void*), void *popt = NULL);
+	CTimeSeries & evoke_modsig(fmodify, void* popt1 = NULL, void* popt2 = NULL);
+	CTimeSeries evoke_getsig(CTimeSeries(*fgetCSignals) (const CTimeSeries&, void*), void* popt = NULL);
+	CTimeSeries evoke_getsig2(CSignal(*fp) (float*, unsigned int, void*, void*), void *popt1 = NULL, void *popt = NULL);
 
 	CTimeSeries & Reset(int fs2set = 0);
 	CTimeSeries & AddChain(const CTimeSeries &sec);
@@ -444,8 +452,9 @@ public:
 
 	CSignals evoke_getval(float(*)(float), void* popt = NULL);
 	CSignals evoke_getval(float (CSignal::*)(unsigned int, unsigned int, void* p) const, void *popt = NULL) ;
-	CSignals & evoke_modsig(fmodify, void *popt = NULL);
-	CSignals evoke_getsig(CTimeSeries(*fgetCSignals) (const CTimeSeries&, void*), void *popt = NULL);
+	CSignals& evoke_modsig(fmodify, void* popt1 = NULL, void* popt2 = NULL);
+	CSignals evoke_getsig(CTimeSeries(*fgetCSignals) (const CTimeSeries&, void*), void* popt = NULL);
+	CSignals evoke_getsig2(CSignal(*fp) (float*, unsigned int, void*, void*), void* popt1 = NULL, void* popt = NULL);
 
 	// Constructors
 	CSignals();
@@ -483,6 +492,8 @@ public:
 	int WriteAXL(FILE* fp);
 
 	bool stereo_scalar() const;
+
+	CSignals& RMS(); //to calculate the overall RMS; different from CSignal::RMS()
 
 	void SetNextChan(const CSignals& second, bool need2makeghost = false);
 	CTimeSeries *DetachNextChan() {CTimeSeries *p=next;next=NULL;return p;}
@@ -547,6 +558,39 @@ public:
 		return length;
 	}
 	int Wavwrite(const char *wavname, char *errstr, std::string wavformat = "");
+	uint16_t type() const
+	{
+		uint16_t out = CSignal::type();
+		//why is this ugly? 
+		//because TYPEBIT_TEMPO_ONE was added in CSignal::type()
+		//    why? because CSignal::type() needs to return temporal type for a simple(single) temporal object
+		// another reason for the ugly minus/plus is, the type-bit scheme: 
+		//    TYPEBIT_TEMPO_ONE TYPEBIT_TEMPO_CHAINS TYPEBIT_TEMPO_CHAINS_SNAP are not mutually exclusive.
+		// Don't try to simplify this unless you know what to do. 12/29/2021
+		if (chain)
+		{
+			if (out & TYPEBIT_TEMPO_ONE)
+				out -= TYPEBIT_TEMPO_ONE;
+			if (snap)
+				out += TYPEBIT_TEMPO_CHAINS_SNAP;
+			else
+				out += TYPEBIT_TEMPO_CHAINS;
+		}
+		else if (fs == 0 || fs > 500)
+		{
+			if (snap) {
+				out -= TYPEBIT_TEMPO_ONE;
+				out += TYPEBIT_TEMPO_CHAINS_SNAP;
+			}
+			else if (chain) {
+				out -= TYPEBIT_TEMPO_ONE;
+				out += TYPEBIT_TEMPO_CHAINS;
+			}
+		}
+		if (next)
+			out += TYPEBIT_MULTICHANS;
+		return out;
+	}
 
 protected:
 	bool operate(const CSignals & sec, char op);
@@ -567,6 +611,8 @@ public:
 	CVar& Reset(int fs2set = 0);
 	bool IsGO() const;
 
+	CSignals evoke_getsig2(CSignal(*fp) (float*, unsigned int, void*, void*), void* popt1 = NULL, void* popt = NULL);
+
 	CVar & bringnext();
 
 	CVar & operator=(const CSignals & rhs);
@@ -574,7 +620,7 @@ public:
 	CVar & operator=(CVar * rhs);
 
 	bool operator==(const CVar& rhs);
-	bool operator==(std::string rhstr);
+	bool operator==(string rhstr);
 	bool operator==(float val);
 
 	CVar & initcell(CVar &sec);
@@ -602,24 +648,7 @@ public:
 
 	uint16_t type() const
 	{
-		uint16_t out = CSignal::type();
-		if (fs == 0 || fs > 500) 
-		{
-			//why is this ugly? 
-			//because TYPEBIT_TEMPO_ONE was added in CSignal::type()
-			//    why? because CSignal::type() needs to return temporal type for a simple(single) temporal object
-			// another reason for the ugly minus/plus is, the type-bit scheme: 
-			//    TYPEBIT_TEMPO_ONE TYPEBIT_TEMPO_CHAINS TYPEBIT_TEMPO_CHAINS_SNAP are not mutually exclusive.
-			// Don't try to simplify this unless you know what to do. 12/29/2021
-			if (snap) {
-				out -= TYPEBIT_TEMPO_ONE;
-				out += TYPEBIT_TEMPO_CHAINS_SNAP;
-			}
-			else if (chain) {
-				out -= TYPEBIT_TEMPO_ONE;
-				out += TYPEBIT_TEMPO_CHAINS;
-			}
-		}
+		uint16_t out = CSignals::type();
 		if (!cell.empty())		out += TYPEBIT_CELL;
 		else if (!strut.empty())
 		{
@@ -627,7 +656,6 @@ public:
 			if (!struts.empty()) out += TYPEBIT_STRUTS;
 		}
 		else if (fs == 3)		out += TYPEBIT_STRUT + TYPEBIT_STRUTS;
-		if (IsGO()) out += TYPEBIT_GO;
 		return out;
 	}
 };

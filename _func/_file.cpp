@@ -232,7 +232,7 @@ int CSignals::Wavwrite(const char* wavname, char* errstr, std::string wavformat)
 	CSignals nextblock, nextblock2;
 	nextblock <= *this;
 	int nChan = next == NULL ? 1 : 2;
-	while (!nextblock.IsEmpty())
+	while (nextblock.nSamples != 0 || nextblock.tmark != 0.)
 	{
 		float* buffer;
 		float tp1, tp2;

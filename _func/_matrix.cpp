@@ -65,9 +65,23 @@ Cfunction set_builtin_function_buffer(fGate fp)
 	return ft;
 }
 
-void __group(float* buf, uint64_t len, void* parg)
+CSignal __group(float* buf, unsigned int len, void* pargin, void* pargout)
 {
-
+	auto in = *(vector<CVar>*)pargin;
+	int fs = (int)in[2].value();
+	CSignal out(fs);
+	float val = in[0].value();
+	float rem = fmod(len, val);
+	if (rem > 0)
+	{
+		unsigned int nPtsNeeded = (unsigned int)(val - rem);
+		out.UpdateBuffer(len + nPtsNeeded);
+	}
+	else
+		out.UpdateBuffer(len);
+	out.nGroups = (unsigned int)val;
+	memcpy(out.buf, buf, len * sizeof(float));
+	return out;
 }
 
 void _group(skope* past, const AstNode* pnode, const vector<CVar>& args)
@@ -84,20 +98,23 @@ void _group(skope* past, const AstNode* pnode, const vector<CVar>& args)
 	{
 		if (past->Sig.nSamples / val != (int)nCols)
 			exception_func(*past, pnode, "The length of array must be divisible by the requested the row count.", "group").raise();
-		past->Sig.nGroups = (int)val;
 	}
 	else
 	{
-		past->Sig.evoke_modsig(__group, (void*)&args);
-
-		float rem = fmod((float)past->Sig.nSamples, val);
-		if (rem > 0)
-		{
-			unsigned int nPtsNeeded = (unsigned int)(val - rem);
-			past->Sig.UpdateBuffer(past->Sig.nSamples + nPtsNeeded);
-		}
-		past->Sig.nGroups = (int)val;
+		vector<CVar> argin(args);
+		argin.push_back(CVar((float)past->Sig.GetFs()));
+		past->Sig = past->Sig.evoke_getsig2(__group, (void*)&argin);
+		//taking care of nGroups for chains
+		if (past->Sig.chain)
+			past->Sig.setsnap(0);
+		for (auto p = past->Sig.chain; p; p = p->chain)
+			p->nGroups = (int)val;
+		//taking care of nGroups for next
+		for (auto p = past->Sig.next; p; p = p->next)
+			p->nGroups = (int)val;
 	}
+	//
+	past->Sig.nGroups = (int)val;
 	if (!strcmp(pnode->str, "matrix"))
 		past->statusMsg = "(NOTE) matrix() is superseded by group() and will be removed in future versions.";
 }

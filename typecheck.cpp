@@ -57,8 +57,7 @@ void ensureVector1(const skope& sc, const AstNode* pnode, const CVar& checkthis,
 		string msg("Audio or tseq object not allowed.");
 		throw exception_func(sc, pnode, msg, fname, id).raise();
 	}
-	if (checkthis.type() & TYPEBIT_GO ||
-		checkthis.type() & TYPEBIT_CELL ||
+	if (checkthis.type() & TYPEBIT_CELL ||
 		checkthis.type() & TYPEBIT_STRUT ||
 		checkthis.type() & TYPEBIT_STRUTS)
 	{
@@ -74,8 +73,7 @@ void ensureVector2(const skope& sc, const AstNode* pnode, const CVar& checkthis,
 		string msg("Audio or tseq object not allowed.");
 		throw exception_misuse(sc, pnode, msg, id).raise();
 	}
-	if (checkthis.type() & TYPEBIT_GO ||
-		checkthis.type() & TYPEBIT_CELL ||
+	if (checkthis.type() & TYPEBIT_CELL ||
 		checkthis.type() & TYPEBIT_STRUT ||
 		checkthis.type() & TYPEBIT_STRUTS)
 	{
@@ -91,8 +89,7 @@ void ensureVector3(const skope& sc, const AstNode* pnode, const CVar& checkthis,
 		string msg = errormsg + " Audio or tseq object not allowed.";
 		throw exception_etc(sc, pnode, msg).raise();
 	}
-	if (checkthis.type() & TYPEBIT_GO ||
-		checkthis.type() & TYPEBIT_CELL ||
+	if (checkthis.type() & TYPEBIT_CELL ||
 		checkthis.type() & TYPEBIT_STRUT ||
 		checkthis.type() & TYPEBIT_STRUTS)
 	{

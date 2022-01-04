@@ -349,8 +349,8 @@ CVar * CNodeProbe::TID_assign(const AstNode *pnode, AstNode *p, AstNode *pRHS)
 				// if lhs is null, that means outputbinding was done at PrepareAndCallUDF
 				if (pbase->lhs)
 				{
-//					pbase->outputbinding(pbase->lhs);
-//					pbase->Sigs.clear();
+					pbase->outputbinding(pbase->lhs);
+					pbase->SigExt.clear();
 					pbase->lhs = nullptr;
 				}
 			}
@@ -625,8 +625,6 @@ CVar * CNodeProbe::extract(const AstNode *pnode, CTimeSeries &isig)
 				}
 			}
 		}
-//		else if (pbase->Sig.type() >= TYPEBIT_GO)
-//			throw CAstException(USAGE, *pbase, pnode).proc("Invalid object type to extract based on index.");
 		else // should be non-audio, non-time sequence data such as vector
 		{
 			int id = 0;

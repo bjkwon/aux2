@@ -1,4 +1,5 @@
 #include "echo.h"
+#include <iomanip>      // std::setw
 
 #ifndef max
 #define max(a,b)            (((a) > (b)) ? (a) : (b))
@@ -73,6 +74,12 @@ string echo_object_time::tmarks(const CTimeSeries& sig, bool unit)
 		out << "~" << xp->tmark + 1000. * xp->nSamples / xp->GetFs();
 		if (unit) out << "ms";
 		out << ") ";
+	}
+	kk = 0;
+	for (const CTimeSeries* xp = &sig; kk < tint; kk++, xp = xp->chain) {
+		out << " " << xp->nSamples;
+		if (xp->nGroups > 1)
+			out << " (" << xp->nGroups << "x" << xp->Len() << ")";
 	}
 	out << endl;
 	out.unsetf(ios::floatfield);
@@ -216,7 +223,9 @@ void echo_cell::print(const CVar& obj)
 void echo_object::print(const string& name, const CVar& obj, int offset)
 {
 	auto tp = obj.type();
-	//What about TYPEBIT_STRUTS?
+	auto res = tp & 0xFF0F;
+	auto isv = ((tp) & 0b1111);
+	cout << "type = " << "0x" << setw(4) << setfill('0') << hex << tp << ", ";
 	if (tp & TYPEBIT_STRUT)
 		echo_struct(name, offset).print(obj);
 	else if (tp & TYPEBIT_CELL)
@@ -231,4 +240,5 @@ void echo_object::print(const string& name, const CVar& obj, int offset)
 		echo_object_string(name, offset).print(obj);
 	else if (ISSCALAR(tp) || ISVECTOR(tp) || IS2D (tp))
 		echo_object_vector(name, offset).print(obj);
+	// Not yet about TYPEBIT_STRUT and the rest
 }
