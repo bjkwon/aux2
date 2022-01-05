@@ -1,0 +1,19 @@
+01/05/2022
+To build in Linux, edit sndfile.h 
+Change __int64 --> int64_t
+
+There must be a way to compile without editing such, because I did it in Dec 16 2021, but I can't replicate it today.
+ 
+g++ -I . -I include/ *.cpp *.c _func/*.cpp -o aux2 -l :libsndfile.so.1 -l :libfftw3f.so.3
+
+How did I figure out libsndfile.so.1 and libfftw3f.so.3?
+-- in shell,
+$ ldconfig -p | grep libsndfile.so
+and
+$ ldconfig -p | grep libfftw
+
+and find out the proper name of the library installed in the system.
+If those libraries are not installed, install them first.
+
+To compile and build in Mac, a few steps are needed.
+
