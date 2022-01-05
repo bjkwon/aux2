@@ -127,7 +127,7 @@ static void resample_if_fs_different(skope* past, const AstNode* p)
 		past->pEnv->Fs = past->Sig.GetFs();
 		past->statusMsg = "(NOTE)Sample Rate of AUXLAB Environment is now set to ";
 		char temp[16];
-		sprintf_s(temp, "%d Hz.", past->pEnv->Fs);
+		sprintf(temp, "%d Hz.", past->pEnv->Fs);
 		past->statusMsg += temp;
 	}
 }
