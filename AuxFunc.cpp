@@ -284,13 +284,6 @@ void CAstSigEnv::InitBuiltInFunctions()
 //	ft.func =  &_setfs;
 //	builtin[name] = ft;
 //
-//	name = "audio";
-//	ft.alwaysstatic = false;
-//	ft.funcsignature = "(non_audio_vector)";
-//	ft.narg1 = 1;	ft.narg2 = 1;
-//	ft.func =  &_audio;
-//	builtin[name] = ft;
-//
 //	name = "squeeze";
 //	ft.alwaysstatic = false;
 //	ft.funcsignature = "() ... to remove the null interval";
@@ -547,29 +540,6 @@ void CAstSigEnv::InitBuiltInFunctions()
 //	}
 //#ifndef NO_FFTW
 //
-//	ft.narg1 = 1;	ft.narg2 = 2;
-//	name = "fft";
-//	ft.funcsignature = "(array, [Num_of_FFT_pts=length_of_the_input])";
-//	ft.func =  &_fft; // check
-//	builtin[name] = ft;
-//	name = "ifft";
-//	ft.func = &_ifft;
-//	builtin[name] = ft;
-//
-//	ft.narg1 = 1;	ft.narg2 = 1;
-//	ft.funcsignature = "(signal_or_vector)";
-//	name = "envelope";
-//	ft.func =  &_envelope;
-//	builtin[name] = ft;
-//	name = "hilbert";
-//	ft.func =  &_hilbert;
-//	builtin[name] = ft;
-//
-//	ft.narg1 = 2;	ft.narg2 = 2;
-//	name = "movespec";
-//	ft.funcsignature = "(audio_signal, frequency_to_shift)";
-//	ft.func = &_time_freq_manipulate;
-//	builtin[name] = ft;
 //
 //	name = "conv";
 //	ft.funcsignature = "(array1, array2)";
@@ -611,27 +581,7 @@ void CAstSigEnv::InitBuiltInFunctions()
 //	ft.func = &_record;
 //#endif
 //	builtin[name] = ft;
-//	ft.funcsignature = "(audio_signal)";
-//	ft.alwaysstatic = false;
-//	ft.narg1 = 1;	ft.narg2 = 1;
-//	name = "vector";
-//	ft.func =  &_vector;
-//	builtin[name] = ft;
-//	name = "dur";
-//	ft.func = &_arraybasic;
-//	builtin[name] = ft;
-//	name = "begint";
-//	ft.func = &_arraybasic;
-//	builtin[name] = ft;
-//	name = "endt";
-//	ft.func = &_arraybasic;
-//	builtin[name] = ft;
-//	name = "rms";
-//	ft.func = &_arraybasic;
-//	builtin[name] = ft;
-//	name = "rmsall";
-//	ft.func = &_arraybasic;
-//	builtin[name] = ft;
+
 //
 //	ft.alwaysstatic = false;
 //	ft.narg1 = 1;	ft.narg2 = 1;

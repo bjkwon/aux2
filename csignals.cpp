@@ -2937,7 +2937,7 @@ void CSignals::nextCSignals(float lasttp, float lasttp_with_silence, CSignals& g
 		ghcopy.Reset();
 }
 
-static double RMS_concatenated(const CTimeSeries& sig)
+static float RMS_concatenated(const CTimeSeries& sig)
 {
 	// Compute the "overall" RMS of entire chain as if all chains were concatenated.
 	// input sig represents RMS value of each chain (nSamples of each chain is 1)
@@ -2949,7 +2949,7 @@ static double RMS_concatenated(const CTimeSeries& sig)
 		cum += pow(10, (p->value() - 3.0103) / 10.) * p->nSamples;
 		len += p->nSamples;
 	}
-	return 10. * log10(cum / len) + 3.0103;
+	return 10. * log10f(cum / len) + 3.0103f;
 }
 
 CSignal __rms(float* buf, unsigned int len, void* pargin, void* pargout); // from rmsandothers.cpp
@@ -2965,9 +2965,7 @@ CSignals& CSignals::RMS()
 	out.SetValue(rmsnow);
 	if (rmsComputed.next)
 	{
-		rmsnow2 = RMS_concatenated(*rmsComputed.next);
-		CSignals tp(rmsnow2);
-		out.SetNextChan(tp);
+		out.SetNextChan(CSignals(RMS_concatenated(*rmsComputed.next)));
 	}
 	return *this = out;
 }

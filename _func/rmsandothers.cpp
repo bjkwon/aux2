@@ -57,6 +57,6 @@ void _rmsetc(skope* past, const AstNode* pnode, const vector<CVar>& args)
 	else if (fname == "dur")
 		past->Sig = past->Sig.evoke_getval(&CSignal::dur);
 	else if (fname == "rmsall")
-		past->Sig = past->Sig.evoke_getval(&CSignal::dur);
+		past->Sig = past->Sig.RMS(); // overall RMS from artificially concatenated chain's 
 }
 

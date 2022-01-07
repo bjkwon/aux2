@@ -542,7 +542,7 @@ CVar* skope::TSeq(const AstNode* pnode, AstNode* p)
 			*run = tp;
 		}
 	}
-	Sig.setsnap();
+	Sig.setsnap(0); // why is it necessary? 1/6/2022
 	return &Sig;
 }
 
@@ -1792,61 +1792,65 @@ CVar* skope::ConditionalOperation(const AstNode* pnode, AstNode* p)
 
 CVar* skope::SetLevel(const AstNode* pnode, AstNode* p)
 {
-	//CVar sigRMS, refRMS, dB = Compute(p->next);
-	//// if tsig is scalar -- apply it across the board of Sig
-	//// if tsig is two-element vector -- if Sig is stereo, apply each; if not, take only the first vector and case 1
-	//// if tsig is stereo-scalar, apply the scalar to each L and R of Sig. If Sig is mono, ignore tsig.next
-	//// if tsig is tseq, it must have the same chain and next structure (exception otherwise)
-	//if (p->type == '@')
-	//{// trinary
-	//	if (dB.type() & TYPEBIT_TSEQ)
-	//		throw exception_etc(*this, pnode, "sig @ ref @ level ---- level cannot be time sequence.").raise();
-	//	refRMS <= Compute(p->child->next);
-	//	if (!refRMS.IsAudio())
-	//		throw exception_etc(*this, pnode, "sig @ ref @ level ---- ref must be an audio signal.").raise();
-	//	refRMS.RMS(); // this should be called here, once another Compute is called refRMS.buf won't be valid
-	//	Compute(p->child);
-	//	sigRMS <= Sig;
-	//	sigRMS.RMS();
-	//	sigRMS -= refRMS;
-	//}
-	//else
-	//{
-	//	Sig = Compute(p);
-	//	sigRMS <= Sig;
-	//	if (dB.type() == TYPEBIT_TSEQ + 1) // scalar time sequence
-	//	{// for tseq leveling, % operator is used.
-	//		for (CTimeSeries* p = &dB; p; p = p->chain)
-	//			p->buf[0] = pow(10, p->buf[0] / 20.);
-	//		for (CTimeSeries* p = dB.next; p; p = p->chain)
-	//			p->buf[0] = pow(10, p->buf[0] / 20.);
-	//		Sig% dB;
-	//		return &Sig;
-	//	}
-	//	// sig @ level
-	//	// if sig is chained, level is applied across all chains
-	//	// i.e., currently there's no simple way to specify chain-specific levels 6/17/2020
+	CVar sigRMS, refRMS, dB = Compute(p->next);
+	// if tsig is scalar -- apply it across the board of Sig
+	// if tsig is two-element vector -- if Sig is stereo, apply each; if not, take only the first vector and case 1
+	// if tsig is stereo-scalar, apply the scalar to each L and R of Sig. If Sig is mono, ignore tsig.next
+	// if tsig is tseq, it must have the same chain and next structure (exception otherwise)
+	auto tp = dB.type();
+	if (p->type == '@')
+	{// trinary
+		// types for scalar tsq TYPEBIT_TEMPO_ONE+1, TYPEBIT_TEMPO_CHAINS+1, or TYPEBIT_MULTICHANS+TYPEBIT_TEMPO_ONE+1, TYPEBIT_MULTICHANS+TYPEBIT_TEMPO_CHAINS+1
+		// mask the first two hex digits (and forget about TYPEBIT_MULTICHANS) then compare
+		if ( (tp & 0x00FF) == TYPEBIT_TEMPO_ONE + 1 || (tp & 0x00FF) == TYPEBIT_TEMPO_CHAINS + 1) // scalar time sequence
+			throw exception_etc(*this, pnode, "sig @ ref @ level ---- level cannot be time sequence.").raise();
+		refRMS <= Compute(p->child->next);
+		auto tp2 = refRMS.type();
+		if (!ISAUDIO(tp2))
+			throw exception_etc(*this, pnode, "sig @ ref @ level ---- ref must be an audio signal.").raise();
+		refRMS.RMS(); // this should be called here, once another Compute is called refRMS.buf won't be valid
+		Compute(p->child);
+		sigRMS <= Sig;
+		sigRMS.RMS();
+		sigRMS -= refRMS;
+	}
+	else
+	{
+		Sig = Compute(p);
+		sigRMS <= Sig;
+		if ((tp & 0x00FF) == TYPEBIT_TEMPO_ONE + 1 || (tp & 0x00FF) == TYPEBIT_TEMPO_CHAINS + 1) // scalar time sequence
+		{// for tseq leveling, % operator is used.
+			for (CTimeSeries* p = &dB; p; p = p->chain)
+				p->buf[0] = powf(10, p->buf[0] / 20.);
+			for (CTimeSeries* p = dB.next; p; p = p->chain)
+				p->buf[0] = powf(10, p->buf[0] / 20.);
+			Sig % dB;
+			return &Sig;
+		}
+		// sig @ level
+		// if sig is chained, level is applied across all chains
+		// i.e., currently there's no simple way to specify chain-specific levels 6/17/2020
 
-	//	// A known hole in the logic here---if dB is stereo but first channel is scalar
-	//	// and next is chained, or vice versa, this will not work
-	//	// Currently it's difficult to define dB that way (maybe possible, but I can't think about an easy way)
-	//	// A new, simpler and intuitive way to define T_SEQ should be in place
-	//	// before fixing this hole.  10/7/2019
+		// A known hole in the logic here---if dB is stereo but first channel is scalar
+		// and next is chained, or vice versa, this will not work
+		// Currently it's difficult to define dB that way (maybe possible, but I can't think about an easy way)
+		// A new, simpler and intuitive way to define T_SEQ should be in place
+		// before fixing this hole.  10/7/2019
 
-	//	//Being fixed.... but need further checking
-	//	//6/17/2020
-	//	//if (dB.chain || (dB.next && dB.next->chain))
-	//	//	sigRMS = sigRMS.evoke_getval(&CSignal::RMS);
-	//	//else
-	//		sigRMS.RMS(); // this should be called before another Compute is called (then, refRMS.buf won't be valid)
-	//}
-	////Reject dB if empty, if string, or if bool
-	//if (dB.IsEmpty() || dB.IsString() || dB.IsBool())
-	//	throw exception_etc(*this, pnode, "Target_RMS_dB after @ must be a real value.").raise();
-	//if (dB.nSamples > 1 && !dB.next)
-	//	dB.SetNextChan(new CSignals(dB.buf[1]));
-	//sigRMS = dB - sigRMS;
-	//Sig | sigRMS;
+		//Being fixed.... but need further checking
+		//6/17/2020
+		if (dB.chain || (dB.next && dB.next->chain))
+			sigRMS = sigRMS.evoke_getval(&CSignal::RMS);
+		else
+			sigRMS.RMS(); // this should be called before another Compute is called (then, refRMS.buf won't be valid)
+	}
+	//Reject dB if empty, if string, or if bool
+	if (dB.IsEmpty() || dB.IsString() || dB.IsBool())
+		throw exception_etc(*this, pnode, "Target_RMS_dB after @ must be a real value.").raise();
+	if (dB.nSamples > 1 && !dB.next)
+		dB.SetNextChan(CSignals(dB.buf[1]));
+	sigRMS = dB - sigRMS;
+	Sig | sigRMS;
 	return &Sig;
 }
 

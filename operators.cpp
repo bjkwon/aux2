@@ -454,7 +454,183 @@ CSignals& CSignals::operator-(void)	// Unary minus
 	return *this;
 }
 
+CSignal & CSignal::operator*(pair<vector<float>, vector<float>> coef)
+{ // modulate this with coef
+	vector<float> tpoints = coef.first;
+	vector<float> vals = coef.second;
+	//assumption: tpoints is increasing 
+	auto itval = vals.begin();
+	for (auto it = tpoints.begin(); it != tpoints.end() - 1; it++)
+	{
+		if (*it > endt()) continue;
+		float t1 = *it + tmark;
+		float t2 = *(it + 1) + tmark;
+		float slope = (*(itval + 1) - *itval) / (t2 - t1);
+		float slopePerSample = (*(itval + 1) - *itval) / (t2 - t1) / fs * 1000.;
+		int beginID = max(0, (int)round((t1 - tmark)*fs / 1000.));
+		int endID = min((int)nSamples, (int)round((t2 - tmark)*fs / 1000.));
+		for (int k = beginID; k < endID; k++)
+			buf[k] *= *itval + slopePerSample * (k - beginID);
+		itval++;
+	}
+	return *this;
+}
 
+CSignal & CSignal::operator%(float v)
+{ // "at" operator; set the RMS at ____
+	float rms = RMS();
+	float factor = v - rms;
+	*this *= pow(10, factor / 20.);
+	return *this;
+}
+CTimeSeries & CTimeSeries::operator%(float v)
+{
+	CSignal::operator%(v);
+	for (CTimeSeries *p = this; p; p = p->chain)
+		p->CSignal::operator%(v);
+	return *this;
+}
+CSignals & CSignals::operator%(float v)
+{
+	CTimeSeries::operator%(v);
+	if (next)
+		next->operator%(v);
+	return *this;
+}
+//No exception handling when "PRESUMPTION" is noted.
+CSignal & CSignal::operator%(const CSignal &targetRMS)
+{ // PRESUMPTION for targetRMS: nSamples>0, bufBlockSize>=8--reject Empty, reject bool & string
+	operator%(targetRMS.buf[0]);
+	return *this;
+}
+CTimeSeries & CTimeSeries::operator%(CTimeSeries * targetRMS)
+{ // PRESUMPTION for targetRMS: nSamples>0, bufBlockSize>=8--reject Empty, reject bool & string
+	// for each chain, if chained, or a single chain satisfying that condition
+	// if chained, it must be the same time-course; i.e., same tmarks
+	// Or, scalar time sequence, where nSamples=1 for all chains
+	bool timescalar = targetRMS->nSamples==1;
+	for (CTimeSeries *p = targetRMS->chain; p; p = p->chain)
+	{
+		if (timescalar && p->nSamples > 1)
+			throw "all operand chains must be scalar.";
+		if (!timescalar && p->nSamples <= 1)
+			throw "all operand chains must be vector or audio.";
+	}
+	if (timescalar)
+	{ // time scalars 
+		vector<float> _tpoints, vals;
+		bool relTime = targetRMS->fs == 0;
+		for (CTimeSeries *p = targetRMS; p; p = p->chain)
+		{
+			_tpoints.push_back(p->tmark);
+			vals.push_back(p->value());
+		}
+		vector<float> tpoints(_tpoints);
+		if (relTime)
+		{
+			for (auto &tp : tpoints)
+				tp *= _dur();
+		}
+		CSignal::operator*(make_pair(tpoints, vals));
+		for (CTimeSeries *p = chain, *q = targetRMS->chain; p; p = p->chain)
+		{
+			tpoints = _tpoints;
+			if (relTime)
+			{
+				for (auto &tp : tpoints)
+					tp *= p->_dur();
+			}
+			p->CSignal::operator*(make_pair(tpoints, vals));
+		}
+	}
+	else
+	{
+		float v = targetRMS->buf[0];
+		CSignal::operator%(v);
+		for (CTimeSeries *p = chain, *q = targetRMS->chain; p; p = p->chain)
+		{
+			if (targetRMS->chain)
+			{
+				v = q->buf[0];
+				q = q->chain;
+			}
+			p->CSignal::operator%(v);
+		}
+	}
+	return *this;
+}
+CSignals & CSignals::operator%(const CSignals &targetRMS)
+{ // PRESUMPTION for targetRMS: 
+	// nSamples>0, bufBlockSize>=8--reject Empty, reject bool & string
+	// for each chain, if chained, or a single chain satisfying that condition
+	// if chained, it must be the same time-course; i.e., same tmarks
+	// if targetRMS->next, it must have the same structure; if not, apply the same targetRMS for both channel (or one, if this->next is nullptr)
+	//
+	// OR
+	// scalar time sequence, where nSamples=1 for all chains
+	CTimeSeries::operator%((CTimeSeries*)&targetRMS);
+	if (next)
+	{
+		if (targetRMS.next)
+			((CSignals*)next)->CTimeSeries::operator%(targetRMS.next);
+		else
+			((CSignals*)next)->CTimeSeries::operator%((CTimeSeries *)&targetRMS);
+	}
+	return *this;
+}
+
+CSignal & CSignal::operator|(float v)
+{ // Set the RMS at ____ (go up or down)
+	*this *= pow(10, v / 20.);
+	return *this;
+}
+CTimeSeries & CTimeSeries::operator|(float v)
+{
+	CSignal::operator|(v);
+	for (CTimeSeries *p = this; p; p = p->chain)
+		p->CSignal::operator|(v);
+	return *this;
+}
+CSignals & CSignals::operator|(float v)
+{
+	CTimeSeries::operator|(v);
+	if (next)
+		next->operator|(v);
+	return *this;
+}
+
+CSignal & CSignal::operator|(const CSignal & RMS2adjust)
+{ // PRESUMPTION for RMS2adjust: nSamples>0, bufBlockSize>=8--reject Empty, reject bool & string
+	operator|(RMS2adjust.buf[0]);
+	return *this;
+}
+CTimeSeries & CTimeSeries::operator|(CTimeSeries * RMS2adjust)
+{
+	float v = RMS2adjust->buf[0];
+	CSignal::operator|(v);
+	for (CTimeSeries *p = chain, *q = RMS2adjust->chain; p; p = p->chain)
+	{
+		if (RMS2adjust->chain)
+		{
+			v = q->buf[0];
+			q = q->chain;
+		}
+		p->CSignal::operator|(v);
+	}
+	return *this;
+}
+CSignals & CSignals::operator|(const CSignals & RMS2adjust)
+{
+	CTimeSeries::operator|((CTimeSeries*)&RMS2adjust);
+	if (next)
+	{
+		if (RMS2adjust.next)
+			((CSignals*)next)->CTimeSeries::operator|(RMS2adjust.next);
+		else
+			((CSignals*)next)->CTimeSeries::operator|((CTimeSeries *)&RMS2adjust);
+	}
+	return *this;
+}
 CTimeSeries& CTimeSeries::operator+(CTimeSeries* sec)
 {
 	AddMultChain('+', sec);
@@ -683,4 +859,21 @@ float CSignal::dur(unsigned int id0, unsigned int len, void* p) const
 {
 	if (len == 0) len = nSamples;
 	return 1000.f / fs * len;
+}
+
+inline static float _getdB(float x)
+{
+	// 3 dB is added to make rms of full scale sinusoid 0 dB
+	return 20 * log10f(x) + 3.0103f;
+}
+// Left for Legacy use only, called by SetLevel()
+// Upgrading to follow the new convention in  CSignal __rms(float* buf, unsigned int len, void* pargin, void* pargout)
+// takes more work than desired. 1/6/2022
+float CSignal::RMS(unsigned int id0, unsigned int len, void* p) const
+{
+	if (len == 0) len = nSamples;
+	if (len == 0) return std::numeric_limits<float>::infinity();
+	float val(0);
+	for_each(buf + id0, buf + id0 + len, [&val](float& v) {val += v * v; });
+	return _getdB(sqrt(val / len));
 }
