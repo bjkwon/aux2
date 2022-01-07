@@ -158,14 +158,15 @@ body& body::operator=(const body & rhs)
 		{
 			if (!ghost && buf)
 				delete[] buf;
-			if (!rhs.ghost)
+			// If both LHS and RHS were already ghost, keep both ghosts
+			// otherwise, ghost on RHS cannot be transferred to ghost on the LHS. 1/6/2022
+			if (!ghost || !rhs.ghost)
 				logbuf = new bool[reqBufSize];
 		}
-		ghost = rhs.ghost;
-		if (!rhs.ghost)
-			memcpy(buf, rhs.buf, nSamples*bufBlockSize);
-		else
+		if (ghost && rhs.ghost)
 			buf = rhs.buf;// shallow (ghost) copy
+		else
+			memcpy(buf, rhs.buf, nSamples * bufBlockSize);
 	}
 	return *this;
 }
@@ -323,7 +324,13 @@ CSignals& CSignals::operator=(const CSignals& rhs)
 	if (this != &rhs)
 	{
 		CTimeSeries::operator=(rhs);
-		SetNextChan(*rhs.next);
+		if (rhs.next) 
+			SetNextChan(*rhs.next);
+		else
+		{
+			delete next;
+			next = NULL;
+		}
 	}
 	return *this;
 }
@@ -2397,7 +2404,6 @@ void CSignals::SetNextChan(const CSignals& second, bool need2makeghost)
 		}
 	}
 	if (next) {
-//		if (!next->ghost) 
 			delete next;
 		next = NULL;
 	}
@@ -2446,7 +2452,7 @@ CSignals CSignals::evoke_getsig2(CSignal(*func) (float*, unsigned int, void*, vo
 {
 	CSignals newout = CTimeSeries::evoke_getsig2(func, pargin, pargout);
 	if (next)
-		newout.SetNextChan(next->evoke_getsig2(func, pargin, pargout));
+		newout.SetNextChan(next->CTimeSeries::evoke_getsig2(func, pargin, pargout));
 	return newout;
 }
 

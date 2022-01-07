@@ -52,7 +52,7 @@ Cfunction set_builtin_function_leftright(fGate fp)
 	vector<string> desc_arg_req = { "audio_obj" };
 	vector<string> desc_arg_opt = { };
 	vector<CVar> default_arg = { };
-	set<uint16_t> allowedTypes1 = { AUDIO_TYPES_2D };
+	set<uint16_t> allowedTypes1 = { ALL_AUDIO_TYPES };
 	ft.allowed_arg_types.push_back(allowedTypes1);
 	// til this line ==============
 	ft.desc_arg_req = desc_arg_req;
@@ -110,5 +110,8 @@ void _leftright(skope* past, const AstNode* pnode, const vector<CVar>& args)
 		past->Sig.next = NULL;
 	}
 	else if (fname == "right")
-		past->Sig.bringnext();
+	{
+		if (past->Sig.next)
+			past->Sig.bringnext();
+	}
 }

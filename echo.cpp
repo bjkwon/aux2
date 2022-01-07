@@ -225,6 +225,7 @@ void echo_object::print(const string& name, const CVar& obj, int offset)
 	auto tp = obj.type();
 	auto res = tp & 0xFF0F;
 	auto isv = ((tp) & 0b1111);
+	auto isster = (tp) & (TYPEBIT_MULTICHANS + 0xF000);
 	cout << "type = " << "0x" << setw(4) << setfill('0') << hex << tp << ", ";
 	if (tp & TYPEBIT_STRUT)
 		echo_struct(name, offset).print(obj);
@@ -232,7 +233,7 @@ void echo_object::print(const string& name, const CVar& obj, int offset)
 		echo_cell(name, offset).print(obj);
 	else if (ISAUDIO(tp))
 		echo_object_audio(name, offset).print(obj);
-	else if (ISTEMPORAL(tp))
+	else if (ISTEMPORAL(tp) || ISSTEREO(tp))
 		echo_object_naudio(name, offset).print(obj);
 	else if (!tp) // Don't do (type & TYPEBIT_NULL) unless you want to be funny!
 		echo_object_null(name, offset).print(obj);
