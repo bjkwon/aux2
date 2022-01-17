@@ -260,6 +260,10 @@ void CAstSigEnv::InitBuiltInFunctions()
 	builtin["blackman"] = SET_BUILTIN_FUNC(blackman);
 	builtin["hann"] = SET_BUILTIN_FUNC(blackman);
 
+	builtin["filt"] = SET_BUILTIN_FUNC(filt);
+	builtin["filtfilt"] = SET_BUILTIN_FUNC(filt);
+	builtin["conv"] = SET_BUILTIN_FUNC(conv);
+
 
 	builtin["audio"] = SET_BUILTIN_FUNC(audio);
 	builtin["vector"] = SET_BUILTIN_FUNC(vector);

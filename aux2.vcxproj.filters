@@ -141,6 +141,9 @@
     <ClCompile Include="lame\lame_aux_internal.cpp">
       <Filter>Source Files\lame</Filter>
     </ClCompile>
+    <ClCompile Include="_func\filt.cpp">
+      <Filter>Source Files\_functions</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="skope.h">
