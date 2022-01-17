@@ -16,6 +16,9 @@
     <Filter Include="Source Files\_functions">
       <UniqueIdentifier>{b6f6a176-4042-453d-a491-774174242447}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\lame">
+      <UniqueIdentifier>{c0a7309a-50b1-44b3-ad87-e3eb40ec4da0}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -108,6 +111,36 @@
     <ClCompile Include="_func\hilb_env.cpp">
       <Filter>Source Files\_functions</Filter>
     </ClCompile>
+    <ClCompile Include="_func\printf.cpp">
+      <Filter>Source Files\_functions</Filter>
+    </ClCompile>
+    <ClCompile Include="lame\brhist.c">
+      <Filter>Source Files\lame</Filter>
+    </ClCompile>
+    <ClCompile Include="lame\get_audio.c">
+      <Filter>Source Files\lame</Filter>
+    </ClCompile>
+    <ClCompile Include="lame\lame_export.c">
+      <Filter>Source Files\lame</Filter>
+    </ClCompile>
+    <ClCompile Include="lame\lame_main.c">
+      <Filter>Source Files\lame</Filter>
+    </ClCompile>
+    <ClCompile Include="lame\lametime.c">
+      <Filter>Source Files\lame</Filter>
+    </ClCompile>
+    <ClCompile Include="lame\parse.c">
+      <Filter>Source Files\lame</Filter>
+    </ClCompile>
+    <ClCompile Include="lame\timestatus.c">
+      <Filter>Source Files\lame</Filter>
+    </ClCompile>
+    <ClCompile Include="utils.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="lame\lame_aux_internal.cpp">
+      <Filter>Source Files\lame</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="skope.h">
@@ -123,6 +156,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="_func\functions_common.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\lame_aux_api.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="utils.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

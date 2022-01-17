@@ -119,6 +119,16 @@ DECL_GATE(_audio)
 DECL_GATE(_vector)
 DECL_GATE(_leftright)
 DECL_GATE(_hilbenvlope)
+DECL_GATE(_printf)
+DECL_GATE(_fprintf)
+DECL_GATE(_fopen)
+DECL_GATE(_fclose)
+DECL_GATE(_fwrite)
+DECL_GATE(_fread)
+DECL_GATE(_write)
+DECL_GATE(_file)
+
+DECL_GATE(_resample)
 
 void _sqrt(skope* past, const AstNode* pnode, const vector<CVar>& args);
 void _sin(skope* past, const AstNode* pnode, const vector<CVar>& args);

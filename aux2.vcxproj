@@ -114,7 +114,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_CONSOLE;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>HAVE_CONFIG_H;HAVE_MPGLIB;_DEBUG;_CONSOLE;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <DisableSpecificWarnings>4996</DisableSpecificWarnings>
       <AdditionalIncludeDirectories>$(ProjectDir); $(ProjectDir)\include\</AdditionalIncludeDirectories>
@@ -122,7 +122,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>fftw3f.lib;sndfile1.0.28_64st.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libmp3lame$(PlatformArchitecture)st.lib;mpglib$(PlatformArchitecture)st.lib;lame.lib;libsamplerate$(PlatformArchitecture)st.lib;fftw3f.lib;sndfile1.0.28_64st.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -141,10 +141,18 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>fftw3f.lib;sndfile1.0.28_64st.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libsamplerate$(PlatformArchitecture)st.lib;fftw3f.lib;sndfile1.0.28_64st.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="lame\brhist.c" />
+    <ClCompile Include="lame\get_audio.c" />
+    <ClCompile Include="lame\lametime.c" />
+    <ClCompile Include="lame\lame_aux_internal.cpp" />
+    <ClCompile Include="lame\lame_export.c" />
+    <ClCompile Include="lame\lame_main.c" />
+    <ClCompile Include="lame\parse.c" />
+    <ClCompile Include="lame\timestatus.c" />
     <ClCompile Include="skope2.cpp" />
     <ClCompile Include="skope_flow.cpp" />
     <ClCompile Include="skope_read_xtree.cpp" />
@@ -162,9 +170,11 @@
     <ClCompile Include="skope_statics.cpp" />
     <ClCompile Include="support.cpp" />
     <ClCompile Include="typecheck.cpp" />
+    <ClCompile Include="utils.cpp" />
     <ClCompile Include="_func\fft.cpp" />
     <ClCompile Include="_func\hilb_env.cpp" />
     <ClCompile Include="_func\lr_aud_vec.cpp" />
+    <ClCompile Include="_func\printf.cpp" />
     <ClCompile Include="_func\rmsandothers.cpp" />
     <ClCompile Include="_func\specialmath.cpp" />
     <ClCompile Include="_func\movespec.cpp" />
@@ -179,8 +189,10 @@
   <ItemGroup>
     <ClInclude Include="aux_classes.h" />
     <ClInclude Include="builtin_functions.h" />
+    <ClInclude Include="include\lame_aux_api.h" />
     <ClInclude Include="skope.h" />
     <ClInclude Include="typecheck.h" />
+    <ClInclude Include="utils.h" />
     <ClInclude Include="_func\functions_common.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

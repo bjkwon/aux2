@@ -167,6 +167,7 @@ body& body::operator=(const body & rhs)
 			buf = rhs.buf;// shallow (ghost) copy
 		else
 			memcpy(buf, rhs.buf, nSamples * bufBlockSize);
+		bufType = rhs.bufType;
 	}
 	return *this;
 }
@@ -1043,7 +1044,14 @@ CTimeSeries::~CTimeSeries()
 	}
 }
 
-void CSignal::SetFs(int  newfs)
+void CSignals::SetFs(int newfs)
+{
+	CSignal::SetFs(newfs);
+	if (next)
+		next->CSignal::SetFs(newfs);
+}
+
+void CSignal::SetFs(int newfs)
 {  // the old data (the content of buf) should be retained; don't call Reset() carelessly.
 	if (bufBlockSize == 1 && newfs != fs)
 	{// Trying to convert a data type with a byte size to float size
@@ -1284,11 +1292,57 @@ CSignal& CSignal::evoke_modsig(fmodify fp, void* pargin, void* pargout)
 	return *this;
 }
 
+CSignal CSignal::evoke_modsig2(CSignal(*func) (const CSignal&, void*, void*), void* pargin, void* pargout)
+{
+	CSignal out(fs);
+	out.UpdateBuffer(nSamples);
+	CSignal indy(fs);
+	uint64_t lastcount = 0, count = 0;
+	for (unsigned int k = 0; k < nGroups; k++)
+	{
+		CSignal bit(fs);
+		bit.UpdateBuffer(Len());
+		memcpy(bit.buf, buf + k * Len(), sizeof(float) * Len());
+		indy = (func)(bit, pargin, pargout);
+		count += indy.nSamples;
+		if (count > out.nSamples)
+			out.UpdateBuffer(count);
+		memcpy(out.buf + lastcount, indy.buf, sizeof(float) * indy.nSamples);
+		lastcount = count;
+	}
+	out.nSamples = count;
+	return out;
+}
+
+
 CTimeSeries& CTimeSeries::evoke_modsig(fmodify fp, void* pargin, void* pargout)
 {
 	for (CTimeSeries* p = this; p; p = p->chain)
 		p->CSignal::evoke_modsig(fp, pargin, pargout);
 	return *this;
+}
+
+CTimeSeries CTimeSeries::evoke_modsig2(CSignal(*func) (const CSignal&, void*, void*), void* pargin, void* pargout)
+{
+	CTimeSeries out(fs);
+	CTimeSeries outExt(fs);
+	for (CTimeSeries* p = this; p; p = p->chain)
+	{
+		void* _pargin = NULL;
+		void* _pargout = NULL;
+		if (pargin)
+			_pargin = pargin;
+		if (pargout)
+			_pargout = (void*)&outExt;
+		CTimeSeries outtp = p->CSignal::evoke_modsig2(func, _pargin, _pargout);
+		if (pargout)
+		{
+			outExt.tmark = p->tmark;
+			((CTimeSeries*)pargout)->AddChain(*(CTimeSeries*)_pargout);
+		}
+		outtp.tmark = p->tmark;
+		out.AddChain(outtp);
+	}	return out;
 }
 
 CSignal CSignal::evoke_getsig2(CSignal(*func) (float*, unsigned int, void*, void*), void* pargin, void* pargout)
@@ -1691,7 +1745,14 @@ CTimeSeries& CTimeSeries::AddChain(const CTimeSeries &sec)
 	if ( tp == TYPEBIT_NULL || tp == TYPEBIT_SIZE1) // NULL or empty string
 		return *this = sec;
 	if (chain == NULL)
-		return *(chain = new CTimeSeries(sec));
+	{
+		auto _dur = (float)nSamples / fs;
+		if (1000.f * nSamples / fs >= sec.tmark)
+			operate(sec, '+');
+		else
+			return *(chain = new CTimeSeries(sec));
+		return *this;
+	}
 	else
 		return chain->AddChain(sec);
 }
@@ -2198,10 +2259,10 @@ void CSignal::ReverseTime()
 	*this = temp;
 }
 
-std::string CSignal::str() const
+string CSignal::str() const
 {
 	unsigned int k;
-	std::string out;
+	string out;
 	out.resize(nSamples);
 	for (k = 0; k < nSamples && strbuf[k]; k++)
 		out[k] = *(strbuf + k);
@@ -2446,6 +2507,14 @@ CSignals& CSignals::evoke_modsig(fmodify fp, void* pargin, void* pargout)
 	if (next)
 		next->evoke_modsig(fp, pargin, pargout);
 	return *this;
+}
+
+CSignals CSignals::evoke_modsig2(CSignal(*func) (const CSignal&, void*, void*), void* pargin, void* pargout)
+{
+	CSignals newout = CTimeSeries::evoke_modsig2(func, pargin, pargout);
+	if (next)
+		newout.SetNextChan(next->CTimeSeries::evoke_modsig2(func, pargin, pargout));
+	return newout;
 }
 
 CSignals CSignals::evoke_getsig2(CSignal(*func) (float*, unsigned int, void*, void*), void* pargin, void* pargout)
@@ -2949,7 +3018,7 @@ static float RMS_concatenated(const CTimeSeries& sig)
 		cum += pow(10, (p->value() - 3.0103) / 10.) * p->nSamples;
 		len += p->nSamples;
 	}
-	return 10. * log10f(cum / len) + 3.0103f;
+	return 10.f * log10f(cum / len) + 3.0103f;
 }
 
 CSignal __rms(float* buf, unsigned int len, void* pargin, void* pargout); // from rmsandothers.cpp
@@ -2960,7 +3029,7 @@ CSignals& CSignals::RMS()
 	CSignals rmsComputed = evoke_getsig2(__rms);
 	// at this point rmsComputed is chain'ed with next (also possibly chain'ed) and nSamples = 1 for each of them 
 	CSignals out(1);
-	float rmsnow, rmsnow2;
+	float rmsnow;
 	rmsnow = RMS_concatenated(rmsComputed);
 	out.SetValue(rmsnow);
 	if (rmsComputed.next)

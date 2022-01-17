@@ -284,7 +284,6 @@ bool CSignals::operate(const CSignals& sec, char op)
 			((CSignals*)next)->CTimeSeries::operate(sec, op);
 	}
 	else if (sec.next)
-
 	{
 		//if copy is constant or vector
 		if (copy.type() <= 2)

@@ -571,6 +571,11 @@ static bool IsConditional(const AstNode* pnode)
 	}
 }
 
+string skope::ComputeString(const AstNode* p)
+{
+	return (p->type == T_STRING) ? p->str : Compute(p)->str();
+}
+
 AstNode* skope::searchtree(const AstNode* pTarget, AstNode* pStart)
 { // search pTarget in all lower nodes (child, alt, next) in pStart
 	// return NULL if not found

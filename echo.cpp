@@ -237,7 +237,7 @@ void echo_object::print(const string& name, const CVar& obj, int offset)
 		echo_object_naudio(name, offset).print(obj);
 	else if (!tp) // Don't do (type & TYPEBIT_NULL) unless you want to be funny!
 		echo_object_null(name, offset).print(obj);
-	else if (ISSTRING(tp))
+	else if (ISSTRING(tp) || ISBYTE(tp))
 		echo_object_string(name, offset).print(obj);
 	else if (ISSCALAR(tp) || ISVECTOR(tp) || IS2D (tp))
 		echo_object_vector(name, offset).print(obj);

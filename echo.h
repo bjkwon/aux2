@@ -71,7 +71,10 @@ public:
 	void print(const CVar& obj)
 	{
 		echo_object::header();
-		cout << "\"" << obj.str() << "\"" << postscript << endl;
+		if (obj.bufType=='S')
+			cout << "\"" << obj.str() << "\"" << postscript << endl;
+		else if (obj.bufType == 'B')
+			cout << "(" << obj.nSamples << " bytes)" << postscript << endl;
 	};
 };
 

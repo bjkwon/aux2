@@ -268,7 +268,17 @@ void CAstSigEnv::InitBuiltInFunctions()
 	builtin["hilbert"] = SET_BUILTIN_FUNC(hilbenvlope);
 	builtin["envelope"] = SET_BUILTIN_FUNC(hilbenvlope);
 
-	
+	builtin["fopen"] = SET_BUILTIN_FUNC(fopen);
+	builtin["fclose"] = SET_BUILTIN_FUNC(fclose);
+	builtin["printf"] = SET_BUILTIN_FUNC(printf);
+	builtin["fprintf"] = SET_BUILTIN_FUNC(fprintf);
+	builtin["sprintf"] = SET_BUILTIN_FUNC(printf);
+	builtin["fread"] = SET_BUILTIN_FUNC(fread);
+	builtin["fwrite"] = SET_BUILTIN_FUNC(fwrite);
+	builtin["write"] = SET_BUILTIN_FUNC(write);
+	builtin["file"] = SET_BUILTIN_FUNC(file);
+
+	builtin["resample"] = SET_BUILTIN_FUNC(resample);
 
 //	name = "write";
 //	ft.alwaysstatic = false;
@@ -291,15 +301,6 @@ void CAstSigEnv::InitBuiltInFunctions()
 //	ft.func =  &_squeeze; // do this
 //	builtin[name] = ft;
 //
-//	// begin narg 2 and 2
-//	ft.alwaysstatic = false;
-//	ft.narg1 = 2;
-//	ft.narg2 = 2;
-//
-//	name = "ramp";
-//	ft.funcsignature = "(signal, ramp_duration)";
-//	ft.func =  &_ramp;
-//	builtin[name] = ft;
 //
 //	name = "isaudioat";
 //	ft.funcsignature = "(audio_signal, time_pt)";
@@ -308,19 +309,6 @@ void CAstSigEnv::InitBuiltInFunctions()
 //
 //	// end narg 2 and 2
 //
-//	ft.narg1 = 1;	ft.narg2 = 1;
-//	name = "hamming";
-//	ft.funcsignature = "(audio_signal)";
-//	ft.func = &_hamming;
-//	builtin[name] = ft;
-//	name = "hann";
-//	ft.func = &_blackman;
-//	builtin[name] = ft;
-//	ft.narg1 = 1;	ft.narg2 = 2;
-//	name = "blackman";
-//	ft.funcsignature = "(audio_signal, [alpha=0.16])";
-//	ft.func = &_blackman;
-//	builtin[name] = ft;
 //
 //#ifndef NO_IIR
 //	ft.narg1 = 2;	ft.narg2 = 6;
@@ -443,39 +431,6 @@ void CAstSigEnv::InitBuiltInFunctions()
 //	name = "interp";
 //	ft.funcsignature = "(refX, refY, query_x_points)";
 //	ft.func = &_interp1;
-//	builtin[name] = ft;
-//
-//	ft.alwaysstatic = true;
-//	ft.narg1 = 2;	ft.narg2 = 0;
-//	ft.funcsignature = "(format_string, ...)";
-//	name = "sprintf";
-//	ft.func =  &_sprintf;
-//	builtin[name] = ft;
-//	name = "fprintf";
-//	ft.alwaysstatic = false;
-//	ft.func =  &_fprintf;
-//	builtin[name] = ft;
-//
-//	ft.narg1 = 2;	ft.narg2 = 3;
-//	name = "fread";
-//	ft.func = &_fread;
-//	builtin[name] = ft;
-//	ft.narg1 = 3;	ft.narg2 = 3;
-//	name = "fwrite";
-//	ft.func = &_fwrite;
-//	builtin[name] = ft;
-//
-//	ft.narg1 = 1;	ft.narg2 = 1;
-//	ft.funcsignature = "(file_ID)";
-//	name = "fclose";
-//	ft.func =  &_fclose;
-//	builtin[name] = ft;
-//
-//	ft.narg1 = 2;	ft.narg2 = 2;
-//	name = "fopen";
-//	ft.alwaysstatic = true;
-//	ft.funcsignature = "(filename, mode)";
-//	ft.func = &_fopen; // check
 //	builtin[name] = ft;
 //
 //	ft.narg1 = 0;	ft.narg2 = 0;
@@ -851,37 +806,49 @@ vector<CVar> skope::make_check_args(const AstNode* pnode, const Cfunction& func)
 	count++;
 	for (const AstNode* pn = p2; pn; pn = pn->next, count++)
 	{
-		if (count > func.narg2)
+		if (func.narg2 >= 0 && count > func.narg2)
 		{
 			ostr << fname << "(): too many args; maximum number of args is " << func.narg2 << ".";
 			throw exception_etc(*this, pnode, ostr.str()).raise();
 		}
+		skope smallskope(this);
 		try {
-			skope smallskope(this);
 			smallskope.Compute(pn);
-			thistype = smallskope.Sig.type();
-			bool pass = false;
-			for (auto it = allowedset->begin(); it != allowedset->end(); it++)
+			if (func.narg2 < 0) // unspecified max arg count, no type checking
+				out.push_back(smallskope.Sig);
+			else
 			{
-				pass = thistype == *it;
-				if (pass)
+				// for arguments with any type (e.g., fwrite), bypass checking with 0xFFFF and add the result of Compute to the out vector
+				if (allowedset->size() == 1 && *allowedset->begin() == 0xFFFF)
 				{
 					out.push_back(smallskope.Sig);
-					break;
+					allowedset++;
+					continue;
 				}
+				thistype = smallskope.Sig.type();
+				bool pass = false;
+				for (auto it = allowedset->begin(); it != allowedset->end(); it++)
+				{
+					pass = thistype == *it;
+					if (pass)
+					{
+						out.push_back(smallskope.Sig);
+						break;
+					}
+				}
+				if (!pass)
+				{
+					ostringstream ostr1;
+					ostr1 << "Invalid type " << thistype;
+					throw exception_etc(*this, pnode, ostr1.str()).raise(); // throwing to the line below
+				}
+				allowedset++;
 			}
-			if (!pass)
-			{
-				ostr << "type " << thistype;
-				throw exception_func(*this, pnode, ostr.str(), fname, count).raise();
-			}
-			allowedset++;
 		}
 		catch (skope_exception e)
 		{
 			ostr << " for arg " << count << " of " + fname + "()";
 			e.outstr += ostr.str();
-//			throw errmsg.c_str();
 			throw e;
 		}
 	}
@@ -891,8 +858,6 @@ vector<CVar> skope::make_check_args(const AstNode* pnode, const Cfunction& func)
 		ostr << fname << "(): the number of arg should be at least " << func.narg1 << "; Only " << count << " given.";
 		throw exception_etc(*this, pnode, ostr.str()).raise();
 	}
-//	if (out.empty())
-//		out.push_back(Sig);
 	for (; count < func.narg2; count++)
 		out.push_back(CVar(func.defaultarg[count - func.narg1]));
 	return out;

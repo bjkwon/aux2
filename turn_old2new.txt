@@ -1,3 +1,5 @@
+**_file.cpp has several lines where float <--> double conversion should be careful.**
+
 1.
 #include "functions_common.h"
 

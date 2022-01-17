@@ -223,6 +223,9 @@ protected:
 		body& operator<=(body * rhs);
 };
 
+/* Use evoke_modsig when no size resizing is done, e.g., filter, ramp
+* Use evoke_modsig2 when size is resized, e.g., resample
+*/
 class CSignal : public body
 {
 public:
@@ -234,6 +237,7 @@ public:
 
 	CSignal evoke_getsig2(CSignal(*fp) (float*, unsigned int, void*, void*), void* popt1 = NULL, void* popt = NULL);
 	CSignal& evoke_modsig(fmodify, void* popt1 = NULL, void* popt2 = NULL);
+	CSignal evoke_modsig2(CSignal(*fp) (const CSignal&, void*, void*), void* popt1 = NULL, void* popt2 = NULL);
 
 	CSignal &matrixmult(CSignal *arg);
 	CSignal & Hilbert FARGS;
@@ -360,6 +364,8 @@ public:
 
 	CTimeSeries evoke_getval(float (CSignal::*)(unsigned int, unsigned int, void *) const, void *popt = NULL);
 	CTimeSeries & evoke_modsig(fmodify, void* popt1 = NULL, void* popt2 = NULL);
+	CTimeSeries evoke_modsig2(CSignal(*fp) (const CSignal&, void*, void*), void* popt1 = NULL, void* popt2 = NULL);
+
 	CTimeSeries evoke_getsig(CTimeSeries(*fgetCSignals) (const CTimeSeries&, void*), void* popt = NULL);
 	CTimeSeries evoke_getsig2(CSignal(*fp) (float*, unsigned int, void*, void*), void *popt1 = NULL, void *popt = NULL);
 
@@ -453,6 +459,8 @@ public:
 	CSignals evoke_getval(float(*)(float), void* popt = NULL);
 	CSignals evoke_getval(float (CSignal::*)(unsigned int, unsigned int, void* p) const, void *popt = NULL) ;
 	CSignals& evoke_modsig(fmodify, void* popt1 = NULL, void* popt2 = NULL);
+	CSignals evoke_modsig2(CSignal(*fp) (const CSignal&, void*, void*), void* popt1 = NULL, void* popt2 = NULL);
+
 	CSignals evoke_getsig(CTimeSeries(*fgetCSignals) (const CTimeSeries&, void*), void* popt = NULL);
 	CSignals evoke_getsig2(CSignal(*fp) (float*, unsigned int, void*, void*), void* popt1 = NULL, void* popt = NULL);
 
@@ -482,6 +490,7 @@ public:
 	CSignals & operator|(const CSignals & RMS2adjust);
 
 	int IsStereo() const { return 0 + (next!=NULL); }
+	void SetFs(int newfs);
 
 	inline bool IsEmpty() const { return next == nullptr && CTimeSeries::IsEmpty(); }
 

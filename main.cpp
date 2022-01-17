@@ -83,8 +83,10 @@ static void show_result(skope& sc)
 		else psig = &sc.Sig;
 		echo(dt, sc, sc.node, psig);
 	}
-
-	cout << endl;
+	if (sc.statusMsg.empty())
+		cout << endl;
+	else
+		cout << sc.statusMsg << endl;
 }
 
 CVar interpreter(skope& sc, const string& instr)
@@ -106,7 +108,7 @@ int main()
 	while (1)
 	{
 		try {
-			printf("AUX>");
+			printf("AUX> ");
 			getline(cin, input);
 			if (input.empty())
 			{

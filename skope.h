@@ -181,7 +181,7 @@ public:
 	void outputbinding(const AstNode* pnode, size_t nArgout);
 	void bind_psig(AstNode* pn, CVar* psig);
 	string makefullfile(const string& fname, string extension = "");
-
+	string ComputeString(const AstNode* p);
 
 	string script;
 	string emsg;
@@ -189,6 +189,8 @@ public:
 	vector<unique_ptr<CVar*>> SigExt; // placeholder for multiple output arguments
 	AstNode* node;
 	CVar* pgo; // pointer, not a copy, of the last computed object; used for graffy functions
+	int level;
+	vector<int> baselevel;
 	map<string, CVar> Vars;
 	map<string, vector<CVar*>> GOvars;
 	AstNode* lhs;
