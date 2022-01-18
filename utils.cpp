@@ -1,9 +1,64 @@
-// ppp.cpp : This file contains the 'main' function. Program execution begins and ends there.
-//
-
 #include <iostream>
 #include <vector>
-#include "utils.h"
+#include <string.h>
+
+using namespace std;
+
+void triml(string& str, string delim)
+{
+	string::size_type pos = str.find_first_not_of(delim);
+	if (pos != string::npos) str.erase(0, pos);
+	else str.erase(str.begin(), str.end());
+}
+
+void trimr(string& str, string delim)
+{
+	string::size_type pos = str.find_last_not_of(delim);
+	if (pos != string::npos) str.erase(pos + 1);
+	else str.erase(str.begin(), str.end());
+}
+
+void trim(string& str, string delim)
+{
+	triml(str, delim);
+	trimr(str, delim);
+}
+
+void triml(string& str, char delim)
+{
+	string _delim(1, delim);
+	triml(str, _delim);
+}
+
+void trimr(string& str, char delim)
+{
+	string _delim(1, delim);
+	trimr(str, _delim);
+}
+
+void trim(string& str, char delim)
+{
+	string _delim(1, delim);
+	trim(str, _delim);
+}
+
+void triml(string& str, char* delim)
+{
+	string _delim(delim);
+	triml(str, _delim);
+}
+
+void trimr(string& str, char* delim)
+{
+	string _delim(delim);
+	trimr(str, _delim);
+}
+
+void trim(string& str, char* delim)
+{
+	string _delim(delim);
+	trim(str, _delim);
+}
 
 int GetFileText(FILE* fp, string& strOut)
 {
@@ -110,58 +165,3 @@ int str2vector(vector<string>& out, const string& in, const string& delim_chars)
 	return (int)out.size();
 }
 
-void triml(string& str, string delim)
-{
-	string::size_type pos = str.find_first_not_of(delim);
-	if (pos != string::npos) str.erase(0, pos);
-	else str.erase(str.begin(), str.end());
-}
-
-void trimr(string& str, string delim)
-{
-	string::size_type pos = str.find_last_not_of(delim);
-	if (pos != string::npos) str.erase(pos + 1);
-	else str.erase(str.begin(), str.end());
-}
-
-void trim(string& str, string delim)
-{
-	triml(str, delim);
-	trimr(str, delim);
-}
-
-void triml(string& str, char delim)
-{
-	string _delim(1, delim);
-	triml(str, _delim);
-}
-
-void trimr(string& str, char delim)
-{
-	string _delim(1, delim);
-	trimr(str, _delim);
-}
-
-void trim(string& str, char delim)
-{
-	string _delim(1, delim);
-	trim(str, _delim);
-}
-
-void triml(string& str, char* delim)
-{
-	string _delim(delim);
-	triml(str, _delim);
-}
-
-void trimr(string& str, char* delim)
-{
-	string _delim(delim);
-	trimr(str, _delim);
-}
-
-void trim(string& str, char* delim)
-{
-	string _delim(delim);
-	trim(str, _delim);
-}

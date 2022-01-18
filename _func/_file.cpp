@@ -19,7 +19,9 @@
 #include "lame_aux_api.h"
 //#include "samplerate.h"
 #include "sndfile.h"
-#include "utils.h"
+//#include "utils.h"
+int str2vector(vector<string>& out, const string& in, const string& delim_chars);
+
 
 int GetFileText(const char* fname, const char* mod, string& strOut); // utils.cpp
 int countDeliminators(const char* buf, const char* deliminators);
