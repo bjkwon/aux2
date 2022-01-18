@@ -98,7 +98,7 @@ char   *strchr(), *strrchr();
 #define FLOAT_TO_UNSIGNED(f) ((unsigned long)(((long)((f) - 2147483648.0)) + 2147483647L + 1))
 #define UNSIGNED_TO_FLOAT(u) (((double)((long)((u) - 2147483647L - 1))) + 2147483648.0)
 
-int set_basic_info(lame_global_flags * gfp, const csignals_mp3_aiff * px);
+static int set_basic_info(lame_global_flags * gfp, const csignals_mp3_aiff * px);
 
 static unsigned int uint32_high_low(unsigned char *bytes)
 {

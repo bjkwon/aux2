@@ -6,14 +6,14 @@ extern "C" void* reallocbuf(void* buf, int floatbuf, size_t length, size_t newle
 	{
 		float* newbuf = new float[newlength];
 		memmove(newbuf, buf, sizeof(float) * length);
-		delete[] buf;
+		delete[] (float*)buf;
 		return (void*)newbuf;
 	}
 	else
 	{
 		double* newbuf = new double[newlength];
 		memmove(newbuf, buf, sizeof(double) * length);
-		delete[] buf;
+		delete[] (double*)buf;
 		return (void*)newbuf;
 	}
 }

@@ -331,6 +331,8 @@ f2bei_array(const float* src, int* dest, int count, int normalize)
     };
 } /* f2bei_array */
 
+#define stdlibmin(a,b) (((a) < (b)) ? (a) : (b))
+
 static int
 lame_encoder_loop(lame_global_flags * gf, FILE * outf, csignals_mp3_aiff *px, char *errstr)
 {
@@ -378,7 +380,7 @@ lame_encoder_loop(lame_global_flags * gf, FILE * outf, csignals_mp3_aiff *px, ch
 
     /* encode until we hit eof */
 	int cum = 0;
-	iread = min(1152, px->length - cum);
+	iread = stdlibmin(1152, (int)px->length - cum);
 	do {
         /* read in 'iread' samples */
         if (px->floatbuf)
@@ -428,7 +430,7 @@ lame_encoder_loop(lame_global_flags * gf, FILE * outf, csignals_mp3_aiff *px, ch
         if (global_writer.flush_write == 1) {
             fflush(outf);
         }
-		iread = min(1152, px->length - cum);
+		iread = stdlibmin(1152, px->length - cum);
     } while (iread > 0);
 
     imp3 = lame_encode_flush(gf, mp3buffer, sizeof(mp3buffer)); /* may return one more mp3 frame */
