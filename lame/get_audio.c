@@ -374,11 +374,11 @@ static get_audio_global_data global;
 
 
 
-#ifdef AMIGA_MPEGA
-int     lame_decode_initfile(const char *fullname, mp3data_struct * const mp3data);
-#else
-int     lame_decode_initfile(FILE * fd, mp3data_struct * mp3data, int *enc_delay, int *enc_padding);
-#endif
+//#ifdef AMIGA_MPEGA
+//int     lame_decode_initfile(const char *fullname, mp3data_struct * const mp3data);
+//#else
+//int     lame_decode_initfile(FILE * fd, mp3data_struct * mp3data, int *enc_delay, int *enc_padding);
+//#endif
 
 /* read mp3 file until mpglib returns one frame of PCM data */
 static int lame_decode_fromfile(FILE * fd, short int pcm_l[], short int pcm_r[],
