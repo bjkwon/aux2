@@ -1,0 +1,43 @@
+g++ -c lame/*.c lame/*.cpp -D HAVE_CONFIG_H -D STDC_HEADERS -D HAVE_LIMITS_H
+
+g++ -I . -I include/ -c lame/*.c lame/*.cpp -D STDC_HEADERS -D HAVE_LIMITS_H
+
+gcc -I . -I include/ -c lame/*.c lame/*.cpp -D STDC_HEADERS -D HAVE_LIMITS_H -D HAVE_CONFIG_H
+
+gcc -I . -I include/ -c lame/*.c lame/*.cpp -D HAVE_CONFIG_H
+
+
+//the best so far
+gcc -I . -I include/ -c lame/*.c lame/*.cpp -D HAVE_CONFIG_H -D HAVE_STDINT_H -U __CYGWIN__
+
+
+// with 67172c64, in Linux 
+gcc -I . -I include/ -c lame/*.c lame/*.cpp -D HAVE_CONFIG_H -D HAVE_STDINT_H
+// worked 
+g++ -c -I . -I include/ *.cpp *.c _func/*.cpp 
+// also worked
+
+bomjun@ip-172-31-48-38:~/dev/aux2$ g++ *.o -o aux2 -l :libsndfile.so.1 -l :libfftw3f.so.3 -l :libsamplerate.so.0 -l :libmp3lame.so
+brhist.o: In function `brhist_disp_line':
+brhist.c:(.text+0x1e3): undefined reference to `Console_IO'
+brhist.c:(.text+0x201): undefined reference to `Console_IO'
+brhist.o: In function `progress_line':
+brhist.c:(.text+0x481): undefined reference to `Console_IO'
+brhist.c:(.text+0x49b): undefined reference to `Console_IO'
+lame_export.o: In function `read_mp3_header':
+lame_export.c:(.text+0x137): undefined reference to `lame_decode_initfile'
+collect2: error: ld returned 1 exit status
+bomjun@ip-172-31-48-38:~/dev/aux2$ ls get_audio
+
+So, edited brhist.c, getting rid of progress_line and CONSOLE_IO
+
+gcc -c -I include/ lame/brhist.c -D HAVE_CONFIG_H -D HAVE_STDINT_H
+==> Now success
+link again
+==> Still error
+
+Edited brhist.c again, getting rid of brhist_disp_line 
+link again
+==> Still error, 
+
+decl of lame_decode_initfile appears twice (once in lame_export.h, another in get_audio.c). The decl in get_audio.c removed. Tried again. Same error of undefined reference to `lame_decode_initfile'
