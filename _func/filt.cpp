@@ -106,18 +106,25 @@ static void filterbase(float* buf, size_t len, const vector<float>& num, const v
 	}
 }
 
-void __filt(float* buf, size_t len, void* parg1, void* parg2)
+CSignal __filt(const CSignal& base, void* parg1, void* parg2)
 {
 	vector<CVar> argin = *(vector<CVar>*)parg1;
 	vector<float> num(argin[0].buf, argin[0].buf + argin[0].nSamples);
 	vector<float> den(argin[1].buf, argin[1].buf + argin[1].nSamples);
 	vector<float> init(argin[2].buf, argin[2].buf + argin[2].nSamples);
 	vector<float> fin;
-	filterbase(buf, len, num, den, init, fin);
+	filterbase(base.buf, base.nSamples, num, den, init, fin);
 	// parg2 was declared as CVar in _filt
 	CVar* cvarfin = (CVar*)parg2;
 	cvarfin->UpdateBuffer(fin.size());
 	memcpy(cvarfin->buf, fin.data(), sizeof(float) * fin.size());
+	// final state after filtering is not only copied to parg2, but also used to update parg1
+	// updating init won't do anything (init is a local variable)
+	// instead update the content of the pointer used to initialize init
+	// So that final state at this group can be used as an initial state in the successive call inside of CSignal::evoke_modsig2
+	// Even if it's not necessary because nGroup=1, updating the content of this pointer won't do any harm. 01/20/2022
+	memcpy((*(((vector<CVar>*)parg1)->begin() + 2)).buf, fin.data(), sizeof(float) * fin.size());
+	return base;
 }
 
 void _filt(skope* past, const AstNode* pnode, const vector<CVar>& args)
@@ -128,7 +135,7 @@ void _filt(skope* past, const AstNode* pnode, const vector<CVar>& args)
 	if (fname == "filt")
 	{
 		CVar* extraOut = new CVar; // to carry a state array
-		past->Sig.evoke_modsig(__filt, (void*)&args, (void*)extraOut);
+		past->Sig.evoke_modsig2(__filt, (void*)&args, (void*)extraOut);
 		if (get_output_count(past->node, pnode) > 1)
 		{
 			past->SigExt.push_back(move(make_unique<CVar*>(&past->Sig)));
@@ -138,7 +145,7 @@ void _filt(skope* past, const AstNode* pnode, const vector<CVar>& args)
 		else
 			delete extraOut;
 	}
-	else
+	else // filtfilt
 	{
 			CSignal temp(past->Sig.GetFs()), out(past->Sig.GetFs());
 			size_t nfact = (size_t)(3 * (max(args[0].nSamples, args[1].nSamples) - 1));
@@ -148,12 +155,12 @@ void _filt(skope* past, const AstNode* pnode, const vector<CVar>& args)
 			CSignal temp2(temp);
 			temp += &temp2;
 			CVar* extraOut = new CVar; // to carry a state array
-			temp.evoke_modsig(__filt, (void*)&args, (void*)extraOut);
+			temp.evoke_modsig2(__filt, (void*)&args, (void*)extraOut);
 			temp.ReverseTime();
 			extraOut->ReverseTime();
 			((vector<CVar>*) & args)->back().UpdateBuffer(extraOut->nSamples);
 			memcpy(((vector<CVar>*) & args)->back().buf, extraOut->buf, sizeof(float) * extraOut->nSamples);
-			temp.evoke_modsig(__filt, (void*)&args, (void*)extraOut);
+			temp.evoke_modsig2(__filt, (void*)&args, (void*)extraOut);
 			temp.ReverseTime();
 			extraOut->ReverseTime();
 			memcpy(past->Sig.buf, temp.buf + nfact, sizeof(float) * past->Sig.nSamples);

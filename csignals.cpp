@@ -1285,15 +1285,17 @@ CTimeSeries CTimeSeries::evoke_getval(float (CSignal::*fp)(unsigned int, unsigne
 
 CSignal& CSignal::evoke_modsig(fmodify fp, void* pargin, void* pargout)
 {
+	auto len = Len();
 	for (unsigned int k = 0; k < nGroups; k++)
 	{
-		(fp)((float*)(strbuf + k * bufBlockSize * Len()), Len(), pargin, pargout);
+		(fp)((float*)(strbuf + k * bufBlockSize * len), len, pargin, pargout);
 	}
 	return *this;
 }
 
 CSignal CSignal::evoke_modsig2(CSignal(*func) (const CSignal&, void*, void*), void* pargin, void* pargout)
 {
+	auto len = Len();
 	CSignal out(fs);
 	out.UpdateBuffer(nSamples);
 	CSignal indy(fs);
@@ -1301,8 +1303,8 @@ CSignal CSignal::evoke_modsig2(CSignal(*func) (const CSignal&, void*, void*), vo
 	for (unsigned int k = 0; k < nGroups; k++)
 	{
 		CSignal bit(fs);
-		bit.UpdateBuffer(Len());
-		memcpy(bit.buf, buf + k * Len(), sizeof(float) * Len());
+		bit.UpdateBuffer(len);
+		memcpy(bit.buf, buf + k * len, sizeof(float) * len);
 		indy = (func)(bit, pargin, pargout);
 		count += indy.nSamples;
 		if (count > out.nSamples)
@@ -1369,10 +1371,10 @@ CSignal CSignal::evoke_getsig2(CSignal(*func) (float*, unsigned int, void*, void
 		out.UpdateBuffer(newLength);
 	for (unsigned int k = 1; k < nGroups; k++)
 	{
-		auto sss = func((float*)(strbuf + len * k * bufBlockSize), len, pargin, temp);
-		memcpy(out.strbuf + len0 * k * sss.bufBlockSize, sss.buf, len0 * sss.bufBlockSize);
+		auto outrow = func((float*)(strbuf + len * k * bufBlockSize), len, pargin, temp);
+		memcpy(out.strbuf + len0 * k * outrow.bufBlockSize, outrow.buf, len0 * outrow.bufBlockSize);
 		if (pargout)
-			memcpy(extra.strbuf + extralen0 * k * sss.bufBlockSize, extra0.buf, extralen0 * sss.bufBlockSize);
+			memcpy(extra.strbuf + extralen0 * k * outrow.bufBlockSize, extra0.buf, extralen0 * outrow.bufBlockSize);
 	}
 	out.nSamples = out0.nSamples * nGroups; // necessary for [b,c]=a.max
 //	out.nGroups = out0.nGroups; //  correct for y=noise(10).group(4)--- nGroups for group should be adjusted inside of _group, not here
