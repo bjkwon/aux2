@@ -2293,3 +2293,20 @@ getOldTag(lame_t gf)
 }
 
 /* end of get_audio.c */
+
+int	read_mp3_header(const char* filename, size_t* nSamples, int* nChans, int* fs, mp3data_struct* mp3info, char* errstr)
+{
+    FILE* fp = fopen(filename, "rb");
+    if (!fp) return -1;
+    int     enc_delay = 0, enc_padding = 0;
+    int input_format = global_reader.input_format;
+    global_reader.input_format = sf_mp123;
+    int res = lame_decode_initfile(fp, &global_decoder.mp3input_data, &enc_delay, &enc_padding);
+    *nChans = global_decoder.mp3input_data.stereo;
+    *fs = global_decoder.mp3input_data.samplerate;
+    *nSamples = global_decoder.mp3input_data.nsamp;
+    *mp3info = global_decoder.mp3input_data;
+    fclose(fp);
+    global_reader.input_format = (sound_file_format)input_format;
+    return 0;
+}

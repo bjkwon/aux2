@@ -9,6 +9,14 @@
 
 #endif
 
+int GetFileText(const char* fname, const char* mod, string& strOut); // utils.cpp
+int GetFileText(FILE* fp, string& strOut); // utils.cpp
+
+//Application-wide global variables
+vector<skope*> xscope;
+
+map<string, vector<CVar*>> glovar_dummy; // need some kind of global definition
+map<string, vector<CVar*>> CAstSigEnv::glovar = glovar_dummy;
 
 #define MAX_PATH 256
 
@@ -222,6 +230,43 @@ AstNode* skope::makenodes(const string& instr)
 	}
 	script = instr;
 	return out;
+}
+
+vector<CVar*> skope::Compute()
+{
+	// There are many reasons to use this function as a Gateway function in the application, avoiding calling Compute(xtree) directly.
+	// Call Compute(xtree) only if you know exactly what's going on. 11/8/2017 bjk
+	vector<CVar*> res;
+	Sig.cell.clear();
+	Sig.strut.clear();
+	Sig.struts.clear();
+	Sig.SetNextChan(NULL);
+	Sig.functionEvalRes = false;
+	inTryCatch = 0;
+	//	pgo = NULL;
+	lhs = NULL;
+	if (!node) {
+		res.push_back(&Sig);
+		return res;
+	}
+	fBreak = false;
+	if (node->type == N_BLOCK && (u.application == "xcom" || u.application == "auxlib")) {
+		AstNode* p = node->next;
+		while (p)
+		{
+			res.push_back(Compute(p));
+			p = p->next;
+			lhs = NULL; // to clear lhs from the last statement in the block 7/23/2019
+		}
+	}
+	else
+	{
+		baselevel.push_back(level);
+		res.push_back(Compute(node));
+		baselevel.pop_back();
+	}
+//	Tick1 = GetTickCount0();
+	return res;
 }
 
 CVar* skope::Compute(const AstNode* pnode)
@@ -916,157 +961,296 @@ static CVar* GetGOVariable(const skope& ths, const char* varname, CVar* pvar)
 
 bool skope::PrepareAndCallUDF(const AstNode* pCalling, CVar* pBase, CVar* pStaticVars)
 {
-	//if (!pCalling->str)
-	//	throw exception_etc(*this, pCalling, "p->str null pointer in PrepareAndCallUDF(p,...)").raise();
-	//// Check if the same udf is called during debugging... in that case Script shoudl be checked and handled...
+	if (!pCalling->str)
+		throw exception_etc(*this, pCalling, "p->str null pointer in PrepareAndCallUDF(p,...)").raise();
+	// Check if the same udf is called during debugging... in that case Script shoudl be checked and handled...
 
-	//// Checking the number of input args used in the call
-	//size_t nargs = 0;
-	//if (pCalling->alt)
-	//	for (auto pp = pCalling->alt->child; pp; pp = pp->next)
-	//		nargs++;
-	//CAstSigEnv tempEnv(*pEnv);
-	//son.reset(new skope(&tempEnv));
-	//son->u = u;
-	//son->u.title = pCalling->str;
-	//son->u.debug.status = null;
-	//son->lhs = lhs;
-	//son->level = level + 1;
-	//son->baselevel.front() = baselevel.back();
-	//son->dad = this; // necessary when debugging exists with stepping (F10), the stepping can continue in tbe calling skope without breakpoints. --=>check 7/25
-	//son->fpmsg = fpmsg;
-	//if (GOvars.find("?foc") != GOvars.end()) son->GOvars["?foc"] = GOvars["?foc"];
-	//if (GOvars.find("gcf") != GOvars.end())	son->GOvars["gcf"] = GOvars["gcf"];
-	//auto udftree = pEnv->udf.find(pCalling->str);
-	//if (udftree != pEnv->udf.end())
-	//{
-	//	son->u.t_func = (*udftree).second.uxtree;
-	//	son->u.t_func_base = son->u.t_func;
-	//	son->u.base = son->u.t_func->str;
-	//}
-	//else
-	//{
-	//	auto udftree2 = pEnv->udf.find(u.base); // if this is to be a local udf, base should be ready through a previous iteration.
-	//	if (udftree2 == pEnv->udf.end())
-	//		throw CAstException(INTERNAL, *this, pCalling).proc("PrepareCallUDF():supposed to be a local udf, but AstNode with that name not prepared");
-	//	son->u.t_func_base = (*udftree2).second.uxtree;
-	//	son->u.base = u.base; // this way, base can maintain through iteration.
-	//	son->u.t_func = (*pEnv->udf.find(u.base)).second.local[pCalling->str].uxtree;
-	//}
-	//son->xtree = son->u.t_func_base->child->next;
-	//son->xtree = son->u.t_func->child->next;
-	////output argument string list
-	//son->u.argout.clear();
-	//AstNode* pOutParam = son->u.t_func->alt;
-	//ostringstream oss;
-	//if (pOutParam) {
-	//	if (pOutParam->type == N_VECTOR)
-	//	{
-	//		if (pOutParam->str)
-	//			pOutParam = ((AstNode*)pOutParam->str)->alt;
-	//		else
-	//			pOutParam = pOutParam->alt;
-	//		for (AstNode* pf = pOutParam; pf; pf = pf->next)
-	//			son->u.argout.push_back(pf->str);
-	//		son->u.nargout = (int)son->u.argout.size();
-	//	}
-	//	else
-	//	{
-	//		oss << "TYPE=" << pOutParam->type << "PrepareCallUDF():UDF output should be alt and N_VECTOR";
-	//		throw CAstException(INTERNAL, *this, pCalling).proc(oss.str().c_str());
-	//	}
-	//}
-	//AstNode* pf, * pa;	 // formal & actual parameter; pa is for this, pf is for son
-	////Checking requested output arguments vs formal output arguments
-	//if (lhs)
-	//{
-	//	AstNode* p = lhs->type == N_VECTOR ? ((AstNode*)lhs->str)->alt : lhs;
-	//	if (lhs->type == N_VECTOR) for (son->u.nargout = 0; p && p->line == lhs->line; p = p->next, son->u.nargout++) {}
-	//	if (son->u.nargout > (int)son->u.argout.size()) {
-	//		oss << "More output arguments than in the definition (" << son->u.argout.size() << ").";
-	//		throw CAstException(USAGE, *this, pCalling).proc(oss.str().c_str(), son->u.t_func->str);
-	//	}
-	//}
-	//else
-	//	son->u.nargout = (int)son->u.argout.size(); // probably not correct
-	//// input parameter binding
-	//pa = pCalling->alt;
-	////If the line invoking the udf res = udf(arg1, arg2...), pa points to arg1 and so on
-	//if (pa && pa->type == N_ARGS)
-	//	pa = pa->child;
-	////If the line invoking the udf res = var.udf(arg1, arg2...), binding of the first arg, var, is done separately via pBase. The rest, arg1, arg2, ..., are done below with pf->next
-	//pf = son->u.t_func->child->child;
-	//if (pBase) { son->SetVar(pf->str, pBase); pf = pf->next; }
-	////if this is for udf object function call, put that psigBase for pf->str and the rest from pa
-	//for (son->u.nargin = 0; pa && pf; pa = pa->next, pf = pf->next, son->u.nargin++)
-	//{
-	//	CVar tsig = Compute(pa);
-	//	if (tsig.IsGO())
-	//		son->SetVar(pf->str, pgo); // variable pf->str is created in the context of son
-	//	else
-	//		son->SetVar(pf->str, &tsig); // variable pf->str is created in the context of son
-	//}
-	//if (nargs > son->u.nargin)
-	//{
-	//	oss << "Excessive input arguments specified (expected " << son->u.nargin << ", given " << nargs << ") :";
-	//	throw CAstException(USAGE, *this, pCalling).proc(oss.str().c_str(), son->u.t_func->str);
-	//}
-	////son->u.nargin is the number of args specified in udf
-	//if (u.debug.status == stepping_in) son->u.debug.status = stepping;
-	//xscope.push_back(son.get());
-	////son->SetVar("_________",pStaticVars); // how can I add static variables here???
-	//size_t nArgout = son->CallUDF(pCalling, pBase);
-	//// output parameter binding
-	//vector<CVar*> holder;
-	//size_t cnt = 0;
-	//// output argument transfer from son to this
-	//double nargin = son->Vars["nargin"].value();
-	//double nargout = son->Vars["nargout"].value();
-	////Undefined output variables are defined as empty
-	//for (auto v : son->u.argout)
-	//	if (son->Vars.find(v) == son->Vars.end() && (son->GOvars.find(v) == son->GOvars.end() || son->GOvars[v].front()->IsEmpty()))
-	//		son->SetVar(v.c_str(), new CVar);
-	////lhs is either NULL (if not specified), T_ID or N_VECTOR
-	//if (lhs)
-	//{
-	//	outputbinding(pCalling, nArgout);
-	//}
-	//else // no output parameter specified. --> first formal output arg goes to ans
-	//{
-	//	if (son->u.argout.empty())
-	//		Sig.Reset();
-	//	else
-	//	{
-	//		if (son->Vars.find(son->u.argout.front()) != son->Vars.end())
-	//			Sig = son->Vars[son->u.argout.front()];
-	//		else
-	//		{
-	//			if (son->GOvars[son->u.argout.front()].size() > 1)
-	//				Sig = *(pgo = MakeGOContainer(son->GOvars[son->u.argout.front()]));
-	//			else if (son->GOvars[son->u.argout.front()].size() == 1)
-	//				Sig = *(pgo = son->GOvars[son->u.argout.front()].front());
-	//			else
-	//				Sig = CVar();
-	//		}
-	//	}
-	//}
-	//if ((son->u.debug.status == stepping || son->u.debug.status == continuing) && u.debug.status == null)
-	//{ // no b.p set in the main udf, but in these conditions, as the local udf is finishing, the stepping should continue in the main udf, or debug.status should be set progress, so that the debugger would be properly exiting as it finishes up in CallUDF()
-	//	u.debug.GUI_running = true;
-	//	if (son->u.debug.status == stepping) // b.p. set in a local udf
-	//		u.debug.status = stepping;
-	//	else // b.p. set in other udf
-	//		u.debug.status = progress;
-	//}
-	//if (son->GOvars.find("?foc") != son->GOvars.end()) GOvars["?foc"] = son->GOvars["?foc"];
-	//if (son->GOvars.find("gcf") != son->GOvars.end()) GOvars["gcf"] = son->GOvars["gcf"];
-	//u.pLastRead = NULL;
-	//if (pgo) pgo->functionEvalRes = true;
-	//Sig.functionEvalRes = true;
-	//xscope.pop_back(); // move here????? to make purgatory work...
+	// Checking the number of input args used in the call
+	size_t nargs = 0;
+	if (pCalling->alt)
+		for (auto pp = pCalling->alt->child; pp; pp = pp->next)
+			nargs++;
+	CAstSigEnv tempEnv(*pEnv);
+	son.reset(new skope(&tempEnv));
+	son->u = u;
+	son->u.title = pCalling->str;
+	son->u.debug.status = null;
+	son->lhs = lhs;
+	son->level = level + 1;
+	son->baselevel.front() = baselevel.back();
+	son->dad = this; // necessary when debugging exists with stepping (F10), the stepping can continue in tbe calling skope without breakpoints. --=>check 7/25
+//	son->fpmsg = fpmsg;
+	if (GOvars.find("?foc") != GOvars.end()) son->GOvars["?foc"] = GOvars["?foc"];
+	if (GOvars.find("gcf") != GOvars.end())	son->GOvars["gcf"] = GOvars["gcf"];
+	auto udftree = pEnv->udf.find(pCalling->str);
+	if (udftree != pEnv->udf.end())
+	{
+		son->u.t_func = (*udftree).second.uxtree;
+		son->u.t_func_base = son->u.t_func;
+		son->u.base = son->u.t_func->str;
+	}
+	else
+	{
+		auto udftree2 = pEnv->udf.find(u.base); // if this is to be a local udf, base should be ready through a previous iteration.
+		if (udftree2 == pEnv->udf.end())
+			throw exception_etc(*this, pCalling, "PrepareCallUDF():supposed to be a local udf, but AstNode with that name not prepared").raise();
+		son->u.t_func_base = (*udftree2).second.uxtree;
+		son->u.base = u.base; // this way, base can maintain through iteration.
+		son->u.t_func = (*pEnv->udf.find(u.base)).second.local[pCalling->str].uxtree;
+	}
+	son->node = son->u.t_func_base->child->next;
+	son->node = son->u.t_func->child->next;
+	//output argument string list
+	son->u.argout.clear();
+	AstNode* pOutParam = son->u.t_func->alt;
+	ostringstream oss;
+	if (pOutParam) {
+		if (pOutParam->type == N_VECTOR)
+		{
+			if (pOutParam->str)
+				pOutParam = ((AstNode*)pOutParam->str)->alt;
+			else
+				pOutParam = pOutParam->alt;
+			for (AstNode* pf = pOutParam; pf; pf = pf->next)
+				son->u.argout.push_back(pf->str);
+			son->u.nargout = (int)son->u.argout.size();
+		}
+		else
+		{
+			oss << "TYPE=" << pOutParam->type << "PrepareCallUDF():UDF output should be alt and N_VECTOR";
+			throw exception_etc(*this, pCalling, oss.str()).raise();
+		}
+	}
+	AstNode* pf, * pa;	 // formal & actual parameter; pa is for this, pf is for son
+	//Checking requested output arguments vs formal output arguments
+	if (lhs)
+	{
+		AstNode* p = lhs->type == N_VECTOR ? ((AstNode*)lhs->str)->alt : lhs;
+		if (lhs->type == N_VECTOR) for (son->u.nargout = 0; p && p->line == lhs->line; p = p->next, son->u.nargout++) {}
+		if (son->u.nargout > (int)son->u.argout.size()) {
+			oss << "More output arguments than in the definition (" << son->u.argout.size() << "), ";
+			oss << son->u.t_func->str;
+			throw exception_etc(*this, pCalling, oss.str()).raise();
+		}
+	}
+	else
+		son->u.nargout = (int)son->u.argout.size(); // probably not correct
+	// input parameter binding
+	pa = pCalling->alt;
+	//If the line invoking the udf res = udf(arg1, arg2...), pa points to arg1 and so on
+	if (pa && pa->type == N_ARGS)
+		pa = pa->child;
+	//If the line invoking the udf res = var.udf(arg1, arg2...), binding of the first arg, var, is done separately via pBase. The rest, arg1, arg2, ..., are done below with pf->next
+	pf = son->u.t_func->child->child;
+	if (pBase) { son->SetVar(pf->str, pBase); pf = pf->next; }
+	//if this is for udf object function call, put that psigBase for pf->str and the rest from pa
+	for (son->u.nargin = 0; pa && pf; pa = pa->next, pf = pf->next, son->u.nargin++)
+	{
+		CVar tsig = Compute(pa);
+		if (tsig.IsGO())
+			son->SetVar(pf->str, pgo); // variable pf->str is created in the context of son
+		else
+			son->SetVar(pf->str, &tsig); // variable pf->str is created in the context of son
+	}
+	if (nargs > son->u.nargin)
+	{
+		oss << "Excessive input arguments specified (expected " << son->u.nargin << ", given " << nargs << ") :";
+		oss << son->u.t_func->str;
+		throw exception_etc(*this, pCalling, oss.str()).raise();
+	}
+	//son->u.nargin is the number of args specified in udf
+	if (u.debug.status == stepping_in) son->u.debug.status = stepping;
+	xscope.push_back(son.get());
+	//son->SetVar("_________",pStaticVars); // how can I add static variables here???
+	size_t nArgout = son->CallUDF(pCalling, pBase);
+	// output parameter binding
+	vector<CVar*> holder;
+	size_t cnt = 0;
+	// output argument transfer from son to this
+	float nargin = son->Vars["nargin"].value();
+	float nargout = son->Vars["nargout"].value();
+	//Undefined output variables are defined as empty
+	for (auto v : son->u.argout)
+		if (son->Vars.find(v) == son->Vars.end() && (son->GOvars.find(v) == son->GOvars.end() || son->GOvars[v].front()->IsEmpty()))
+			son->SetVar(v.c_str(), new CVar);
+	//lhs is either NULL (if not specified), T_ID or N_VECTOR
+	if (lhs)
+	{
+		outputbinding(pCalling, nArgout);
+	}
+	else // no output parameter specified. --> first formal output arg goes to ans
+	{
+		if (son->u.argout.empty())
+			Sig.Reset();
+		else
+		{
+			if (son->Vars.find(son->u.argout.front()) != son->Vars.end())
+				Sig = son->Vars[son->u.argout.front()];
+			else
+			{
+//				if (son->GOvars[son->u.argout.front()].size() > 1)
+//					Sig = *(pgo = MakeGOContainer(son->GOvars[son->u.argout.front()]));
+//				else if (son->GOvars[son->u.argout.front()].size() == 1)
+//					Sig = *(pgo = son->GOvars[son->u.argout.front()].front());
+//				else
+					Sig = CVar();
+			}
+		}
+	}
+	if ((son->u.debug.status == stepping || son->u.debug.status == continuing) && u.debug.status == null)
+	{ // no b.p set in the main udf, but in these conditions, as the local udf is finishing, the stepping should continue in the main udf, or debug.status should be set progress, so that the debugger would be properly exiting as it finishes up in CallUDF()
+		u.debug.GUI_running = true;
+		if (son->u.debug.status == stepping) // b.p. set in a local udf
+			u.debug.status = stepping;
+		else // b.p. set in other udf
+			u.debug.status = progress;
+	}
+	if (son->GOvars.find("?foc") != son->GOvars.end()) GOvars["?foc"] = son->GOvars["?foc"];
+	if (son->GOvars.find("gcf") != son->GOvars.end()) GOvars["gcf"] = son->GOvars["gcf"];
+	u.pLastRead = NULL;
+	if (pgo) pgo->functionEvalRes = true;
+	Sig.functionEvalRes = true;
+	xscope.pop_back(); // move here????? to make purgatory work...
 	return true;
 }
 
+size_t skope::CallUDF(const AstNode* pnode4UDFcalled, CVar* pBase)
+{
+	// t_func: the T_FUNCTION node pointer for the current UDF call, created after ReadUDF ("formal" context--i.e., how the udf file was read with variables used in the file)
+	// pOutParam: AstNode for formal output variable (or LHS), just used inside of this function.
+	// Output parameter dispatching (sending the output back to the calling worksapce) is done with pOutParam and lhs at the bottom.
+
+	// u.debug.status is set when debug key is pressed (F5, F10, F11), prior to this call.
+	// For an initial entry UDF, u.debug.status should be null
+	CVar nargin((float)u.nargin);
+	CVar nargout((float)u.nargout);
+	SetVar("nargin", &nargin);
+	SetVar("nargout", &nargout); // probably not correct
+	// If the udf has multiple statements, p->type is N_BLOCK), then go deeper
+	// If it has a single statement, take it from there.
+	AstNode* pFirst = u.t_func->child->next;
+	if (pFirst->type == N_BLOCK)	pFirst = pFirst->next;
+	//Get the range of lines for the current udf
+	u.currentLine = pFirst->line;
+	AstNode* p;
+	int line2;
+	for (p = pFirst; p; p = p->next)
+	{
+		line2 = p->line;
+		if (!p->next) // if the node is T_FOR, T_WHILE or T_IF, p-next is NULL is it should continue through p->child
+		{
+			if (p->type == T_FOR || p->type == T_WHILE)
+				p = p->alt;
+			else if (p->type == T_IF)
+			{
+				if (p->alt)
+					p = p->alt;
+				else
+					p = p->child;
+			}
+		}
+	}
+	//probably needed to enter a new, external udf (if not, may skip)
+//	if (pEnv->udf[u.base].newrecruit)
+//		fpmsg.UpdateDebuggerGUI(this, refresh, -1); // shouldn't this be entering instead of refresh? It seems that way at least to F11 an not-yet-opened udf 10/16/2018. But.. it crashes. It must not have been worked on thoroughly...
+														//if this is auxconscript front astsig, enter call fpmsg.UpdateDebuggerGUI()
+//	if (u.debug.status == stepping)
+//		/*u.debug.GUI_running = true, */ fpmsg.UpdateDebuggerGUI(this, entering, -1);
+//	else
+	{ // probably entrance udf... First, check if current udfname (i.e., Script) is found in DebugBreaks
+		// if so, mark u.debug.status as progress and set next breakpoint
+		// and call debug_GUI
+		vector<int> breakpoint = pEnv->udf[u.base].DebugBreaks;
+		for (vector<int>::iterator it = breakpoint.begin(); it != breakpoint.end(); it++)
+		{
+			if (*it < u.currentLine) continue;
+			if (*it <= line2) {
+				u.debug.status = progress; u.nextBreakPoint = *it;
+				//u.debug.GUI_running = true, fpmsg.UpdateDebuggerGUI(this, entering, -1);
+				break;
+			}
+		}
+	}
+	p = pFirst;
+	while (p)
+	{
+		pLast = p;
+		// T_IF, T_WHILE, T_FOR are checked here to break right at the beginning of the loop
+		u.currentLine = p->line;
+//		if (p->type == T_ID || p->type == T_FOR || p->type == T_IF || p->type == T_WHILE || p->type == N_IDLIST || p->type == N_VECTOR)
+//			hold_at_break_point(p);
+		Compute(p);
+		//		pgo = NULL; // without this, go lingers on the next line
+		//		Sig.Reset(1); // without this, fs=3 lingers on the next line
+		if (fExit) break;
+		p = p->next;
+	}
+	if (u.debug.status != null)
+	{
+		//		currentLine = -1; // to be used in CDebugDlg::ProcessCustomDraw() (re-drawing with default background color)... not necessary for u.debug.status==stepping (because currentLine has been updated stepping) but won't hurt
+		if (u.debug.GUI_running == true)
+		{
+			// send to purgatory and standby for another debugging key action, if dad is the base scope
+			//if (dad == xscope.front() && u.debug.status == stepping)
+			//{
+			//	fpmsg.UpdateDebuggerGUI(this, purgatory, -1);
+			//	fpmsg.HoldAtBreakPoint(this, pLast);
+			//}
+			u.currentLine = -1;
+			u.debug.inPurgatory = false; // necessary to reset the color of debug window listview.
+			//when exiting from a inside udf (whether local or not) to a calling udf with F10 or F11, the calling udf now should have stepping.
+//			fpmsg.UpdateDebuggerGUI(this, exiting, -1);
+		}
+		if (xscope.size() > 2) // pvevast hasn't popped yet... This means son is secondary udf (either a local udf or other udf called by the primary udf)
+		{//why is this necessary? 10/19/2018----yes this is...2/16/2019
+//			if (u.debug.status == stepping && fpmsg.IsCurrentUDFOnDebuggerDeck && !fpmsg.IsCurrentUDFOnDebuggerDeck(Script.c_str()))
+//				fpmsg.UpdateDebuggerGUI(dad, entering, -1);
+		}
+	}
+	return u.nargout;
+}
+
+multimap<CVar, AstNode*> skope::register_switch_cvars(const AstNode* pnode, vector<int>& undefined)
+{
+	multimap<CVar, AstNode*> out;
+	// This evaluates the udf and computes all case keys for switch..case... loops.
+	AstNode* p, * _pnode = (AstNode*)pnode;
+	for (; _pnode; _pnode = _pnode->next)
+	{
+		if (_pnode->type == T_SWITCH)
+		{
+			for (p = _pnode->alt; p && p->next; p = p->next->alt)
+			{
+				if (p->type == N_ARGS)
+				{
+					for (AstNode* pa = p->child; pa; pa = pa->next)
+					{
+						const CVar tsig2 = Compute(pa);
+						out.emplace(tsig2, p->next);
+					}
+				}
+				else if (p->type == T_OTHERWISE)
+					break;
+				else
+				{
+					try {
+						CVar tsig2 = Compute(p);
+						out.emplace(tsig2, p->next);
+					}
+					catch (const skope_exception& e)
+					{
+						string emsg = e.outstr;
+						string estr = e.tidstr;
+						int line = e.line;
+						line++; line--;
+						undefined.push_back(e.line);
+					}
+				}
+			}
+		}
+	}
+	return  out;
+}
 
 AstNode* skope::ReadUDF(string& emsg, const char* udf_filename)
 {
@@ -1099,12 +1283,12 @@ AstNode* skope::ReadUDF(string& emsg, const char* udf_filename)
 	//file found
 	transform(fullpath.begin(), fullpath.end(), fullpath.begin(), ::tolower);
 	string filecontent;
-	//if (GetFileText(auxfile, filecontent) <= 0)
-	//{// File reading error or empty file
-	//	emsg = string("Cannot read specified udf or script file ") + udf_filename;
-	//	fclose(auxfile);
-	//	return NULL;
-	//}
+	if (GetFileText(auxfile, filecontent) <= 0)
+	{// File reading error or empty file
+		emsg = string("Cannot read specified udf or script file ") + udf_filename;
+		fclose(auxfile);
+		return NULL;
+	}
 	fclose(auxfile);
 	// if udf exists and filecontent is still the content, use it
 	auto udftree = pEnv->checkout_udf(udf_filename, filecontent);
@@ -1128,35 +1312,82 @@ AstNode* skope::ReadUDF(string& emsg, const char* udf_filename)
 	return pout;
 }
 
-FILE* skope::fopen_from_path(string fname, string ext, string& fullfilename)
-{ // in in out
-	char drive[64], dir[MAX_PATH], filename[MAX_PATH], extension[MAX_PATH];
-//	_splitpath(fname.c_str(), drive, dir, filename, extension);
-	transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
+AstNode* skope::RegisterUDF(const AstNode* p, const char* fullfilename, const string& filecontent)
+{
+	//Deregistering takes place during cleaning out of pEnv i.e., ~CAstSigEnv()
+	char udf_filename[256];
+	_splitpath(fullfilename, NULL, NULL, udf_filename, NULL);
+	AstNode* pnode4Func = (AstNode*)((p->type == N_BLOCK) ? p->next : p);
+	string namefrompnode = pnode4Func->str;
+	transform(namefrompnode.begin(), namefrompnode.end(), namefrompnode.begin(), ::tolower);
+	if (namefrompnode != udf_filename) // pnode4Func is NULL for local function call and it will crash.....8/1/
+	{
+		auto it = pEnv->udf.find(p->str);
+		if (it != pEnv->udf.end())	pEnv->udf.erase(pEnv->udf.find(p->str));
+		string emsg = string(string(udf_filename) + " vs ") + pnode4Func->str;
+		throw exception_etc(*this, p, string("inconsistent function name: ") + emsg).raise();
+	}
+	vector<int> undefined;
+	auto vv = register_switch_cvars(pnode4Func->child->next->next, undefined);
 
-	char type[4];
-	if (ext == "txt") strcpy(type, "rt");
-	else						strcpy(type, "rb");
+	pEnv->udf[udf_filename].uxtree = pnode4Func;
+	pEnv->udf[udf_filename].fullname = fullfilename;
+	pEnv->udf[udf_filename].content = filecontent.c_str();
+	pEnv->udf[udf_filename].switch_case = vv;
+	pEnv->udf[udf_filename].switch_case_undefined = undefined;
+
+	for (AstNode* pp = pnode4Func->next; pp; pp = pp->next)
+	{// if one or more local functions exists
+		UDF loc;
+		loc.uxtree = pp;
+		namefrompnode = pp->str;
+		transform(namefrompnode.begin(), namefrompnode.end(), namefrompnode.begin(), ::tolower);
+		loc.fullname = fullfilename;
+		loc.content = "see base function for content";
+		pEnv->udf[udf_filename].local[namefrompnode] = loc;
+	}
+	return pnode4Func;
+}
+
+#if !defined(MAX_PATH)
+#define MAX_PATH          260
+#endif
+
+FILE* skope::fopen_from_path(const string& fname, const string& ext, string& fullfilename)
+{ // in in out
+#ifdef _WINDOWS
+	char drive[64], dir[MAX_PATH], filename[MAX_PATH], extension[MAX_PATH];
+	_splitpath(fname.c_str(), drive, dir, filename, extension);
+#endif
+	string _fname(fname), _ext(ext);
+	transform(_ext.begin(), _ext.end(), _ext.begin(), ::tolower);
+	char fopenopt[4];
+	if (_ext == "txt") strcpy(fopenopt, "rt");
+	else						strcpy(fopenopt, "rb");
 	size_t pdot = fname.rfind('.');
 	if ((pdot == fname.npos || pdot < fname.length() - 4) && !extension[0])
-		fname += "." + ext;
+		_fname += "." + ext;
 
+#ifdef _WINDOWS
 	if (drive[0] + dir[0] > 0)
+#else
+	if (fname.find('/') != string::npos)
+#endif
 	{ // if path is included in fname, open with fname
-		fullfilename = fname;
-		return fopen(fname.c_str(), type);
+		fullfilename = _fname;
+		return fopen(_fname.c_str(), fopenopt);
 	}
 	else {
-		string ofname(fname);
+		string ofname(_fname);
 		// search fname in AuxPath, beginning with current working directory
-		fullfilename = pEnv->AppPath + fname;
-		FILE* file = fopen(fullfilename.c_str(), type);
+		fullfilename = pEnv->AppPath + _fname;
+		FILE* file = fopen(fullfilename.c_str(), fopenopt);
 		if (!file)
 		{
 			for (auto path : pEnv->AuxPath)
 			{
-				fullfilename = path + fname;
-				file = fopen(fullfilename.c_str(), type);
+				fullfilename = path + _fname;
+				file = fopen(fullfilename.c_str(), fopenopt);
 				if (file) return file;
 			}
 		}
@@ -1168,22 +1399,22 @@ AstNode* CAstSigEnv::checkin_udf(const string& udfname, const string& fullpath, 
 {
 	AstNode* pout = NULL;
 	skope qscope(this);
-	//qscope.Script = udfname;
-	//transform(qscope.Script.begin(), qscope.Script.end(), qscope.Script.begin(), ::tolower);
-	//udf[qscope.Script].newrecruit = true;
-	//auto udftree = qscope.parse_aux(filecontent.c_str(), emsg);
-	//if (udftree)
-	//{
-	//	qscope.node = udftree;
-	//	pout = qscope.RegisterUDF(qscope.node, fullpath.c_str(), filecontent);
-	//	// The following should be after all the throws. Otherwise, the UDF AST will be dangling.
-	//	// To prevent de-allocation of the AST of the UDF when qscope goes out of skope.
-	//	if (qscope.node->type == N_BLOCK)
-	//		qscope.node->next = NULL;
-	//	else
-	//		qscope.node = NULL;
-	//	return pout;
-	//}
+	qscope.script = udfname;
+	transform(qscope.script.begin(), qscope.script.end(), qscope.script.begin(), ::tolower);
+	udf[qscope.script].newrecruit = true;
+	auto udftree = qscope.makenodes(filecontent);
+	if (udftree)
+	{
+		qscope.node = udftree;
+		pout = qscope.RegisterUDF(qscope.node, fullpath.c_str(), filecontent);
+		// The following should be after all the throws. Otherwise, the UDF AST will be dangling.
+		// To prevent de-allocation of the AST of the UDF when qscope goes out of skope.
+		if (qscope.node->type == N_BLOCK)
+			qscope.node->next = NULL;
+		else
+			qscope.node = NULL;
+		return pout;
+	}
 	return NULL;
 }
 
@@ -1234,19 +1465,19 @@ skope::skope(const skope* src)
 void skope::init()
 {
 	node = NULL;
-	//statusMsg = "";
-	//fAllocatedAst = false;
-	//pLast = NULL;
-	//son = NULL;
-	//dad = NULL;
-	//lhs = NULL;
+	statusMsg = "";
+//	fAllocatedAst = false;
+	pLast = NULL;
+	son = NULL;
+	dad = NULL;
+	lhs = NULL;
 
-	//FsFixed = false;
-	//pgo = NULL;
-	//Tick0 = 1;
-	//inTryCatch = 0;
-	//level = 1;
-	//baselevel.push_back(level);
+//	FsFixed = false;
+	pgo = NULL;
+	Tick0 = 1;
+	inTryCatch = 0;
+	level = 1;
+	baselevel.push_back(level);
 }
 
 skope& skope::SetVar(const char* name, CVar* prhs, CVar* pBase)
@@ -1996,4 +2227,30 @@ void skope::switch_case_handler(const AstNode* pnode)
 	for (auto ck = more.begin(); ck != more.end(); ck++)
 		pEnv->udf[u.base].switch_case.emplace((*ck).first, (*ck).second);
 	pEnv->udf[u.base].switch_case_undefined.clear();
+}
+
+UDF& UDF::operator=(const UDF& rhs)
+{
+	if (this != &rhs)
+	{
+		uxtree = rhs.uxtree;
+		fullname = rhs.fullname;
+		content = rhs.content;
+		DebugBreaks = rhs.DebugBreaks;
+		newrecruit = rhs.newrecruit;
+	}
+	return *this;
+}
+
+CAstSigEnv& CAstSigEnv::operator=(const CAstSigEnv& rhs)
+{
+	if (this != &rhs)
+	{
+		Fs = rhs.Fs;
+		AuxPath = rhs.AuxPath;
+		udf = rhs.udf;
+		shutdown = rhs.shutdown;
+		glovar = rhs.glovar;
+	}
+	return *this;
 }

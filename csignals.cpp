@@ -2784,9 +2784,6 @@ CSignals &CSignals::each(float(*fn)(complex<float>))
 
 #ifdef _WINDOWS
 
-#ifndef NO_PLAYSND
-
-#endif // NO_PLAYSND
 
 #endif
 

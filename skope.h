@@ -141,7 +141,8 @@ public:
 	unsigned long toc(const AstNode* p);
 	void setstring(const string& instr) { script = instr; };
 	AstNode* makenodes(const string& instr);
-	CVar * Compute(const AstNode* pnode);
+	CVar* Compute(const AstNode* pnode);
+	vector<CVar*> Compute();
 	CVar* TID(AstNode* pnode, AstNode* pRHS, CVar* psig = NULL);
 	skope& SetVar(const char* name, CVar* psig, CVar* pBase = NULL);
 	AstNode* read_node(CNodeProbe& np, AstNode* ptree, AstNode* ppar, bool& RHSpresent);
@@ -149,10 +150,13 @@ public:
 	void throw_LHS_lvalue(const AstNode* pn, bool udf);
 	AstNode* searchtree(const AstNode* pTarget, AstNode* pStart);
 	AstNode* searchtree(AstNode* p, int type);
+	multimap<CVar, AstNode*> register_switch_cvars(const AstNode* pnode, vector<int>& undefined);
 	AstNode* ReadUDF(string& emsg, const char* udf_filename);
+	AstNode* RegisterUDF(const AstNode* p, const char* fullfilename, const string& filecontent);
 	CVar* GetVariable(const char* varname, CVar* pvar = NULL);
 	bool PrepareAndCallUDF(const AstNode* pCalling, CVar* pBase, CVar* pStaticVars = NULL);
-	FILE* fopen_from_path(string fname, string ext, string& fullfilename);
+	size_t CallUDF(const AstNode* pnode4UDFcalled, CVar* pBase);
+	FILE* fopen_from_path(const string& fname, const string& ext, string& fullfilename);
 	bool builtin_func_call(CNodeProbe& diggy, AstNode* p);
 	void HandleAuxFunctions(const AstNode* pnode, AstNode* pRoot = NULL);
 	CVar* pseudoVar(const AstNode* pnode, AstNode* p, CSignals* pout);

@@ -41,3 +41,17 @@ link again
 ==> Still error, 
 
 decl of lame_decode_initfile appears twice (once in lame_export.h, another in get_audio.c). The decl in get_audio.c removed. Tried again. Same error of undefined reference to `lame_decode_initfile'
+
+gcc -c -Iinclude/ lame/*.c -D HAVE_CONFIG_H -D HAVE_STDINT_H
+
+g++ *.o -o aux2 -l :libmp3lame.so -l :libsndfile.so.1 -l :libfftw3f.so.3 -l :libsamplerate.so.0 
+
+g++ -I. -Iinclude/ -c _func/_file.cpp 
+
+g++ -I. -Iinclude/ -Ilame/ -c *.cpp _func/*.cpp lame/*.cpp
+
+g++ *.o -o aux2 -l :libmp3lame.so -l :libsndfile.so.1 -l :libfftw3f.so.3 -l :libsamplerate.so.0
+
+first--- g++ -I. -Iinclude/ -Ilame/ -c *.cpp _func/*.cpp lame/*.cpp
+second-- gcc -c -Iinclude/ lame/*.c -D HAVE_CONFIG_H -D HAVE_STDINT_H
+third--- g++ *.o -o aux2 -l :libmp3lame.so -l :libsndfile.so.1 -l :libfftw3f.so.3 -l :libsamplerate.so.0 

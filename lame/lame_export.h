@@ -103,7 +103,7 @@ extern int lame_aux_encode(lame_t gf, const char *filename, csignals_mp3_aiff *p
 extern int lame_aux_decode(lame_t gf, const char *filename, csignals_mp3_aiff *px, char *errstr);
 extern char* lame_getenv(char const* var);
 
-int	lame_decode_initfile(FILE * fd, mp3data_struct * mp3data, int *enc_delay, int *enc_padding);
+extern int lame_decode_initfile(FILE * fd, mp3data_struct * mp3data, int *enc_delay, int *enc_padding);
 
 
 #if defined(__cplusplus)

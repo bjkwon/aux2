@@ -7,6 +7,8 @@
 #include "skope_exception.h"
 #include "echo.h"
 
+extern vector<skope*> xscope;
+
 void echo(int depth, skope& ctx, const AstNode* pnode, CVar* pvar)
 {
 	if (!pnode->suppress)
@@ -93,7 +95,7 @@ CVar interpreter(skope& sc, const string& instr)
 {
 	auto nodes = sc.makenodes(instr);
 	sc.node = nodes;
-	sc.Compute(nodes);
+	sc.Compute();
 	show_result(sc);
 	return sc.Sig;
 }
@@ -104,6 +106,7 @@ int main()
 	pglobalEnv->AppPath = "";
 	pglobalEnv->InitBuiltInFunctions();
 	skope sc(pglobalEnv);
+	xscope.push_back(&sc);
 	string input;
 	while (1)
 	{

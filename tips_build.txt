@@ -12,8 +12,21 @@ $ ldconfig -p | grep libsndfile.so
 and
 $ ldconfig -p | grep libfftw
 
+$ ldconfig -p | grep libsampler
+	libsamplerate.so.0 (libc6,x86-64) => /usr/lib/x86_64-linux-gnu/libsamplerate.so.0
+
+bomjun@ip-172-31-48-38:~/dev/aux2$ ldconfig -p | grep libsndfile
+	libsndfile.so.1 (libc6,x86-64) => /usr/lib/x86_64-linux-gnu/libsndfile.so.1
+bomjun@ip-172-31-48-38:~/dev/aux2$ ldconfig -p | grep libmp3lame
+	libmp3lame.so.0 (libc6,x86-64) => /usr/lib/x86_64-linux-gnu/libmp3lame.so.0
+	libmp3lame.so (libc6,x86-64) => /usr/lib/x86_64-linux-gnu/libmp3lame.so
+
 and find out the proper name of the library installed in the system.
 If those libraries are not installed, install them first.
 
 To compile and build in Mac, a few steps are needed.
 
+g++ *.o -o aux2 -l :libsndfile.so.1 -l :libfftw3f.so.3 -l :libsamplerate.so.0 -l :libmp3lame.so
+
+
+gcc 
