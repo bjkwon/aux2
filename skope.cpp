@@ -333,7 +333,7 @@ CVar* skope::Compute(const AstNode* pnode)
 	case T_REPLICA:
 		return TID((AstNode*)pnode, NULL, &replica); //Make sure replica has been prepared prior to this
 	case T_ENDPOINT:
-		tsig.SetValue(endpoint);
+		tsig.SetValue(ends.back());
 		return TID((AstNode*)pnode, NULL, &tsig); //Make sure endpoint has been prepared prior to this
 	case '+':
 	case '-':
@@ -750,7 +750,7 @@ AstNode* skope::read_node(CNodeProbe& np, AstNode* ptree, AstNode* ppar, bool& R
 					// if static function, np.psigBase must be NULL
 					if (t_func->suppress == 3 && np.psigBase)
 						throw exception_misuse(*this, t_func, string(ptree->str) + "() : function declared as static cannot be called as a member function.").raise();
-					if (PrepareAndCallUDF(ptree, np.psigBase)) // this probably won't return false
+					if (PrepareAndCallUDF(ptree, &Sig)) // this probably won't return false
 					{// if a function call follows N_ARGS, skip it for next_parsible_node
 						np.psigBase = &Sig;
 						if (ptree->alt && (ptree->alt->type == N_ARGS || IsConditional(ptree->alt)))
@@ -1038,13 +1038,18 @@ bool skope::PrepareAndCallUDF(const AstNode* pCalling, CVar* pBase, CVar* pStati
 	// input parameter binding
 	pa = pCalling->alt;
 	//If the line invoking the udf res = udf(arg1, arg2...), pa points to arg1 and so on
-	if (pa && pa->type == N_ARGS)
-		pa = pa->child;
+	son->u.nargin = 0;
+	if (pa) {
+		if (pa->type == N_ARGS)
+			pa = pa->child;
+		else if (pa->type == N_STRUCT) // if it is a dot function call, make son->u.nargin 1
+			son->u.nargin = 1;
+	}
 	//If the line invoking the udf res = var.udf(arg1, arg2...), binding of the first arg, var, is done separately via pBase. The rest, arg1, arg2, ..., are done below with pf->next
 	pf = son->u.t_func->child->child;
 	if (pBase) { son->SetVar(pf->str, pBase); pf = pf->next; }
 	//if this is for udf object function call, put that psigBase for pf->str and the rest from pa
-	for (son->u.nargin = 0; pa && pf; pa = pa->next, pf = pf->next, son->u.nargin++)
+	for (; pa && pf; pa = pa->next, pf = pf->next, son->u.nargin++)
 	{
 		CVar tsig = Compute(pa);
 		if (tsig.IsGO())
@@ -1454,7 +1459,7 @@ skope::skope(const skope* src)
 	else
 		pEnv = new CAstSigEnv(22050);
 	node = src->node;
-	//endpoint = src->endpoint;
+	ends = src->ends;
 	//pgo = src->pgo;
 	//Script = src->Script;
 	//pLast = src->pLast;
@@ -2090,12 +2095,12 @@ CVar* skope::SetLevel(const AstNode* pnode, AstNode* p)
 	return &Sig;
 }
 
-void skope::prepare_endpoint(const AstNode* p, CVar* pvar)
+float skope::find_endpoint(const AstNode* p, CVar* pvar)
 {  // p is the node the indexing starts (e.g., child of N_ARGS... wait is it also child of conditional p?
 	if (p->next) // first index in 2D
-		endpoint = (float)pvar->nGroups;
+		return (double)pvar->nGroups;
 	else
-		endpoint = (float)pvar->nSamples;
+		return (double)pvar->nSamples;
 }
 
 void skope::interweave_indices(CVar& isig, CVar& isig2, unsigned int len)

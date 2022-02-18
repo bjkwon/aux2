@@ -18,6 +18,7 @@
 #include <time.h>
 #include "aux_classes.h"
 #include "skope.h"
+#include "typecheck.h"
 #include "deque"
 
 #include <algorithm> // for lowercase
@@ -140,7 +141,7 @@ void CNodeProbe::insertreplace(const AstNode *pnode, CVar &sec, CVar &indsig)
 	//				throw CAstException(INTERNAL, *pbase, pnode).proc("insertreplace()--s(conditional?)");
 	//			if (sec.IsScalar())
 	//			{
-	//				double val = sec.value();
+	//				float val = sec.value();
 	//				for (CTimeSeries* piece(psigBase), *index(&indsig); piece; piece = piece->chain, index = index->chain)
 	//				{
 	//					for (unsigned int k = 0; k < index->nSamples; k++)
@@ -258,7 +259,7 @@ CVar * CNodeProbe::TID_indexing(const AstNode* pnode, AstNode *pLHS, AstNode *pR
 	//	oss << "(";
 	//	if (isig.nSamples > 1)  oss << "[";
 	//	if (isig.nSamples < 10)
-	//		for_each(isig.buf, isig.buf + isig.nSamples - 1, [&oss](double v) {oss << v << ' '; });
+	//		for_each(isig.buf, isig.buf + isig.nSamples - 1, [&oss](float v) {oss << v << ' '; });
 	//	else
 	//		oss << (int)isig.buf[0] << ' ' << (int)isig.buf[1] << " ... ";
 	//	if (isig.nSamples > 1)  oss << (int)isig.buf[isig.nSamples - 1] << "]";
@@ -356,6 +357,9 @@ CVar * CNodeProbe::TID_assign(const AstNode *pnode, AstNode *p, AstNode *pRHS)
 			}
 			else if (p == pnode)
 			{	//top-level: SetVar
+				// [DUPLICATE FOUND] if this is for LHS update after a call to a UDF, 
+				//  p->str should have been already updated inside of PrepareAndCallUDF 
+				//  Do something if this is a problem 1/29/2022
 				if (p->suppress != -1) // for the case of (recorder).start--we should keep RHS from affecting the LHS
 				{
 					if (psigRHS->IsGO() && psigRHS->GetFs()!=3)
@@ -401,7 +405,7 @@ CVar * CNodeProbe::TID_assign(const AstNode *pnode, AstNode *p, AstNode *pRHS)
 		}
 		else
 		{
-			throw exception_etc(*pbase, p, "Not expecting this.. 2");
+			throw exception_etc(*pbase, p, "Not expecting this.. 2").raise();
 		}
 	}
 	return psigBase;
@@ -409,45 +413,48 @@ CVar * CNodeProbe::TID_assign(const AstNode *pnode, AstNode *p, AstNode *pRHS)
 
 CVar * CNodeProbe::TID_time_extract(const AstNode *pnode, AstNode *p, AstNode *pRHS)
 {
-	//if (pRHS)
-	//{
-	//	vector<double> tpoints = pbase->gettimepoints(pnode, p->child);
-	//	if (pbase->searchtree(pRHS, T_REPLICA))
-	//		pbase->replica = TimeExtract(pnode, p->child);
-	//	CVar tsig = pbase->Compute(pRHS); // rhs
-	//	if (tsig.GetType() != CSIG_AUDIO && !tsig.IsEmpty())
-	//		throw CAstException(USAGE, *pbase, p).proc("Referencing timepoint(s) in an audio variable requires another audio signal on the RHS.");
-	//	CVar isig(1);
-	//	isig.UpdateBuffer(2);
-	//	isig.buf[0] = tpoints[0];
-	//	isig.buf[1] = tpoints[1];
-	//	insertreplace(pnode, tsig, isig);
-	//	ostringstream oss;
-	//	oss << "(" << tpoints[0] << '~' << tpoints[1] << ")";
-	//	varname += oss.str();
+	if (pRHS)
+	{
+		vector<float> tpoints = pbase->gettimepoints(pnode, p->child);
+		if (pbase->searchtree(pRHS, T_REPLICA))
+			pbase->replica = TimeExtract(pnode, p->child);
+		CVar tsig = pbase->Compute(pRHS); // rhs
+		if (!ISAUDIO(tsig.type()) && !tsig.IsEmpty())
+			throw exception_etc(*pbase, pnode, "Referencing timepoint(s) in an audio variable requires another audio signal on the RHS.").raise();
+		CVar isig(1);
+		isig.UpdateBuffer(2);
+		isig.buf[0] = tpoints[0];
+		isig.buf[1] = tpoints[1];
+		insertreplace(pnode, tsig, isig);
+		ostringstream oss;
+		oss << "(" << tpoints[0] << '~' << tpoints[1] << ")";
+		varname += oss.str();
 		return psigBase;
-	//}
-	//else
-	//	return TimeExtract(pnode, p->child);
+	}
+	else
+		return TimeExtract(pnode, p->child);
 }
 
 CVar * CNodeProbe::TimeExtract(const AstNode *pnode, AstNode *p)
 {
-	//if (!psigBase)
-	//	throw CAstException(INTERNAL,*pbase, pnode).proc("TimeExtract(): null psigBase");
-	//pbase->checkAudioSig(pnode, *psigBase);
+	if (!psigBase)
+		throw exception_etc(*pbase, pnode, "TimeExtract(): null psigBase").raise();
+	ensureAudio2(*pbase, pnode, *psigBase);
 
-	//CTimeSeries *pts = psigBase;
-	//for (; pts; pts = pts->chain)
-	//	pbase->endpoint = pts->CSignal::endt();
-	//if (psigBase->next)
-	//{
-	//	pts = psigBase->next;
-	//	pbase->endpoint = max(pbase->endpoint, pts->CSignal::endt());
-	//}
-	//vector<double> tpoints = pbase->gettimepoints(pnode, p);
+	float endpoint;
+	CTimeSeries *pts = psigBase;
+	for (; pts; pts = pts->chain)
+		endpoint = pts->CSignal::endt();
+	if (psigBase->next)
+	{
+		pts = psigBase->next;
+		endpoint = max(endpoint, pts->CSignal::endt());
+	}
+	pbase->ends.push_back(endpoint);
+	vector<float> tpoints = pbase->gettimepoints(pnode, p);
 	CVar out(*psigBase);
-	//out.Crop(tpoints[0], tpoints[1]);
+	out.Crop(tpoints[0], tpoints[1]);
+	pbase->ends.pop_back();
 	return &(pbase->Sig = out);
 }
 
@@ -466,7 +473,6 @@ bool skope::builtin_func_call(CNodeProbe &diggy, AstNode *p)
 	}
 	return false;
 }
-
 
 CNodeProbe::CNodeProbe(skope *past, AstNode *pnode, CVar *psig)
 {
@@ -598,7 +604,7 @@ CVar * CNodeProbe::extract(const AstNode *pnode, CTimeSeries &isig)
 				auto it = size2reserve.begin();
 				p->UpdateBuffer(*(it + 1) - *it + 1);
 				id = (int)_pisig->buf[0] - 1;
-				p->tmark = (double)id / pbase->Sig.GetFs() * 1000.;
+				p->tmark = (float)id / pbase->Sig.GetFs() * 1000.;
 				it++; it++;
 				lastid = (int)_pisig->buf[0] - 1;
 				for (unsigned int i = 0; i < _pisig->nSamples; i++)
@@ -609,7 +615,7 @@ CVar * CNodeProbe::extract(const AstNode *pnode, CTimeSeries &isig)
 						cum = 0;
 						CSignals *pchain = new CSignals(pbase->Sig.GetFs());
 						pchain->UpdateBuffer(*(it + 1) - *it + 1);
-						pchain->tmark = (double)id / pbase->Sig.GetFs() * 1000.;
+						pchain->tmark = (float)id / pbase->Sig.GetFs() * 1000.;
 						p->chain = pchain;
 						p = pchain;
 						it++; it++;
@@ -647,16 +653,16 @@ CVar &CNodeProbe::eval_indexing(const AstNode *pInd, CVar &isig)
 
 	// process the first index
 	unsigned int len;
-	pbase->prepare_endpoint(pInd, psigBase);
+	pbase->ends.push_back(pbase->find_endpoint(pInd, psigBase));
 	try {
 		skope tp(pbase);
 		if (pInd->type == T_FULLRANGE)
 		{ // x(:,ids) or x(:)
-			isig.UpdateBuffer((unsigned int)pbase->endpoint);
+			isig.UpdateBuffer((unsigned int)pbase->ends.back());
 			for (int k = 0; k < (int)isig.nSamples; k++)	isig.buf[k] = k + 1;
 		}
 		else
-			isig = tp.Compute(pInd);
+			isig = pbase->Compute(pInd);
 		if (isig.IsLogical()) pbase->index_array_satisfying_condition(isig);
 		// process the second index, if it exists
 		if (pInd->next)
@@ -673,14 +679,15 @@ CVar &CNodeProbe::eval_indexing(const AstNode *pInd, CVar &isig)
 			}
 			else // x(ids1,ids2)
 			{
-				//endpoint for the second arg in 2D is determined here.
-				tp.endpoint = (double)psigBase->Len();
-				isig2 = tp.Compute(p);
+				//endpoint for the second arg in 2D is determined here
+				pbase->ends.push_back((float)psigBase->Len());
+				isig2 = pbase->Compute(p);
+				pbase->ends.pop_back(); // pop 2-D end value from the stack here
 			}
 			auto mx = isig2._max();
 			auto nx = psigBase->Len();
 			if (isig2.IsLogical()) pbase->index_array_satisfying_condition(isig2);
-			else if (isig2._max() > (double)psigBase->Len())
+			else if (isig2._max() > (float)psigBase->Len())
 			{
 				ostringstream oss;
 				oss << "max of 2nd index " << isig2._max() << " exceeds" << psigBase->Len() << ".";
@@ -693,6 +700,7 @@ CVar &CNodeProbe::eval_indexing(const AstNode *pInd, CVar &isig)
 		e.outstr += "invalid indexing... code to be refactored";
 		throw e;
 	}
+	pbase->ends.pop_back();
 	return isig;
 }
 
@@ -733,7 +741,7 @@ CVar * CNodeProbe::TID_condition(const AstNode *pnode, AstNode *pLHS, AstNode *p
 			//		// id translated from tmark for each chain
 			//		int fs = cts->GetFs();
 			//		id = (unsigned int)(cts->tmark / 1000. * fs + .5);
-			//		memcpy(p->buf + id, cts->buf, cts->nSamples * sizeof(double));
+			//		memcpy(p->buf + id, cts->buf, cts->nSamples * sizeof(float));
 			//	}
 			//}
 			//else

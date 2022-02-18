@@ -174,7 +174,7 @@ public:
 	void Concatenate(const AstNode* pnode, AstNode* p);
 	CVar* ConditionalOperation(const AstNode* pnode, AstNode* p);
 	CVar* SetLevel(const AstNode* pnode, AstNode* p);
-	void prepare_endpoint(const AstNode* p, CVar* pvar);
+	float find_endpoint(const AstNode* p, CVar* pvar);
 	void interweave_indices(CVar& isig, CVar& isig2, unsigned int len);
 	void index_array_satisfying_condition(CVar& isig);
 	CVar* InitCell(const AstNode* pnode, AstNode* p);
@@ -207,7 +207,7 @@ public:
 	const AstNode* pLast;
 	string statusMsg; // to display any message during processing inside of AstSig.cpp in the application
 	unsigned long Tick0, Tick1;
-	float endpoint;
+	vector<float> ends;
 private:
 	bool done;
 	bool nodeAllocated;
