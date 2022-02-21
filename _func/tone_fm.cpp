@@ -57,7 +57,6 @@ static inline void __fm(float* buf, int fs, float midFreq, float fmWidth, float 
 
 void _tone(skope* past, const AstNode* pnode, const vector<CVar>& args)
 {
-//	const AstNode* p = get_first_arg(pnode, (*(past->pEnv->builtin.find(pnode->str))).second.alwaysstatic);
 	CVar freq = past->Sig;
 	if (freq._max() >= past->GetFs() / 2)
 		throw exception_func(*past, pnode, "Frequency exceeds Nyquist frequency.", "tone()", 1).raise();

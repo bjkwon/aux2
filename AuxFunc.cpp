@@ -284,6 +284,8 @@ void CAstSigEnv::InitBuiltInFunctions()
 
 	builtin["resample"] = SET_BUILTIN_FUNC(resample);
 
+	builtin["clear"] = SET_BUILTIN_FUNC(clear);
+
 //	name = "write";
 //	ft.alwaysstatic = false;
 //	ft.funcsignature = "(audio_signal, filename[, option])";
@@ -795,16 +797,19 @@ vector<CVar> skope::make_check_args(const AstNode* pnode, const Cfunction& func)
 	auto allowedset = func.allowed_arg_types.begin();
 	thistype = Sig.type();
 	bool pass0 = false;
-	for (auto it = allowedset->begin(); it != allowedset->end(); it++)
+	if (*allowedset->begin() != 0xFFFF)
 	{
-		pass0 = thistype == *it;
-		if (pass0)
-			break;
-	}
-	if (!pass0)
-	{
-		ostr << "type " << thistype;
-		throw exception_func(*this, pnode, ostr.str(), fname, count).raise();
+		for (auto it = allowedset->begin(); it != allowedset->end(); it++)
+		{
+			pass0 = thistype == *it;
+			if (pass0)
+				break;
+		}
+		if (!pass0)
+		{
+			ostr << "type " << thistype;
+			throw exception_func(*this, pnode, ostr.str(), fname, count).raise();
+		}
 	}
 	allowedset++;
 	count++;
@@ -867,6 +872,38 @@ vector<CVar> skope::make_check_args(const AstNode* pnode, const Cfunction& func)
 	return out;
 }
 
+const AstNode* find_parentnode_alt(const AstNode* pnode, const AstNode* pRoot0)
+{
+	// determine if pnode is part of N_VECTOR nodes from pRoot0
+	for (auto p = pRoot0; p; p = p->alt)
+	{
+		if (p->type==N_VECTOR && p->alt== pnode)
+			return p;
+		if (p->alt == pnode)
+			return p;
+	}
+	return pnode;
+}
+
+const AstNode* arg0node(const AstNode* pnode, const AstNode* pRoot0)
+{
+	if (pnode->type == N_STRUCT)
+	{
+		return find_parentnode_alt(pnode, pRoot0);
+	}
+	else
+	{
+		if (pnode->alt)
+		{
+			if (pnode->alt->type == N_ARGS)
+				return pnode->alt->child;
+			else if (pnode->alt->type == N_HOOK)
+				return pnode->alt;
+		}
+		return NULL;
+	}
+}
+
 void skope::HandleAuxFunctions(const AstNode *pnode, AstNode *pRoot)
 {
 	string fnsigs;
@@ -874,16 +911,9 @@ void skope::HandleAuxFunctions(const AstNode *pnode, AstNode *pRoot)
 	string fname = pnode->str;
 	auto ft = pEnv->builtin.find(fname);
 	bool structCall = pnode->type == N_STRUCT;
-	AstNode * p(NULL);
-	if (pnode->alt)
-	{
-		if (pnode->alt->type == N_ARGS)
-			p = pnode->alt->child;
-		else if (pnode->alt->type == N_HOOK)
-			p = pnode->alt;
-	}
+	const AstNode* arg0 = arg0node(pnode, node);
 	if (!structCall)
-		Compute(p);
+		Compute(arg0); // Update Sig with arg0; For strucCall, it was already done in read_node()
 	if ((*ft).second.func)
 	{
 		vector<CVar> args = make_check_args(pnode, (*ft).second);
@@ -899,7 +929,7 @@ void skope::HandleAuxFunctions(const AstNode *pnode, AstNode *pRoot)
 	{
 		if (structCall)
 		{
-			if (p && p->type != N_STRUCT) throw exception_etc(*this, pnode, string("Too many arg : " + fname)).raise();
+			if (arg0 && arg0->type != N_STRUCT) throw exception_etc(*this, pnode, string("Too many arg : " + fname)).raise();
 		}
 		if (Sig.IsStruct() || !Sig.cell.empty() || Sig.GetFs() == 3)
 		{
@@ -909,7 +939,7 @@ void skope::HandleAuxFunctions(const AstNode *pnode, AstNode *pRoot)
 				throw exception_etc(*this, pnode, string("Cannot take cell, class or handle object " + dotnotation)).raise();
 			}
 			else
-				throw exception_etc(*this, p, string("Cannot take cell, class or handle object " + fname)).raise();
+				throw exception_etc(*this, arg0, string("Cannot take cell, class or handle object " + fname)).raise();
 		}
 		const AstNode* p2 = get_second_arg(pnode, pnode->type == N_STRUCT);
 		if (p2)
@@ -924,3 +954,34 @@ void skope::HandleAuxFunctions(const AstNode *pnode, AstNode *pRoot)
 	Sig.functionEvalRes = true;
 	return;
 }
+
+Cfunction set_builtin_function_clear(fGate fp)
+{
+	Cfunction ft;
+	set<uint16_t> allowedTypes;
+	ft.func = fp;
+	// Edit from this line ==============
+	ft.alwaysstatic = false;
+	vector<string> desc_arg_req = { "object"  };
+	vector<string> desc_arg_opt = {  };
+	vector<CVar> default_arg = { };
+	set<uint16_t> allowedTypes1 = { 0xFFFF};
+	ft.allowed_arg_types.push_back(allowedTypes1);
+	// til this line ==============
+	ft.defaultarg = default_arg;
+	ft.narg1 = desc_arg_req.size();
+	ft.narg2 = ft.narg1 + default_arg.size();
+	return ft;
+}
+
+void _clear(skope* past, const AstNode* pnode, const vector<CVar>& args)
+{
+	auto arg0 = arg0node(pnode, past->node);
+	if (arg0->type==T_ID)
+		past->ClearVar(arg0->str);
+	else
+		throw exception_etc(*past, pnode, "Only variables can be cleared.").raise();
+	past->Sig.Reset();
+
+}
+

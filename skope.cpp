@@ -2234,6 +2234,40 @@ void skope::switch_case_handler(const AstNode* pnode)
 	pEnv->udf[u.base].switch_case_undefined.clear();
 }
 
+vector<string> skope::ClearVar(const char *var, CVar *psigBase)
+{
+	vector<string> out;
+	vector<string> vars;
+	if (!psigBase)
+	{
+		auto it = Vars.find(var);
+		if (it != Vars.end())
+		{
+			out.push_back((*it).first);
+			Vars.erase(it);
+		}
+	}
+	else
+	{
+		auto it = psigBase->strut.find(var);
+		if (it != psigBase->strut.end())
+		{
+			out.push_back((*it).first);
+			psigBase->strut.erase(it);
+		}
+		else
+		{
+			auto it = psigBase->struts.find(var);
+			if (it != psigBase->struts.end())
+			{
+				out.push_back((*it).first);
+				psigBase->struts.erase(it);
+			}
+		}
+	}
+	return out;
+}
+
 UDF& UDF::operator=(const UDF& rhs)
 {
 	if (this != &rhs)

@@ -150,6 +150,8 @@ void skope::HandleMathFunc(string& fname, const body& arg)
 				Sig.each(cfn1);
 			}
 		}
+		else
+			Sig.each(fn1);
 		return;
 	}
 	Sig.each(fn1);

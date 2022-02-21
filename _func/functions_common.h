@@ -69,3 +69,12 @@ Cfunction set_builtin_function_XXX(fGate fp)
 	return ft;
 }
 
+/* These functions would be useful in gate functions
+* find_parentnode_alt:
+*	returns the parent node of a dot-call; or pnode itself if it's not a dot-call
+* arg0node: 
+*	returns the principal argument node (i.e., the very first arg); regardless of dot-call or not.
+*/
+
+const AstNode* find_parentnode_alt(const AstNode* pnode, const AstNode* pRoot0);
+const AstNode* arg0node(const AstNode* pnode, const AstNode* pRoot0);
