@@ -187,7 +187,7 @@ public:
 	string makefullfile(const string& fname, string extension = "");
 	string ComputeString(const AstNode* p);
 	vector<string> ClearVar(const char* var, CVar* psigBase=NULL);
-
+	void replica_prep(CVar* psig);
 
 	string script;
 	string emsg;

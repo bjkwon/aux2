@@ -793,7 +793,7 @@ AstNode* skope::read_node(CNodeProbe& np, AstNode* ptree, AstNode* ppar, bool& R
 		}
 		if (searchtree(np.root->child, T_REPLICA))
 		{
-//			replica_prep(pres);
+			replica_prep(pres);
 			// Updating replica with pres, the variable reading at current node, is necessary whenever replica is present
 			// But, if current node is final and type is one of these, don't update np.psigBase
 			if (!ptree->alt && (ptree->type == N_STRUCT || ptree->type == N_ARGS || ptree->type == N_TIME_EXTRACT))
@@ -1910,9 +1910,11 @@ void skope::Concatenate(const AstNode* pnode, AstNode* p)
 	Compute(p);
 	uint16_t a = tsig.type();
 	uint16_t b = Sig.type();
-	if (a & TYPEBIT_CELL)
+	if (a & TYPEBIT_CELL || !(b & TYPEBIT_CELL))
+		throw exception_etc(*this, p, "RHS is cell; LHS is not.").raise();
+	if (b & TYPEBIT_CELL) 
 	{
-		if (b & TYPEBIT_CELL)
+		if (a & TYPEBIT_CELL)
 		{
 			for (size_t k = 0; k < tsig.cell.size(); k++)
 				Sig.cell.push_back(tsig.cell[(int)k]);
@@ -1923,12 +1925,12 @@ void skope::Concatenate(const AstNode* pnode, AstNode* p)
 	else
 	{
 		if (b > 0 && a >> 2 != b >> 2)
-			throw exception_etc(*this, p, "Different object type between LHS and RHS. Can't concatenate.");
+			throw exception_etc(*this, p, "Different object type between LHS and RHS. Can't concatenate.").raise();
 		//Check rejection conditions
 		if (tsig.nSamples * Sig.nSamples > 0) // if either is empty, no rejection
 		{
 			if (tsig.nGroups != Sig.nGroups && tsig.Len() != Sig.Len())
-				throw exception_etc(*this, p->next, "To concatenate, the second operand must have the same number of elements or the same number of groups (i.e., rows) ");
+				throw exception_etc(*this, p->next, "To concatenate, the second operand must have the same number of elements or the same number of groups (i.e., rows) ").raise();
 		}
 		//For matrix, Group-wise (i.e., row-wise) concatenation
 		if (Sig.nGroups > 1 && Sig.Len() != tsig.Len())
@@ -1940,8 +1942,8 @@ void skope::Concatenate(const AstNode* pnode, AstNode* p)
 			for (unsigned int k, kk = 0; kk < Sig.nGroups; kk++)
 			{
 				k = Sig.nGroups - kk - 1;
-				memcpy(Sig.buf + len1 * k, Sig.buf + len0 * k, sizeof(double) * len0);
-				memcpy(Sig.buf + len1 * k + len0, tsig.buf + lent * k, sizeof(double) * lent);
+				memcpy(Sig.buf + len1 * k, Sig.buf + len0 * k, sizeof(float) * len0);
+				memcpy(Sig.buf + len1 * k + len0, tsig.buf + lent * k, sizeof(float) * lent);
 			}
 		}
 		else
@@ -2098,9 +2100,9 @@ CVar* skope::SetLevel(const AstNode* pnode, AstNode* p)
 float skope::find_endpoint(const AstNode* p, CVar* pvar)
 {  // p is the node the indexing starts (e.g., child of N_ARGS... wait is it also child of conditional p?
 	if (p->next) // first index in 2D
-		return (double)pvar->nGroups;
+		return (float)pvar->nGroups;
 	else
-		return (double)pvar->nSamples;
+		return (float)pvar->nSamples;
 }
 
 void skope::interweave_indices(CVar& isig, CVar& isig2, unsigned int len)

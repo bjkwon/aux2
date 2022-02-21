@@ -93,7 +93,15 @@ void _lens(skope* past, const AstNode* pnode, const vector<CVar>& args)
 {
 	string fname = pnode->str;
 	if (fname == "length")
-		past->Sig = past->Sig.evoke_getsig2(__length);
+	{
+		if (!past->Sig.cell.empty())
+		{
+			past->Sig.SetValue((float)past->Sig.cell.size());
+			past->Sig.cell.clear();
+		}
+		else
+			past->Sig = past->Sig.evoke_getsig2(__length);
+	}
 	else if (fname == "size")
 	{
 		CVar out((float)past->Sig.nGroups);

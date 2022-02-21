@@ -27,6 +27,26 @@
 #include "psycon.tab.h"
 #include "skope_exception.h"
 
+void skope::replica_prep(CVar* psig)
+{// For GO's, prepping replica is not simple, because a copy of the psig doesn't represent the GO.
+ // Therefore, CSIG_HDLARRAY data type is used to carry it forward,
+ // because an CSIG_HDLARRAY object can be copied without worries.
+ // Note: in this case CSIG_HDLARRAY with size of one can be created. Keep that in mind.
+	//if (psig->IsGO())
+	//{
+	//	//if pgo is already a CSIG_HDLARRAY with multiple elements
+	//	if (pgo->GetType() == CSIG_HDLARRAY)
+	//		replica = *pgo;
+	//	else
+	//	{
+	//		vector<CVar*> tp(1, pgo);
+	//		replica = *MakeGOContainer(tp);
+	//	}
+	//}
+	//else
+		replica = *psig;
+}
+
 void CNodeProbe::insertreplace(const AstNode *pnode, CVar &sec, CVar &indsig)
 {
 	//bool logicalindex = indsig.IsLogical();

@@ -2595,7 +2595,9 @@ CVar& CVar::initcell(CVar &sec)
 
 CVar& CVar::appendcell(CVar &sec)
 {
-	if (!(type()& TYPEBIT_CELL))
+	auto tp = type();
+	auto mask2noncell = tp & !TYPEBIT_CELL;
+	if (mask2noncell)
 		throw "attempting to add a cell member to a non-cell variable.";
 	cell.push_back(sec);
 	return *this;
