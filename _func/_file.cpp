@@ -287,7 +287,7 @@ static FILE* prepare_freadwrite(skope* past, const AstNode* pnode, const vector<
 	auto arg = args.begin();
 	if (fname == "fwrite") arg++;
 	prec = (*arg).str();
-	if (prec == "int8" || prec == "uint8" || prec == "char" || prec == "byte")
+	if (prec == "int8" || prec == "uint8" || prec == "char" || prec == "byte" || prec == "void")
 		bytes = 1;
 	else if (prec == "int16" || prec == "uint16")
 		bytes = 2;
@@ -372,8 +372,11 @@ void _fwrite(skope* past, const AstNode* pnode, const vector<CVar>& args)
 		}
 	}
 	if (!pobj) pobj = &args[0];
-
-	if (prec == "char")
+	if (prec == "void" || prec == "byte")
+	{
+		res = fwrite(args[0].buf, 1, args[0].nSamples, file);
+	}
+	else if (prec == "char") 
 	{
 		if (pobj->IsString())
 			res = fwrite(pobj->strbuf, 1, pobj->nSamples, file);
@@ -466,12 +469,12 @@ void _fread(skope* past, const AstNode* pnode, const vector<CVar>& args)
 	res = fseek(file, 0L, SEEK_SET);
 
 	size_t nItems = sz / bytes;
-	if (prec == "char" || prec == "byte")
+	if (prec == "char" || prec == "byte" || prec == "void")
 	{ // Treat it separately just to make the code neat.
 		past->Sig.SetString('\0');
 		past->Sig.UpdateBuffer((unsigned int)nItems);
 		fread(past->Sig.strbuf, bytes, nItems, file);
-		if (prec == "byte") past->Sig.bufType = 'B';
+		if (prec == "byte" || prec == "void") past->Sig.bufType = 'B';
 		return;
 	}
 	past->Sig.Reset(1); // always make it non-audio
