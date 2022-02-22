@@ -1913,19 +1913,7 @@ void skope::Concatenate(const AstNode* pnode, AstNode* p)
 	Compute(p);
 	uint16_t a = tsig.type();
 	uint16_t b = Sig.type();
-	if (a & TYPEBIT_CELL || !(b & TYPEBIT_CELL))
-		throw exception_etc(*this, p, "RHS is cell; LHS is not.").raise();
-	if (b & TYPEBIT_CELL) 
-	{
-		if (a & TYPEBIT_CELL)
-		{
-			for (size_t k = 0; k < tsig.cell.size(); k++)
-				Sig.cell.push_back(tsig.cell[(int)k]);
-		}
-		else
-			Sig.cell.push_back(tsig);
-	}
-	else
+	if (!(a & TYPEBIT_CELL) && !(b & TYPEBIT_CELL))
 	{
 		if (b > 0 && a >> 2 != b >> 2)
 			throw exception_etc(*this, p, "Different object type between LHS and RHS. Can't concatenate.").raise();
@@ -1954,6 +1942,21 @@ void skope::Concatenate(const AstNode* pnode, AstNode* p)
 			if (Sig.nGroups > 1) Sig.nGroups += tsig.nGroups;
 			Sig += &tsig;
 			Sig.MergeChains();
+		}
+	}
+	else
+	{
+		if (a & TYPEBIT_CELL || !(b & TYPEBIT_CELL))
+			throw exception_etc(*this, p, "2nd op is cell; 1st op is not.").raise();
+		if (b & TYPEBIT_CELL)
+		{
+			if (a & TYPEBIT_CELL)
+			{
+				for (size_t k = 0; k < tsig.cell.size(); k++)
+					Sig.cell.push_back(tsig.cell[(int)k]);
+			}
+			else
+				Sig.cell.push_back(tsig);
 		}
 	}
 }
