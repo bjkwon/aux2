@@ -30,25 +30,15 @@ map<string, Cfunction> CAstSigEnv::pseudo_vars = dummy_pseudo_vars;
 //#endif
 
 
-void _figure(skope* past, const AstNode* pnode, const vector<CVar>& args);
-void _axes(skope* past, const AstNode* pnode, const vector<CVar>& args);
-void _text(skope* past, const AstNode* pnode, const vector<CVar>& args);
-void _plot(skope* past, const AstNode* pnode, const vector<CVar>& args);
-void _line(skope* past, const AstNode* pnode, const vector<CVar>& args);
-void _delete_graffy(skope* past, const AstNode* pnode, const vector<CVar>& args);
-void _repaint(skope* past, const AstNode* pnode, const vector<CVar>& args);
-void _showrms(skope* past, const AstNode* pnode, const vector<CVar>& args);
-void _replicate(skope* past, const AstNode* pnode, const vector<CVar>& args);
-
 DECL_GATE(_movespec)
 
 void _minmax(skope* past, const AstNode* pnode, const vector<CVar>& args);
 void _filt(skope* past, const AstNode* pnode, const vector<CVar>& args);
 void _iir(skope* past, const AstNode* pnode, const vector<CVar>& args);
 DECL_GATE(_tparamonly)
-void _rand(skope* past, const AstNode* pnode, const vector<CVar>& args);
-void _irand(skope* past, const AstNode* pnode, const vector<CVar>& args);
-void _randperm(skope* past, const AstNode* pnode, const vector<CVar>& args);
+DECL_GATE(_rand)
+DECL_GATE(_irand)
+DECL_GATE(_randperm)
 void _sprintf(skope* past, const AstNode* pnode, const vector<CVar>& args);
 void _record(skope* past, const AstNode* pnode, const vector<CVar>& args);
 void _play(skope* past, const AstNode* pnode, const vector<CVar>& args);

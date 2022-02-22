@@ -226,7 +226,7 @@ void echo_object::print(const string& name, const CVar& obj, int offset)
 	auto res = tp & 0xFF0F;
 	auto isv = ((tp) & 0b1111);
 	auto isster = (tp) & (TYPEBIT_MULTICHANS + 0xF000);
-	cout << "type = " << "0x" << setw(4) << setfill('0') << hex << tp << ", ";
+	cout << "type = " << "0x" << setw(4) << setfill('0') << hex << tp << ", " << dec;
 	if (tp & TYPEBIT_STRUT)
 		echo_struct(name, offset).print(obj);
 	else if (tp & TYPEBIT_CELL)

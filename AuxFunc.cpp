@@ -286,6 +286,11 @@ void CAstSigEnv::InitBuiltInFunctions()
 
 	builtin["clear"] = SET_BUILTIN_FUNC(clear);
 
+	builtin["rand"] = SET_BUILTIN_FUNC(rand);
+	builtin["randperm"] = SET_BUILTIN_FUNC(randperm);
+	builtin["irand"] = SET_BUILTIN_FUNC(irand);
+
+
 //	name = "write";
 //	ft.alwaysstatic = false;
 //	ft.funcsignature = "(audio_signal, filename[, option])";
@@ -423,9 +428,6 @@ void CAstSigEnv::InitBuiltInFunctions()
 //	name = "cell";
 //	ft.func =  &_cell;
 //	builtin[name] = ft;
-////	name = "clear";
-////	ft.func = &_clear;
-////	builtin[name] = ft;
 //
 //	ft.narg1 = 2;	ft.narg2 = 2;
 //	name = "respeed";
@@ -453,9 +455,6 @@ void CAstSigEnv::InitBuiltInFunctions()
 //
 //	ft.narg1 = 1;	ft.narg2 = 1;
 //	ft.funcsignature = "(filename)";
-//	name = "file";
-//	ft.func =  &_file;
-//	builtin[name] = ft;
 //	name = "include";
 //	ft.func =  &_include; // check
 //	builtin[name] = ft;
@@ -620,52 +619,6 @@ void CAstSigEnv::InitBuiltInFunctions()
 		ft.func =  NULL;
 		builtin[name] = ft;
 	}
-
-//#ifdef _WINDOWS
-//	ft.alwaysstatic = true;
-//	ft.narg1 = 0;	ft.narg2 = 1;
-//	name = "figure";
-//	ft.funcsignature = "([position(screen_coordinate)]) or (existing_Figure_ID)";
-//	ft.func =  &_figure;
-//	builtin[name] = ft;
-//
-//	ft.alwaysstatic = false;
-//	ft.narg1 = 1;	ft.narg2 = 2;
-//	name = "axes";
-//	ft.funcsignature = "([position]) or (existing_axes_ID)";
-//	ft.func =  &_axes;
-//	builtin[name] = ft;
-//
-//	ft.narg1 = 3;	ft.narg2 = 4;
-//	ft.funcsignature = "([graphic_handle], x, y, string)";
-//	name = "text";
-//	ft.func = &_text;
-//	builtin[name] = ft;
-//
-//	ft.narg1 = 1;	ft.narg2 = 4;
-//	ft.funcsignature = "([graphic_handle], variable [, options]) or (vector_x, vector_y [, options])";
-//	name = "plot";
-//	ft.func = &_plot;
-//	builtin[name] = ft;
-//	name = "line";
-//	ft.func = &_line;
-//	builtin[name] = ft;
-//
-//	name = "delete";
-//	ft.narg1 = 1;	ft.narg2 = 1;
-//	ft.alwaysstatic = false;
-//	ft.funcsignature = "(graphic_handle)";
-//	ft.func = &_delete_graffy;
-//	builtin[name] = ft;
-//	name = "repaint";
-//	ft.funcsignature = "(graphic_handle)";
-//	ft.func = &_repaint;
-//	builtin[name] = ft;
-//	name = "showrms";
-//	ft.funcsignature = "(graphic_handle)";
-//	ft.func = &_showrms;
-//	builtin[name] = ft;
-//#endif // _WINDOWS
 
 	//name = "input";
 	//ft.alwaysstatic = false;
