@@ -153,6 +153,7 @@ public:
 	multimap<CVar, AstNode*> register_switch_cvars(const AstNode* pnode, vector<int>& undefined);
 	AstNode* ReadUDF(string& emsg, const char* udf_filename);
 	AstNode* RegisterUDF(const AstNode* p, const char* fullfilename, const string& filecontent);
+	CVar* GetGlobalVariable(const AstNode* pnode, const char* varname);
 	CVar* GetVariable(const char* varname, CVar* pvar = NULL);
 	bool PrepareAndCallUDF(const AstNode* pCalling, CVar* pBase, CVar* pStaticVars = NULL);
 	size_t CallUDF(const AstNode* pnode4UDFcalled, CVar* pBase);

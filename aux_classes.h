@@ -495,7 +495,7 @@ public:
 	inline bool IsEmpty() const { return next == nullptr && CTimeSeries::IsEmpty(); }
 
 	float MakeChainless();
-	void SetValue(float v);
+//	void SetValue(float v);
 
 	int ReadAXL(FILE* fp, bool logical, char *errstr);
 	int WriteAXL(FILE* fp);

@@ -1,5 +1,53 @@
 #include "skope.h"
 
+/* How to add new functions to the list of built in functions
+
+typedef void(*fGate) (skope* past, const AstNode* pnode, const vector<CVar>& args);
+
+Case 1) One gate function to one built-in, Cfunction decl (exclusive)
+Given gate function decl:
+   void _tone(skope* past, const AstNode* pnode, const vector<CVar>& args);
+and Cfunction decl:
+   Cfunction set_builtin_function_tone(fGate fp); --> arg number/types of tone() are registered here.
+
+In CAstSigEnv::InitBuiltInFunctions(),
+	builtin["tone"] = set_builtin_function_tone(&_tone); 
+simplied to -->
+	builtin["tone"] = SET_BUILTIN_FUNC(tone);
+    (LHS: func_name in quotation;  RHS: name of gate function, no quotation)
+
+    DECL_GATE(_tone) in builtin_functions.h
+
+Case 2) Multiple gate functions to multiple built-in's, shared Cfunction decl
+Multiple gate functions:
+    void _imaginary_unit(skope* past, const AstNode* pnode, const vector<CVar>& args);
+    void _pi(skope* past, const AstNode* pnode, const vector<CVar>& args);
+    void _natural_log_base(skope* past, const AstNode* pnode, const vector<CVar>& args);
+One Cfunction decl:
+    Cfunction set_builtin_function_constant(fGate fp);
+
+In CAstSigEnv::InitBuiltInFunctions(),
+	pseudo_vars["i"] = set_builtin_function_constant(&_imaginary_unit);
+	pseudo_vars["pi"] = set_builtin_function_constant(&_pi);
+	pseudo_vars["e"] = set_builtin_function_constant(&_natural_log_base);
+
+	DECL_GATE(_constant) in builtin_functions.h
+
+Case 3) One gate function to multiple built-in's, shared Cfunction decl
+Gate functions:
+    void _tparamonly(skope* past, const AstNode* pnode, const vector<CVar>& args);
+One Cfunction decl:
+	Cfunction set_builtin_function_tparamonly(fGate fp)
+In CAstSigEnv::InitBuiltInFunctions(),
+    builtin["noise"] = set_builtin_function_tparamonly(&_tparamonly);
+	builtin["gnoise"] = set_builtin_function_tparamonly(&_tparamonly);
+Simplify -->
+	builtin["noise"] = SET_BUILTIN_FUNC(tparamonly);
+	builtin["gnoise"] = SET_BUILTIN_FUNC(tparamonly);
+
+   DECL_GATE(_tparamonly) in builtin_functions.h
+*/
+
 /* types
 * 0 NULL
 * 1 scalar
@@ -124,7 +172,8 @@ DECL_GATE(_file)
 
 DECL_GATE(_resample)
 
+DECL_GATE(_constant)
+
 void _sqrt(skope* past, const AstNode* pnode, const vector<CVar>& args);
 void _sin(skope* past, const AstNode* pnode, const vector<CVar>& args);
 
-//void _wavwrite(skope* past, const AstNode* pnode, const vector<CVar>& args);

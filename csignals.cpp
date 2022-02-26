@@ -2477,13 +2477,6 @@ void CSignals::SetNextChan(const CSignals& second, bool need2makeghost)
 		*next = second;
 }
 
-void CSignals::SetValue(float v)
-{
-	Reset(1);
-	body::SetValue(v);
-}
-
-
 CSignals& CSignals::Reset(int fs2set)	// Empty all data fields - sets nSamples to 0.
 {
 	CTimeSeries::Reset(fs2set);

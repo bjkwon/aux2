@@ -240,7 +240,7 @@ vector<CVar*> skope::Compute()
 	Sig.cell.clear();
 	Sig.strut.clear();
 	Sig.struts.clear();
-	Sig.SetNextChan(NULL);
+//	Sig.SetNextChan(NULL);
 	Sig.functionEvalRes = false;
 	inTryCatch = 0;
 	//	pgo = NULL;
@@ -711,6 +711,17 @@ AstNode* skope::read_node(CNodeProbe& np, AstNode* ptree, AstNode* ppar, bool& R
 		else
 			Sig = *np.psigBase;
 	}
+	else if (ptree->type == N_HOOK)
+	{
+		pres = GetGlobalVariable(ptree, ptree->str);
+		if (!pres)
+		{
+			if (np.root->child && (!ptree->alt || ptree->alt->type == N_STRUCT))
+				return NULL;
+			throw exception_etc(*this, ptree, string("Undefined special variable: ") + ptree->str).raise();
+		}
+		np.psigBase = pres;
+	}
 	else
 	{
 		// If RHS exists (i.e., child is non-null), no need to get the LHS variable completely,
@@ -907,6 +918,7 @@ CVar* skope::TID(AstNode* pnode, AstNode* pRHS, CVar* psig)
 	}
 	return &Sig;
 }
+
 static CVar* GetGOVariable(const skope& ths, const char* varname, CVar* pvar)
 { // To retrieve a GO variable.
   // For a single element, returns its pointer
@@ -930,7 +942,34 @@ static CVar* GetGOVariable(const skope& ths, const char* varname, CVar* pvar)
 	{
 		throw exception_etc(ths, ths.node, "GetGOVariable() should be called when varname is sure to exist in GOvars").raise();
 	}
-}CVar* skope::GetVariable(const char* varname, CVar* pvar)
+}
+
+CVar* skope::GetGlobalVariable(const AstNode* pnode, const char* varname)
+{
+	auto it = pEnv->pseudo_vars.find(varname);
+	if (it != pEnv->pseudo_vars.end())
+	{
+		vector<CVar> dummy;
+		(*it).second.func(this, pnode, dummy);
+	}
+	else
+	{
+		map<string, vector<CVar*>>::iterator jt = CAstSigEnv::glovar.find(varname);
+		if (jt == CAstSigEnv::glovar.end())
+			return NULL;
+		if ((*jt).second.front()->IsGO())
+		{
+			return NULL; // just for now 8/16/2019
+		}
+		else
+		{
+			Sig = *(*jt).second.front();
+		}
+	}
+	return &Sig;
+}
+
+CVar* skope::GetVariable(const char* varname, CVar* pvar)
 { //To retrive a variable from a workspace pvar is NULL (default)
   //To retrive a member variable, specify pvar as the base variable
  // For multiple GO's, calls GetGOVariable()

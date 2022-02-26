@@ -178,6 +178,7 @@
     <ClCompile Include="_func\printf.cpp" />
     <ClCompile Include="_func\rand.cpp" />
     <ClCompile Include="_func\rmsandothers.cpp" />
+    <ClCompile Include="_func\sharps.cpp" />
     <ClCompile Include="_func\specialmath.cpp" />
     <ClCompile Include="_func\movespec.cpp" />
     <ClCompile Include="_func\sums.cpp" />

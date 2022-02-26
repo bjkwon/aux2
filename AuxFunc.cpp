@@ -219,23 +219,23 @@ void CAstSigEnv::InitBuiltInFunctions()
 	set<uint16_t> allowedTypes;
 	vector<string> arg_desc;
 
-	builtin["tone"] = set_builtin_function_tone(&_tone);
-	builtin["noise"] = set_builtin_function_tparamonly(&_tparamonly);
-	builtin["gnoise"] = set_builtin_function_tparamonly(&_tparamonly);
-	builtin["dc"] = set_builtin_function_tparamonly(&_tparamonly);
-	builtin["silence"] = set_builtin_function_tparamonly(&_tparamonly);
-	builtin["wave"] = set_builtin_function_wave(&_wave);
-	builtin["wavwrite"] = set_builtin_function_wavwrite(&_wavwrite);
-	builtin["ramp"] = set_builtin_function_ramp(&_ramp);
+	builtin["tone"] = SET_BUILTIN_FUNC(tone);
+	builtin["noise"] = SET_BUILTIN_FUNC(tparamonly);
+	builtin["gnoise"] = SET_BUILTIN_FUNC(tparamonly);
+	builtin["dc"] = SET_BUILTIN_FUNC(tparamonly);
+	builtin["silence"] = SET_BUILTIN_FUNC(tparamonly);
+	builtin["wave"] = SET_BUILTIN_FUNC(wave);
+	builtin["wavwrite"] = SET_BUILTIN_FUNC(wavwrite);
+	builtin["ramp"] = SET_BUILTIN_FUNC(ramp);
 	builtin["sam"] = SET_BUILTIN_FUNC(sam);
-	builtin["pow"] = set_builtin_function_pow(&_pow);
-	builtin["^"] = set_builtin_function_pow(&_pow);
-	builtin["mod"] = set_builtin_function_mod(&_mod);
-	builtin["%"] = set_builtin_function_mod(&_mod);
+	builtin["pow"] = SET_BUILTIN_FUNC(pow);
+	builtin["^"] = SET_BUILTIN_FUNC(pow);
+	builtin["mod"] = SET_BUILTIN_FUNC(mod);
+	builtin["%"] = SET_BUILTIN_FUNC(mod);
 	
-	builtin["group"] = set_builtin_function_group(&_group);
-	builtin["matrix"] = set_builtin_function_group(&_group);
-	builtin["ungroup"] = set_builtin_function_ungroup(&_ungroup);
+	builtin["group"] = SET_BUILTIN_FUNC(group);
+	builtin["matrix"] = SET_BUILTIN_FUNC(group);
+	builtin["ungroup"] = SET_BUILTIN_FUNC(ungroup);
 	builtin["fft"] = SET_BUILTIN_FUNC(fft);
 	builtin["ifft"] = SET_BUILTIN_FUNC(ifft);
 
@@ -290,6 +290,9 @@ void CAstSigEnv::InitBuiltInFunctions()
 	builtin["randperm"] = SET_BUILTIN_FUNC(randperm);
 	builtin["irand"] = SET_BUILTIN_FUNC(irand);
 
+	pseudo_vars["i"] = set_builtin_function_constant(&_imaginary_unit);
+	pseudo_vars["e"] = set_builtin_function_constant(&_natural_log_base);
+	pseudo_vars["pi"] = set_builtin_function_constant(&_pi);
 
 //	name = "write";
 //	ft.alwaysstatic = false;
@@ -409,16 +412,6 @@ void CAstSigEnv::InitBuiltInFunctions()
 //	ft.func = &_cumsum;
 //	builtin[name] = ft;
 //
-//	ft.funcsignature = "(value)";
-//	name = "rand";
-//	ft.func =  &_rand;
-//	builtin[name] = ft;
-//	name = "irand";
-//	ft.func =  &_irand;
-//	builtin[name] = ft;
-//	name = "randperm";
-//	ft.func =  &_randperm;
-//	builtin[name] = ft;
 //	name = "zeros";
 //	ft.func =  &_zeros;
 //	builtin[name] = ft;
@@ -487,25 +480,6 @@ void CAstSigEnv::InitBuiltInFunctions()
 //	name = "issame";
 //	ft.func = _veq;
 //	builtin[name] = ft;
-//
-//	ft.alwaysstatic = false;
-//	ft.narg1 = 2;	ft.narg2 = 4;
-//	ft.funcsignature = "(signal, Numerator_array [, Denominator_array=1 for FIR])";
-//	const char *f8[] = { "filt", "filtfilt", 0 };
-//	for (int k = 0; f8[k]; k++)
-//	{
-//		name = f8[k];
-//		ft.func = _filt;
-//		builtin[name] = ft;
-//	}
-//#ifndef NO_FFTW
-//
-//
-//	name = "conv";
-//	ft.funcsignature = "(array1, array2)";
-//	ft.func = &_conv;
-//	builtin[name] = ft;
-//#endif
 //
 //	ft.narg1 = 1;	ft.narg2 = 2;
 //	ft.funcsignature = "(signal_or_vector [, positive_for_acending_negative_for_descending = 1])";
@@ -642,34 +616,6 @@ void CAstSigEnv::InitBuiltInFunctions()
 	//ft.funcsignature = "(string)";
 	//ft.func = &_esc;
 	//builtin[name] = ft;
-
-
-	//name = "i";
-	//ft.alwaysstatic = false;
-	//ft.narg1 = ft.narg2 = 0;
-	//ft.funcsignature = "";
-	//ft.func = &_imaginary_unit;
-	//pseudo_vars[name] = ft;
-	//name = "e";
-	//ft.func = &_natural_log_base;
-	//pseudo_vars[name] = ft;
-	//name = "pi";
-	//ft.func = &_pi;
-	//pseudo_vars[name] = ft;
-
-}
-
-void firstparamtrim(string &str)
-{
-	size_t parenth1 = str.find('(');
-	size_t parenth2 = str.find(')');
-	size_t comma = str.find(',', parenth1);
-	string tocopy(")");
-	if (comma != string::npos)
-		tocopy = str.substr(comma + 2);
-	str.replace(str.begin() + parenth1 + 1, str.end(), tocopy);
-	str.replace(str.begin() + 1, str.end(), str);
-	str[0] = '.';
 }
 
 static inline complex<float> r2c_sqrt(complex<float> x) { return sqrt(x); }
