@@ -38,7 +38,9 @@ Cfunction set_builtin_function_lens(fGate fp)
 	vector<string> desc_arg_req = { "arrray/signal/string" };
 	vector<string> desc_arg_opt = { "" };
 	vector<CVar> default_arg = { };
-	set<uint16_t> allowedTypes1 = { 1, 2, 3, ALL_AUDIO_TYPES, TYPEBIT_STRING, TYPEBIT_STRING + 1, TYPEBIT_STRING + 2, TYPEBIT_STRING + 3, TYPEBIT_SIZE1, TYPEBIT_SIZE1 + 1, TYPEBIT_SIZE1 + 2, TYPEBIT_SIZE1 + 3,  TYPEBIT_BYTE + 1, TYPEBIT_BYTE + 2, TYPEBIT_BYTE + 3,};
+	set<uint16_t> allowedTypes1 = { 1, 2, 3, ALL_AUDIO_TYPES, TYPEBIT_STRING, TYPEBIT_STRING + 1, TYPEBIT_STRING + 2, TYPEBIT_STRING + 3, 
+		TYPEBIT_SIZE1, TYPEBIT_SIZE1 + 1, TYPEBIT_SIZE1 + 2, TYPEBIT_SIZE1 + 3,  TYPEBIT_BYTE + 1, TYPEBIT_BYTE + 2, TYPEBIT_BYTE + 3,
+	    TYPEBIT_CELL };
 	ft.allowed_arg_types.push_back(allowedTypes1);
 	// til this line ==============
 	ft.desc_arg_req = desc_arg_req;

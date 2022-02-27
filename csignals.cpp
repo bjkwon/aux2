@@ -2488,6 +2488,18 @@ CSignals& CSignals::Reset(int fs2set)	// Empty all data fields - sets nSamples t
 	return *this;
 }
 
+void CSignals::SetValue(float v)
+{
+	Reset(1);
+	body::SetValue(v);
+}
+
+void CSignals::SetValue(complex<float> v)
+{
+	Reset(1);
+	body::SetValue(v);
+}
+
 CSignals CSignals::evoke_getval(float (CSignal::*fp)(unsigned int, unsigned int, void *) const, void *popt)
 {
 	CSignals newout = CTimeSeries::evoke_getval(fp, popt);

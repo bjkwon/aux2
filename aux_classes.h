@@ -507,6 +507,9 @@ public:
 	void SetNextChan(const CSignals& second, bool need2makeghost = false);
 	CTimeSeries *DetachNextChan() {CTimeSeries *p=next;next=NULL;return p;}
 	CSignals & Reset(int fs2set=0);
+	void SetValue(float v);
+	void SetValue(complex<float> v);
+
 	CSignals & reciprocal(void);
 	CSignals & operator-(void);
 	CSignals & operator<=(const CSignals & rhs); // ghost assignment operator2
