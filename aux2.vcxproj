@@ -43,14 +43,14 @@
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v142</PlatformToolset>
-    <CharacterSet>Unicode</CharacterSet>
+    <CharacterSet>NotSet</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v142</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
-    <CharacterSet>Unicode</CharacterSet>
+    <CharacterSet>NotSet</CharacterSet>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -184,6 +184,7 @@
     <ClCompile Include="_func\sums.cpp" />
     <ClCompile Include="_func\tone_fm.cpp" />
     <ClCompile Include="_func\windowing.cpp" />
+    <ClCompile Include="_func\_dir.cpp" />
     <ClCompile Include="_func\_file.cpp" />
     <ClCompile Include="_func\_matrix.cpp" />
     <ClCompile Include="_func\_minmax.cpp" />

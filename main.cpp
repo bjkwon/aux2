@@ -9,6 +9,26 @@
 
 extern vector<skope*> xscope;
 
+string get_current_dir()
+{
+#ifdef _WIN32
+	size_t tbufferLen = MAX_PATH;
+	char *tbuffer = new char[tbufferLen];
+	tbuffer[0] = 0;
+	DWORD count = GetCurrentDirectory(tbufferLen, tbuffer);
+	while (count > tbufferLen)
+	{
+		tbufferLen *= 2;
+		delete[] tbuffer;
+		tbuffer = new char[tbufferLen];
+		count = GetCurrentDirectory(tbufferLen, tbuffer);
+	}
+#endif
+	string out = tbuffer;
+	delete[] tbuffer;
+	return out;
+}
+
 void echo(int depth, skope& ctx, const AstNode* pnode, CVar* pvar)
 {
 	if (!pnode->suppress)
@@ -103,7 +123,7 @@ CVar interpreter(skope& sc, const string& instr)
 int main()
 {
 	CAstSigEnv* pglobalEnv = new CAstSigEnv(22050);
-	pglobalEnv->AppPath = "";
+	pglobalEnv->AppPath = get_current_dir();
 	pglobalEnv->InitBuiltInFunctions();
 	skope sc(pglobalEnv);
 	xscope.push_back(&sc);
@@ -120,7 +140,13 @@ int main()
 				if (input.empty())
 					break;
 			}
-			interpreter(sc, input);
+			//if the line begins with #, it bypasses the usual parsing
+			if (input.front() == '#')
+			{
+				system(input.substr(1).c_str());
+			}
+			else
+				interpreter(sc, input);
 		}
 		catch (skope_exception e) {
 			cout << "Error: " << e.getErrMsg() << endl;
@@ -130,6 +156,6 @@ int main()
 		}
 	}
 	delete pglobalEnv;
-    return 0;
+	return 0;
 }
 

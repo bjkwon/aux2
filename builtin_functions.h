@@ -107,7 +107,7 @@ void _cell(skope* past, const AstNode* pnode, const vector<CVar>& args);
 DECL_GATE(_group)
 DECL_GATE(_ungroup)
 DECL_GATE(_clear)
-
+DECL_GATE(_dir)
 //DECL_GATE(_buffer)
 void _interp1(skope* past, const AstNode* pnode, const vector<CVar>& args);
 void _fdelete(skope* past, const AstNode* pnode, const vector<CVar>& args);

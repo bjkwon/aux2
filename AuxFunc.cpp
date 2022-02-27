@@ -29,6 +29,9 @@
 
 #include "builtin_functions.h"
 
+string CAstSigEnv::AppPath = "";
+
+
 bool CAstSigEnv::IsValidBuiltin(const string& funcname)
 {
 	if (pseudo_vars.find(funcname) != pseudo_vars.end())
@@ -294,6 +297,8 @@ void CAstSigEnv::InitBuiltInFunctions()
 	pseudo_vars["e"] = set_builtin_function_constant(&_natural_log_base);
 	pseudo_vars["pi"] = set_builtin_function_constant(&_pi);
 
+	builtin["dir"] = SET_BUILTIN_FUNC(dir);
+
 //	name = "write";
 //	ft.alwaysstatic = false;
 //	ft.funcsignature = "(audio_signal, filename[, option])";
@@ -453,12 +458,6 @@ void CAstSigEnv::InitBuiltInFunctions()
 //	builtin[name] = ft;
 //	name = "fdelete";
 //	ft.func =  &_fdelete; // check
-//	builtin[name] = ft;
-//
-//	ft.narg1 = 0;	ft.narg2 = 1;
-//	ft.funcsignature = "(directory_name)";
-//	name = "dir";
-//	ft.func =  &_dir;
 //	builtin[name] = ft;
 //
 //	ft.alwaysstatic = false;
@@ -696,7 +695,7 @@ vector<CVar> skope::make_check_args(const AstNode* pnode, const Cfunction& func)
 	auto allowedset = func.allowed_arg_types.begin();
 	thistype = Sig.type();
 	bool pass0 = false;
-	if (*allowedset->begin() != 0xFFFF)
+	if (thistype && *allowedset->begin() != 0xFFFF)
 	{
 		for (auto it = allowedset->begin(); it != allowedset->end(); it++)
 		{
@@ -710,8 +709,16 @@ vector<CVar> skope::make_check_args(const AstNode* pnode, const Cfunction& func)
 			throw exception_func(*this, pnode, ostr.str(), fname, count).raise();
 		}
 	}
-	allowedset++;
-	count++;
+	if (thistype) 
+	{
+		allowedset++;
+		count++;
+	}
+	else
+	{
+		Sig = func.defaultarg[0];
+		count++;
+	}
 	for (const AstNode* pn = p2; pn; pn = pn->next, count++)
 	{
 		if (func.narg2 >= 0 && count > func.narg2)
@@ -812,7 +819,11 @@ void skope::HandleAuxFunctions(const AstNode *pnode, AstNode *pRoot)
 	bool structCall = pnode->type == N_STRUCT;
 	const AstNode* arg0 = arg0node(pnode, node);
 	if (!structCall)
+	{
 		Compute(arg0); // Update Sig with arg0; For strucCall, it was already done in read_node()
+		if (!arg0)
+			Sig.Reset();
+	}
 	if ((*ft).second.func)
 	{
 		vector<CVar> args = make_check_args(pnode, (*ft).second);

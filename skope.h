@@ -9,7 +9,11 @@
 #include <algorithm>
 #define PI	3.141592f
 
+#ifdef _WIN32
+#include <windows.h>
+#else
 typedef uint64_t INT_PTR;
+#endif
 
 using namespace std;
 
@@ -70,7 +74,7 @@ public:
 class CAstSigEnv
 {
 public:
-    string AppPath;
+	static string AppPath;
 	static map<string, vector<CVar*>> glovar;
 	static map<string, Cfunction> pseudo_vars;
 	map<string, UDF> udf;
