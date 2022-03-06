@@ -1,4 +1,5 @@
 #include "functions_common.h"
+#include "utils.h"
 
 /* Use cases:
 1)  dir
@@ -65,35 +66,7 @@ Cfunction set_builtin_function_dir(fGate fp)
 	return ft;
 }
 
-string get_path_only(const string& fullfilename)
-{ // (something1)/(something2)/(something3) ==> (something1)/(something2)/
-	// (something1)/(something2)/ ==> (something1)/(something2)/
-	// if (something_the_last_block) contains wildcard characters, don't take it but move left til the next DIRMARKER
-	string out = fullfilename;
-	auto res = out.find_last_of(DIRMARKER);
-	if (res != string::npos)
-	{
-		out = out.substr(0, res);
-	}
-	else
-	{
-		auto res1 = out.find('*');
-		auto res2 = out.find(':');
-		auto res3 = out.find('?');
-		if (res1 != string::npos || res3 != string::npos || res3 != string::npos)
-			return "";
-	}
-	return out;
-}
 
-string get_name_only(const string& fullfilename)
-{
-	string out = fullfilename;
-	auto res = out.find_last_of(DIRMARKER);
-	if (res != string::npos)
-		out = out.substr(res + 1);
-	return out;
-}
 
 #ifdef _WIN32
 

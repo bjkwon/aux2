@@ -23,6 +23,14 @@ using namespace std;
 
 typedef void (*fmodify) (float*, uint64_t, void*, void*);
 
+#ifdef _WIN32
+#define DIRMARKER '\\'
+#define DIRMARKERSTR "\\"
+#else
+#define DIRMARKER '/'
+#define DIRMARKERSTR "/"
+#endif
+
 // fs : 1 for non-temporal 
 //      0 for relative timemarks tseq 
 //      2 for string

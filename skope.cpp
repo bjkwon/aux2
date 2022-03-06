@@ -2,6 +2,7 @@
 #include "skope.h"
 #include "skope_exception.h"
 #include "typecheck.h"
+#include "utils.h"
 #include <assert.h>
 
 #ifndef _WINDOWS
@@ -1296,8 +1297,7 @@ AstNode* skope::ReadUDF(string& emsg, const char* udf_filename)
 AstNode* skope::RegisterUDF(const AstNode* p, const char* fullfilename, const string& filecontent)
 {
 	//Deregistering takes place during cleaning out of pEnv i.e., ~CAstSigEnv()
-	char udf_filename[256];
-	_splitpath(fullfilename, NULL, NULL, udf_filename, NULL);
+	string udf_filename = get_name_only(fullfilename);
 	AstNode* pnode4Func = (AstNode*)((p->type == N_BLOCK) ? p->next : p);
 	string namefrompnode = pnode4Func->str;
 	transform(namefrompnode.begin(), namefrompnode.end(), namefrompnode.begin(), ::tolower);
@@ -1305,7 +1305,7 @@ AstNode* skope::RegisterUDF(const AstNode* p, const char* fullfilename, const st
 	{
 		auto it = pEnv->udf.find(p->str);
 		if (it != pEnv->udf.end())	pEnv->udf.erase(pEnv->udf.find(p->str));
-		string emsg = string(string(udf_filename) + " vs ") + pnode4Func->str;
+		string emsg = string(udf_filename + " vs ") + pnode4Func->str;
 		throw exception_etc(*this, p, string("inconsistent function name: ") + emsg).raise();
 	}
 	vector<int> undefined;
@@ -1343,11 +1343,11 @@ FILE* skope::fopen_from_path(const string& fname, const string& ext, string& ful
 	string _fname(fname), _ext(ext);
 	transform(_ext.begin(), _ext.end(), _ext.begin(), ::tolower);
 	char fopenopt[4];
-	if (_ext == "txt") strcpy(fopenopt, "rt");
-	else						strcpy(fopenopt, "rb");
-	size_t pdot = fname.rfind('.');
-	if ((pdot == fname.npos || pdot < fname.length() - 4) && !extension[0])
-		_fname += "." + ext;
+	if (_ext == "txt" || _ext == "aux") strcpy(fopenopt, "rt");
+	else			strcpy(fopenopt, "rb");
+	//size_t pdot = fname.rfind('.'); //??
+	//if ((pdot == fname.npos || pdot < fname.length() - 4) && !extension[0]) //??
+	//	_fname += "." + ext; //??
 
 #ifdef _WINDOWS
 	if (drive[0] + dir[0] > 0)

@@ -28,6 +28,10 @@ void trim(string& str, char* delim);
 int sformat(string& out, size_t nLengthMax, const char* format, ...);
 int str2vector(vector<string>& out, const string& in, const string& delim_chars);
 int countDeliminators(const char* buf, const char* deliminators);
+string get_path_only(const string& fullfilename);
+string get_current_dir();
+
+string get_name_only(const string& fullfilename);
 
 template <class T>
 T sumarray(T *in, int len)

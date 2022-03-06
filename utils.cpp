@@ -4,6 +4,19 @@
 
 using namespace std;
 
+#ifdef _WIN32
+#include <windows.h>
+#define DIRMARKER '\\'
+#define DIRMARKERSTR "\\"
+#else
+#include <glob.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <time.h>
+#define DIRMARKER '/'
+#define DIRMARKERSTR "/"
+#endif
+
 void triml(string& str, string delim)
 {
 	string::size_type pos = str.find_first_not_of(delim);
@@ -165,3 +178,58 @@ int str2vector(vector<string>& out, const string& in, const string& delim_chars)
 	return (int)out.size();
 }
 
+string get_path_only(const string& fullfilename)
+{ // (something1)/(something2)/(something3) ==> (something1)/(something2)/
+	// (something1)/(something2)/ ==> (something1)/(something2)/
+	// if (something_the_last_block) contains wildcard characters, don't take it but move left til the next DIRMARKER
+	string out = fullfilename;
+	auto res = out.find_last_of(DIRMARKER);
+	if (res != string::npos)
+	{
+		out = out.substr(0, res);
+	}
+	else
+	{
+		auto res1 = out.find('*');
+		auto res2 = out.find(':');
+		auto res3 = out.find('?');
+		if (res1 != string::npos || res3 != string::npos || res3 != string::npos)
+			return "";
+	}
+	return out;
+}
+
+string get_name_only(const string& fullfilename)
+{
+	string out = fullfilename;
+	auto res = out.find_last_of(DIRMARKER);
+	if (res != string::npos)
+		out = out.substr(res + 1);
+	return out;
+}
+
+string get_current_dir()
+{
+	string out;
+#ifdef _WIN32
+	size_t tbufferLen = MAX_PATH;
+	char* tbuffer = new char[tbufferLen];
+	tbuffer[0] = 0;
+	DWORD count = GetCurrentDirectory((DWORD)tbufferLen, tbuffer);
+	while (count > tbufferLen)
+	{
+		tbufferLen *= 2;
+		delete[] tbuffer;
+		tbuffer = new char[tbufferLen];
+		count = GetCurrentDirectory((DWORD)tbufferLen, tbuffer);
+	}
+	out = tbuffer;
+	delete[] tbuffer;
+#else
+	char cwd[MAX_PATH];
+	if (getcwd(cwd, sizeof(cwd)))
+		out = cwd;
+#endif
+	if (out.back() != DIRMARKER) out += DIRMARKER;
+	return out;
+}

@@ -6,35 +6,11 @@
 #include "skope.h"
 #include "skope_exception.h"
 #include "echo.h"
+#include "utils.h"
 #ifndef _WIN32
 #include <unistd.h>
 #endif
 extern vector<skope*> xscope;
-
-string get_current_dir()
-{
-	string out;
-#ifdef _WIN32
-	size_t tbufferLen = MAX_PATH;
-	char *tbuffer = new char[tbufferLen];
-	tbuffer[0] = 0;
-	DWORD count = GetCurrentDirectory(tbufferLen, tbuffer);
-	while (count > tbufferLen)
-	{
-		tbufferLen *= 2;
-		delete[] tbuffer;
-		tbuffer = new char[tbufferLen];
-		count = GetCurrentDirectory(tbufferLen, tbuffer);
-	}
-	out = tbuffer;
-	delete[] tbuffer;
-#else
-	char cwd[PATH_MAX];
-	if (getcwd(cwd, sizeof(cwd)))
-		out = cwd;
-#endif
-	return out;
-}
 
 void echo(int depth, skope& ctx, const AstNode* pnode, CVar* pvar)
 {
