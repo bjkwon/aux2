@@ -133,7 +133,7 @@ void __printf(skope* past, const AstNode* pnode, const vector<CVar>& args)
 	else if (fname == "fprintf")
 	{
 		auto fp = (FILE*)*(uint64_t*)(args.begin())->buf;
-		if (fprintf(fp, output.c_str()) < 0)
+		if (fprintf(fp, "%s", output.c_str()) < 0)
 		{
 			throw exception_func(*past, pnode, "-- Invalid file identifier", fname).raise();
 		}

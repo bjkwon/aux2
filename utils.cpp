@@ -17,6 +17,11 @@ using namespace std;
 #define DIRMARKERSTR "/"
 #endif
 
+#ifndef MAX_PATH
+#define MAX_PATH 4906
+#endif
+
+
 void triml(string& str, string delim)
 {
 	string::size_type pos = str.find_first_not_of(delim);

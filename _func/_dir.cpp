@@ -229,7 +229,7 @@ void _dir(skope* past, const AstNode* pnode, const vector<CVar>& args)
 #else
 	string cwd = get_current_dir();
 	// does arg include DIRMARKER; if so, cd to the specified path
-	string pathonly = get_path_only(args.c_str());
+	string pathonly = get_path_only(arg.c_str());
 	string name;
 	if (!pathonly.empty())
 	{
