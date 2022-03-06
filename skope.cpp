@@ -6,7 +6,7 @@
 
 #ifndef _WINDOWS
 #include <libgen.h>
-
+#define MAX_PATH 256
 #endif
 
 int GetFileText(const char* fname, const char* mod, string& strOut); // utils.cpp
@@ -18,7 +18,6 @@ vector<skope*> xscope;
 map<string, vector<CVar*>> glovar_dummy; // need some kind of global definition
 map<string, vector<CVar*>> CAstSigEnv::glovar = glovar_dummy;
 
-#define MAX_PATH 256
 
 skope::skope(string instr)
 {
@@ -44,72 +43,6 @@ CAstSigEnv::~CAstSigEnv()
 {
 
 }
-/*
-const AstNode* skope::findDadNode(const AstNode* p, const AstNode* pME)
-{
-	if (!p) return NULL;
-	if (p == pME) return p;
-	if (p->type == N_BLOCK)
-	{
-		p = p->next;
-		const AstNode* res = findDadNode(p, pME);
-		while (!res)
-		{
-			if (!p) break;
-			p = p->next;
-			res = findDadNode(p, pME);
-		}
-		return res;
-	}
-	if (!p->child && !p->alt) return NULL;
-	if (p->child == pME) return p;
-	const AstNode* res = NULL;
-	do
-	{
-		if (p->child)
-			res = findParentNode(p->child, res);
-		else
-			res = findParentNode(p->alt, res);
-		if (!res) break;
-	} while (res->type == N_STRUCT);
-	if (res) return res;
-	if (p->type == N_VECTOR)
-	{
-		auto pp = (const AstNode*)(p->str);
-		if (!pp)
-		{// p is "true" N_VECTOR -- where p->alt and the success on nexts are actual elements
-			for (auto p2 = p->alt; p2; p2 = p2->next)
-			{
-				if (p2 == pME) return p;
-			}
-			return NULL;
-		}
-		else
-		{
-			if (pp == pME) return p;
-			res = findDadNode(pp, pME);
-			if (res) return res;
-		}
-	}
-	return NULL;
-}
-
-const AstNode* skope::findParentNode(const AstNode* p, const AstNode* pME, bool altonly)
-{
-	if (p)
-	{
-		if (!p->child && !p->alt) return NULL;
-		if (!altonly && p->child == pME) return p;
-		if (p->alt == pME) return p;
-		if (!altonly && p->child)
-			return findParentNode(p->child, pME, altonly);
-		else
-			return findParentNode(p->alt, pME, altonly);
-	}
-	return NULL;
-}
-*/
-
 
 void skope::outputbinding(const AstNode* plhs)
 {
@@ -132,7 +65,10 @@ void skope::outputbinding(const AstNode* plhs)
 				delete pp; // most likely pp was created in _func() in _functions
 			it++;
 			if (it == SigExt.end() && p->next)
+			{
+				SigExt.clear(); // without this, a subsequent call to this function has invalid elements of SigExt *it->release() will crash.
 				throw exception_etc(*this, p, "Too many output arguments.").raise();
+			}
 		}
 	}
 }

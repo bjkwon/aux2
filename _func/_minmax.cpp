@@ -86,8 +86,6 @@ void _minmax(skope* past, const AstNode* pnode, const vector<CVar>& args)
 		if (fname == "max") past->Sig = past->Sig.evoke_getsig2(__max_aux2, NULL, popt);
 		else if (fname == "min") past->Sig = past->Sig.evoke_getsig2(__min_aux2, NULL, popt);
 		past->SigExt.push_back(move(make_unique<CVar*>(&past->Sig)));
-//		if (ISTEMPORAL(past->Sig.type()))
-//			extraOut->setsnap();
 		unique_ptr<CVar*> pt = make_unique<CVar*>(extraOut); // popt carries maximum/minimum indices
 		past->SigExt.push_back(move(pt));
 	}
@@ -97,7 +95,5 @@ void _minmax(skope* past, const AstNode* pnode, const vector<CVar>& args)
 			past->Sig = past->Sig.evoke_getsig2(__max_aux2, NULL, popt);
 		else if (fname == "min") past->Sig = past->Sig.evoke_getsig2(__min_aux2, NULL, popt);
 	}
-//	if (ISTEMPORAL(past->Sig.type())) 
-//		past->Sig.setsnap();
 }
 

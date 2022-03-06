@@ -131,8 +131,7 @@ public:
 class skope
 {
 public:
-	static const AstNode* findDadNode(const AstNode* p, const AstNode* pME);
-	static const AstNode* findParentNode(const AstNode* p, const AstNode* pME, bool altonly = false);
+	static const AstNode* find_parent(const AstNode* p, const AstNode* pME);
 	static AstNode* goto_line(const AstNode* pnode, int line);
 	static bool IsLooping(const AstNode* p);
 

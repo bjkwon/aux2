@@ -43,15 +43,15 @@ void echo(int depth, skope& ctx, const AstNode* pnode, CVar* pvar)
 		// ctx.xtree->alt indicates subsequent modifier of TID (e.e., x(10:20) x.sqrt, etc)
 		if (pnode->type==T_ID && !ctx.node->alt)
 		{
-			auto body = skope::findDadNode(ctx.node, pnode);
-			auto lhs = skope::findDadNode(ctx.node, body);
 			bool variablenameset = false;
-			if (pnode == ctx.node && body == lhs && lhs->type == T_ID && ctx.Vars.find(lhs->str) != ctx.Vars.end())
+			if (ctx.node->type==N_VECTOR)
+				variablenameset = true;
+			else if (pnode == ctx.node && pnode->type == T_ID && ctx.Vars.find(pnode->str) != ctx.Vars.end())
 				variablenameset = true;
 			else if (pnode->child)
 				variablenameset = true; // pnode is LHS
-			else if (lhs->type == N_VECTOR)
-				variablenameset = true; // c=1; [a,b]=x.max
+			else if (pnode->type == N_VECTOR)
+				variablenameset = true; // c=1; [a,b]=x.max ---> check this again.... 3/1/2022
 			string varname;
 			if (variablenameset)
 				varname = pnode->str;

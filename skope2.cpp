@@ -518,7 +518,7 @@ CVar &CNodeProbe::ExtractByIndex(const AstNode *pnode, AstNode *p)
 		eval_indexing(p->child, isig);
 		if (!(isig.type() & 1)) // has more than one element. 
 			lhsref_single = false;
-		if (isig._max() > pbase->Sig.nSamples) // can be replaced with psigBase->nSamples
+		if (isig._max() > psigBase->nSamples) // can be replaced with psigBase->nSamples
 		{
 			ostringstream oss;
 			oss << isig._max();

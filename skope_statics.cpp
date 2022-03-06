@@ -1,66 +1,19 @@
 #include "skope.h"
 
-const AstNode* skope::findDadNode(const AstNode* p, const AstNode* pME)
-{
-	if (!p) return NULL;
-	if (p == pME) return p;
-	if (p->type == N_BLOCK)
-	{
-		p = p->next;
-		const AstNode* res = findDadNode(p, pME);
-		while (!res)
-		{
-			if (!p) break;
-			p = p->next;
-			res = findDadNode(p, pME);
-		}
-		return res;
-	}
-	if (!p->child && !p->alt) return NULL;
-	if (p->child == pME) return p;
-	const AstNode* res = NULL;
-	do
-	{
-		if (p->child)
-			res = findParentNode(p->child, res);
-		else
-			res = findParentNode(p->alt, res);
-		if (!res) break;
-	} while (res->type == N_STRUCT);
-	if (res) return res;
-	if (p->type == N_VECTOR)
-	{
-		auto pp = (const AstNode*)(p->str);
-		if (!pp)
-		{// p is "true" N_VECTOR -- where p->alt and the success on nexts are actual elements
-			for (auto p2 = p->alt; p2; p2 = p2->next)
-			{
-				if (p2 == pME) return p;
-			}
-			return NULL;
-		}
-		else
-		{
-			if (pp == pME) return p;
-			res = findDadNode(pp, pME);
-			if (res) return res;
-		}
-	}
-	return NULL;
-}
-
-const AstNode* skope::findParentNode(const AstNode* p, const AstNode* pME, bool altonly)
-{
-	if (p)
-	{
-		if (!p->child && !p->alt) return NULL;
-		if (!altonly && p->child == pME) return p;
-		if (p->alt == pME) return p;
-		if (!altonly && p->child)
-			return findParentNode(p->child, pME, altonly);
-		else
-			return findParentNode(p->alt, pME, altonly);
-	}
+// 3/1/2022
+// This works... except for the case of N_VECTOR... Do it
+const AstNode* skope::find_parent(const AstNode* p, const AstNode* a)
+{ // search a from nodes begining at p
+	if (p->child == a) return p;
+	if (p->alt == a) return p;
+	if (p->next == a) return p;
+	const AstNode* q = NULL;
+	if (p->child)
+		if (q = find_parent(p->child, a)) return q;
+	if (p->alt)
+		if (q = find_parent(p->alt, a)) return q;
+	if (p->next)
+		if (q = find_parent(p->next, a)) return q;
 	return NULL;
 }
 

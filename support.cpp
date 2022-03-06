@@ -1,6 +1,8 @@
 #include "aux_classes.h"
 #include "skope.h"
 
+const AstNode* arg0node(const AstNode* pnode, const AstNode* pRoot0); // AuxFunc.cpp
+
 static int countVectorItems(const AstNode* pnode)
 {
 	if (pnode->type != N_VECTOR) return 0;
@@ -48,28 +50,29 @@ int get_output_count(const AstNode* proot, const AstNode* pnode)
 	}
 	else if (pnode->type == N_STRUCT)
 	{
-		auto body = skope::findDadNode(pCurLine, pnode);
-		auto lhs = skope::findDadNode(pCurLine, body);
-		if (lhs->type == N_ARGS)
-			nOutVars = 0;
-		else if (lhs->type == N_VECTOR)
-			nOutVars = countVectorItems(lhs);
-		else if (lhs == body) // no LHS
-			nOutVars = 1;
-		//		else
-//			throw "unchecked logic flow";
+		//if there's no lhs, lhs is same as arg0
+		auto arg0 = skope::find_parent(pCurLine, pnode);
+		if (pCurLine != arg0) {
+			auto lhs = skope::find_parent(pCurLine, arg0);
+			if (lhs->type == N_ARGS)
+				nOutVars = 0;
+			else if (lhs->type == N_VECTOR)
+				nOutVars = countVectorItems(lhs);
+			else
+				nOutVars = 1;
+		}
 	}
 	else
 	{
-		auto lhs = skope::findDadNode(pCurLine, pnode);
-		if (lhs == pnode) // no LHS
-			nOutVars = 1;
-		else  if (lhs->type == N_ARGS)
-			nOutVars = 0;
-		else if (lhs->type == N_VECTOR)
-			nOutVars = countVectorItems(lhs);
-		//		else
-//			throw "unchecked logic flow";
+		// If no LHS, lhs is NULL
+		auto lhs = skope::find_parent(pCurLine, pnode);
+		if (lhs)
+		{
+			if (lhs->type == N_ARGS)
+				nOutVars = 0;
+			else if (lhs->type == N_VECTOR)
+				nOutVars = countVectorItems(lhs);
+		}
 	}
 	return nOutVars;
 }
