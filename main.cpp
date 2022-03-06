@@ -6,11 +6,14 @@
 #include "skope.h"
 #include "skope_exception.h"
 #include "echo.h"
-
+#ifndef _WIN32
+#include <unistd.h>
+#endif
 extern vector<skope*> xscope;
 
 string get_current_dir()
 {
+	string out;
 #ifdef _WIN32
 	size_t tbufferLen = MAX_PATH;
 	char *tbuffer = new char[tbufferLen];
@@ -23,9 +26,13 @@ string get_current_dir()
 		tbuffer = new char[tbufferLen];
 		count = GetCurrentDirectory(tbufferLen, tbuffer);
 	}
-#endif
-	string out = tbuffer;
+	out = tbuffer;
 	delete[] tbuffer;
+#else
+	char cwd[PATH_MAX];
+	if (getcwd(cwd, sizeof(cwd)))
+		out = cwd;
+#endif
 	return out;
 }
 

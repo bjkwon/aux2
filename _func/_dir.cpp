@@ -39,6 +39,10 @@ string get_current_dir(); // from main.cpp
 #define DIRMARKER '\\'
 #define DIRMARKERSTR "\\"
 #else
+#include <glob.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <time.h>
 #define DIRMARKER '/'
 #define DIRMARKERSTR "/"
 #endif
@@ -61,34 +65,78 @@ Cfunction set_builtin_function_dir(fGate fp)
 	return ft;
 }
 
+string get_path_only(const string& fullfilename)
+{ // (something1)/(something2)/(something3) ==> (something1)/(something2)/
+	// (something1)/(something2)/ ==> (something1)/(something2)/
+	// if (something_the_last_block) contains wildcard characters, don't take it but move left til the next DIRMARKER
+	string out = fullfilename;
+	auto res = out.find_last_of(DIRMARKER);
+	if (res != string::npos)
+	{
+		out = out.substr(0, res);
+	}
+	else
+	{
+		auto res1 = out.find('*');
+		auto res2 = out.find(':');
+		auto res3 = out.find('?');
+		if (res1 != string::npos || res3 != string::npos || res3 != string::npos)
+			return "";
+	}
+	return out;
+}
+
+string get_name_only(const string& fullfilename)
+{
+	string out = fullfilename;
+	auto res = out.find_last_of(DIRMARKER);
+	if (res != string::npos)
+		out = out.substr(res + 1);
+	return out;
+}
+
 #ifdef _WIN32
 
 static void update_dir_info2CVar(CVar& out, const WIN32_FIND_DATA& ls, const char *fname, const char* ext, const char* pathonly)
 {
-	CVar tp;
-	tp.strut["name"] = string(fname);
-	tp.strut["ext"] = string(ext);
+	CVar obj;
+	obj.strut["name"] = string(fname);
+	obj.strut["ext"] = string(ext);
 	char fullname[256];
 	if (pathonly[0])
-		tp.strut["path"] = string(pathonly);
+		obj.strut["path"] = string(pathonly);
 	else
 	{
 		char* pt = strstr(fullname, fname);
 		if (pt) *pt = 0;
 		if (fullname[0])
-			tp.strut["path"] = string(fullname);
+			obj.strut["path"] = string(fullname);
 		else
-			tp.strut["path"] = CAstSigEnv::AppPath;
+			obj.strut["path"] = CAstSigEnv::AppPath;
 	}
-	tp.strut["bytes"] = CVar((float)(ls.nFileSizeHigh * ((uint64_t)MAXDWORD + 1) + ls.nFileSizeLow));
+	obj.strut["bytes"] = CVar((float)(ls.nFileSizeHigh * ((uint64_t)MAXDWORD + 1) + ls.nFileSizeLow));
 	FILETIME ft = ls.ftLastWriteTime;
 	SYSTEMTIME lt;
 	FileTimeToSystemTime(&ft, &lt);
 	sprintf(fullname, "%02d/%02d/%4d, %02d:%02d:%02d", lt.wMonth, lt.wDay, lt.wYear, lt.wHour, lt.wMinute, lt.wSecond);
-	tp.strut["date"] = string(fullname);
+	obj.strut["time"] = string(fullname);
 	CVar b(float(ls.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY ? 1. : 0.));
-	tp.strut["isdir"] = b;
-	out.appendcell(tp);
+	obj.strut["isdir"] = b;
+	out.appendcell(obj);
+}
+#else
+static void update_dir_info2CVar(CVar& out, const string& fname, const string& pathonly)
+{
+	CVar obj;
+	obj.strut["name"] = fname;
+	obj.strut["path"] = pathonly;
+	struct stat st;
+	stat(fname.c_str(), &st);
+	obj.strut["bytes"] = CVar((float)st.st_size);
+	CVar b((float)S_ISDIR(st.st_mode));
+	obj.strut["isdir"] = b;
+	obj.strut["time"] = string(ctime(&st.st_mtime));
+	out.appendcell(obj);
 }
 #endif
 
@@ -205,6 +253,28 @@ void _dir(skope* past, const AstNode* pnode, const vector<CVar>& args)
 			update_dir_info2CVar(past->Sig, ls, fname, ext, curDirPath);
 		}
 	} while (FindNextFile(hFind, &ls));
-#elif
+#else
+	string cwd = get_current_dir();
+	// does arg include DIRMARKER; if so, cd to the specified path
+	string pathonly = get_path_only(args.c_str());
+	string name;
+	if (!pathonly.empty())
+	{
+		chdir(pathonly.c_str());
+		name = get_name_only(arg.c_str());
+		pathonly = get_current_dir();
+	}
+	else
+	{
+		pathonly = cwd;
+		name = arg;
+	}
+	glob_t gbuf = { 0 };
+	glob(arg.c_str(), GLOB_DOOFFS, NULL, &gbuf);
+	for (size_t k = 0; k < gbuf.gl_pathc; k++)
+	{
+		update_dir_info2CVar(past->Sig, gbuf.gl_pathv[k], pathonly);
+	}
+	globfree(&gbuf);
 #endif
 }
