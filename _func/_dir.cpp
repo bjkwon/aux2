@@ -119,6 +119,7 @@ void _dir(skope* past, const AstNode* pnode, const vector<CVar>& args)
 	bool arg_ending_back_slash = false;
 
 	if (arg.empty()) arg += ".";
+#ifdef _WINDOWS
 	bool dot_or_dotdot = false;
 	if (arg == "." || "..") dot_or_dotdot = true;
 	if (arg.back() == DIRMARKER)
@@ -127,7 +128,6 @@ void _dir(skope* past, const AstNode* pnode, const vector<CVar>& args)
 		arg += ".";
 	}
 	if (arg == "..") { arg += DIRMARKER; arg += "."; }
-#ifdef _WINDOWS
 	WIN32_FIND_DATA ls;
 	HANDLE hFind = FindFirstFile(arg.c_str(), &ls);	
 	char curDirPath[MAX_PATH]; // where the FindFirstFile operation is based
@@ -227,6 +227,8 @@ void _dir(skope* past, const AstNode* pnode, const vector<CVar>& args)
 		}
 	} while (FindNextFile(hFind, &ls));
 #else
+	if (arg.empty()) arg += "*";
+	if (arg == "..") { arg += DIRMARKER; arg += "*"; }
 	string cwd = get_current_dir();
 	// does arg include DIRMARKER; if so, cd to the specified path
 	string pathonly = get_path_only(arg.c_str());
@@ -248,6 +250,7 @@ void _dir(skope* past, const AstNode* pnode, const vector<CVar>& args)
 	{
 		update_dir_info2CVar(past->Sig, gbuf.gl_pathv[k], pathonly);
 	}
+	chdir(cwd.c_str());
 	globfree(&gbuf);
 #endif
 }

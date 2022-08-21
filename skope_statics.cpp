@@ -1,9 +1,11 @@
 #include "skope.h"
 
-// 3/1/2022
-// This works... except for the case of N_VECTOR... Do it
 const AstNode* skope::find_parent(const AstNode* p, const AstNode* a)
-{ // search a from nodes begining at p
+{
+	// last changed 6/12/2022 to accommodate [out,state]=x.filt
+	if (p->type == N_VECTOR)
+		return (const AstNode*)p->str;
+	// search a from nodes begining at p
 	if (p->child == a) return p;
 	if (p->alt == a) return p;
 	if (p->next == a) return p;
