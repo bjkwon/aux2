@@ -2,6 +2,7 @@
 //
 
 #include <iostream>
+#include <fstream>
 #include "aux_classes.h"
 #include "skope.h"
 #include "skope_exception.h"
@@ -9,6 +10,8 @@
 #include "utils.h"
 #ifndef _WIN32
 #include <unistd.h>
+#include <readline/readline.h>
+#include <readline/history.h>
 #endif
 extern vector<skope*> xscope;
 
@@ -110,26 +113,55 @@ int main()
 	pglobalEnv->InitBuiltInFunctions();
 	skope sc(pglobalEnv);
 	xscope.push_back(&sc);
-	string input;
+	string input, line;
+	bool programExit = false;
+#ifndef _WIN32
+	ifstream historyfstream("aux2.history", istream::in);
+	while(getline(historyfstream, line))
+	{
+		add_history(line.c_str());
+	}
+	historyfstream.close();
+#endif
 	while (1)
 	{
 		try {
+#ifdef _WIN32
 			printf("AUX> ");
 			getline(cin, input);
-			if (input.empty())
+#else
+			input.clear();
+			char* readbuf = programExit ? readline("") : readline("AUX> ");
+			if (readbuf == NULL)
 			{
-				cout << "Press [ENTER] to quit" << endl;
-				getline(cin, input);
-				if (input.empty())
-					break;
+				cout << "Internal Error: readline; Program will exit.\n";
+				break;
 			}
-			//if the line begins with #, it bypasses the usual parsing
-			if (input.front() == '#')
+			if (strlen(readbuf) > 0) 
 			{
-				system(input.substr(1).c_str());
+				add_history(readbuf);
+				ofstream historyfstream2("aux2.history", ostream::out | ios::app);
+				historyfstream2 << readbuf << endl;
+				historyfstream2.close();
+				input = readbuf;
+				free(readbuf);
+			}
+#endif
+			if (!input.empty())
+			{
+				//if the line begins with #, it bypasses the usual parsing
+				if (input.front() == '#')
+					system(input.substr(1).c_str());
+				else
+					interpreter(sc, input);
+				programExit = false;
 			}
 			else
-				interpreter(sc, input);
+			{
+				if (programExit) break;
+				programExit = true;
+				cout << "Press [ENTER] to quit" << endl;
+			}
 		}
 		catch (skope_exception e) {
 			cout << "Error: " << e.getErrMsg() << endl;

@@ -1,4 +1,4 @@
 g++ -I. -Iinclude/ -Ilame/ -c *.cpp _func/*.cpp lame/*.cpp
 gcc -c -Iinclude/ lame/*.c -D HAVE_CONFIG_H -D HAVE_MPGLIB
-g++ *.o -o aux2 -l :libmp3lame.so -l :libsndfile.so.1 -l :libfftw3f.so.3 -l :libsamplerate.so.0
+g++ *.o -o aux2 -l :libmp3lame.so -l :libsndfile.so.1 -l :libfftw3f.so.3 -l :libsamplerate.so.0 -lreadline
 
