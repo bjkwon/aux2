@@ -204,6 +204,16 @@ string get_path_only(const string& fullfilename)
 	return out;
 }
 
+string get_ext_only(const string& fullfilename)
+{
+	string out = fullfilename;
+	auto res = out.find_last_of('.');
+	if (res == string::npos)
+		return "";
+	else
+		return out.substr(res);
+}
+
 string get_name_only(const string& fullfilename)
 {
 	string out = fullfilename;
