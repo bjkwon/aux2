@@ -32,6 +32,7 @@ string get_path_only(const string& fullfilename);
 string get_current_dir();
 
 string get_name_only(const string& fullfilename);
+string get_ext_only(const string& fullfilename);
 
 template <class T>
 T sumarray(T *in, int len)

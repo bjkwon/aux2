@@ -1336,18 +1336,21 @@ AstNode* skope::RegisterUDF(const AstNode* p, const char* fullfilename, const st
 
 FILE* skope::fopen_from_path(const string& fname, const string& ext, string& fullfilename)
 { // in in out
+	char extension[MAX_PATH] = {0};
 #ifdef _WINDOWS
-	char drive[64], dir[MAX_PATH], filename[MAX_PATH], extension[MAX_PATH];
+	char drive[64], dir[MAX_PATH], filename[MAX_PATH];
 	_splitpath(fname.c_str(), drive, dir, filename, extension);
+#else
+	strcpy(extension, get_ext_only(fname).c_str());
 #endif
 	string _fname(fname), _ext(ext);
 	transform(_ext.begin(), _ext.end(), _ext.begin(), ::tolower);
 	char fopenopt[4];
 	if (_ext == "txt" || _ext == "aux") strcpy(fopenopt, "rt");
 	else			strcpy(fopenopt, "rb");
-	//size_t pdot = fname.rfind('.'); //??
-	//if ((pdot == fname.npos || pdot < fname.length() - 4) && !extension[0]) //??
-	//	_fname += "." + ext; //??
+	size_t pdot = fname.rfind('.');
+	if ((pdot == fname.npos || pdot < fname.length() - 4) && !extension[0])
+		_fname += "." + ext;
 
 #ifdef _WINDOWS
 	if (drive[0] + dir[0] > 0)

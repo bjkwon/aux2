@@ -92,7 +92,7 @@ int GetFileText(FILE* fp, string& strOut)
 	while (pos > 0 && pos < filesize && res)
 	{
 		buf[pos++] = '\n';
-		fseek(fp, (long)pos + 1 + 1, SEEK_SET);
+		fseek(fp, 1, SEEK_CUR);
 		res = fread(buf + pos, 1, (size_t)(filesize - pos), fp);
 		pos += res;
 	}
@@ -204,12 +204,25 @@ string get_path_only(const string& fullfilename)
 	return out;
 }
 
+string get_ext_only(const string& fullfilename)
+{
+	string out = fullfilename;
+	auto res = out.find_last_of('.');
+	if (res == string::npos)
+		return "";
+	else
+		return out.substr(res);
+}
+
 string get_name_only(const string& fullfilename)
 {
 	string out = fullfilename;
 	auto res = out.find_last_of(DIRMARKER);
 	if (res != string::npos)
 		out = out.substr(res + 1);
+	res = out.find_last_of('.');
+	if (res != string::npos)
+		out = out.substr(0, res);
 	return out;
 }
 
