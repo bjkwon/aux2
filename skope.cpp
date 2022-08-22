@@ -1345,9 +1345,9 @@ FILE* skope::fopen_from_path(const string& fname, const string& ext, string& ful
 	char fopenopt[4];
 	if (_ext == "txt" || _ext == "aux") strcpy(fopenopt, "rt");
 	else			strcpy(fopenopt, "rb");
-	//size_t pdot = fname.rfind('.'); //??
-	//if ((pdot == fname.npos || pdot < fname.length() - 4) && !extension[0]) //??
-	//	_fname += "." + ext; //??
+	size_t pdot = fname.rfind('.');
+	if ((pdot == fname.npos || pdot < fname.length() - 4) && !extension[0]) //??
+		_fname += "." + ext;
 
 #ifdef _WINDOWS
 	if (drive[0] + dir[0] > 0)
