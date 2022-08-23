@@ -10,7 +10,6 @@
 #define MAX_PATH 256
 #endif
 
-int GetFileText(const char* fname, const char* mod, string& strOut); // utils.cpp
 int GetFileText(FILE* fp, string& strOut); // utils.cpp
 
 //Application-wide global variables

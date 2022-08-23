@@ -96,7 +96,6 @@ int GetFileText(FILE* fp, string& strOut)
 		res = fread(buf + pos, 1, (size_t)(filesize - pos), fp);
 		pos += res;
 	}
-	fclose(fp);
 	if (pos <= 0)
 		return -2;
 	else
@@ -112,7 +111,9 @@ int GetFileText(const char* fname, const char* mod, string& strOut)
 { // mod is either "rb" or "rt"
 	FILE* fp = fopen(fname, mod);
 	if (!fp) return -1;
-	return GetFileText(fp, strOut);
+	int res = GetFileText(fp, strOut);
+	fclose(fp);
+	return res;
 }
 
 int countDeliminators(const char* buf, const char* deliminators)
