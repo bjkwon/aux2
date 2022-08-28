@@ -13,7 +13,6 @@
 
 #pragma once
 
-using namespace std;
 
 #include <string>
 #include <complex>
@@ -21,6 +20,7 @@ using namespace std;
 #include <map>
 #include <functional>
 
+using namespace std;
 typedef void (*fmodify) (float*, uint64_t, void*, void*);
 
 #ifdef _WIN32

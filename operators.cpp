@@ -644,16 +644,19 @@ bool body::operator < (const body &rhs) const
 	if (nGroups > rhs.nGroups) return false;
 	if (bufBlockSize < rhs.bufBlockSize) return true;
 	if (bufBlockSize > rhs.bufBlockSize) return false;
-	if (bufBlockSize== sizeof(float))
+	if (bufBlockSize== sizeof(float)) {
 		for (unsigned int k = 0; k < nSamples; k++)
 			if (buf[k] < rhs.buf[k]) return true;
-	else if (bufBlockSize == 2*sizeof(float))
+	}
+        else if (bufBlockSize == 2*sizeof(float)) {
 		for (unsigned int k = 0; k < nSamples; k++)
 			if (real(cbuf[k]) < real(rhs.cbuf[k]) && imag(cbuf[k]) < imag(rhs.cbuf[k])) return true;
-	else if (bufBlockSize == 1)
+	}
+        else if (bufBlockSize == 1) {
 		for (unsigned int k = 0; k < nSamples; k++)
 			if (strbuf[k] < rhs.strbuf[k]) return true;
-	if (ghost && !rhs.ghost) return true;
+	}
+        if (ghost && !rhs.ghost) return true;
 	if (!ghost && rhs.ghost) return false;
 	return false;
 }

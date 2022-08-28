@@ -527,7 +527,7 @@ static void write2textfile(FILE* fid, CVar* psig)
 	if (psig->bufBlockSize == 1)
 	{
 		for (unsigned int k = 0; k < psig->nSamples; k++)
-			fprintf(fid, "%c ", psig->logbuf[k]);
+			fprintf(fid, "%c ", (char)psig->logbuf[k]);
 		fprintf(fid, "\n");
 	}
 	else if (ISAUDIO(psig->type())) // audio

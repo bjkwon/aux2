@@ -11,11 +11,11 @@ const AstNode* skope::find_parent(const AstNode* p, const AstNode* a)
 	if (p->next == a) return p;
 	const AstNode* q = NULL;
 	if (p->child)
-		if (q = find_parent(p->child, a)) return q;
+		if ((q = find_parent(p->child, a))) return q;
 	if (p->alt)
-		if (q = find_parent(p->alt, a)) return q;
+		if ((q = find_parent(p->alt, a))) return q;
 	if (p->next)
-		if (q = find_parent(p->next, a)) return q;
+		if ((q = find_parent(p->next, a))) return q;
 	return NULL;
 }
 
