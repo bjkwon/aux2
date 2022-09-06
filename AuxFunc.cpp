@@ -299,13 +299,6 @@ void CAstSigEnv::InitBuiltInFunctions()
 
 	builtin["dir"] = SET_BUILTIN_FUNC(dir);
 
-//	name = "write";
-//	ft.alwaysstatic = false;
-//	ft.funcsignature = "(audio_signal, filename[, option])";
-//	ft.narg1 = 2;	ft.narg2 = 3;
-//	ft.func = &_write;
-//	builtin[name] = ft;
-//
 //	name = "setfs"; // check this... is narg1 one correct?
 //	ft.alwaysstatic = true;
 //	ft.funcsignature = "(filename)";

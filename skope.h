@@ -178,7 +178,7 @@ public:
 	void Concatenate(const AstNode* pnode, AstNode* p);
 	CVar* ConditionalOperation(const AstNode* pnode, AstNode* p);
 	CVar* SetLevel(const AstNode* pnode, AstNode* p);
-	float find_endpoint(const AstNode* p, CVar* pvar);
+	float find_endpoint(const AstNode* p, const CVar& var);
 	void interweave_indices(CVar& isig, CVar& isig2, unsigned int len);
 	void index_array_satisfying_condition(CVar& isig);
 	CVar* InitCell(const AstNode* pnode, AstNode* p);
@@ -214,12 +214,20 @@ public:
 	string statusMsg; // to display any message during processing inside of AstSig.cpp in the application
 	unsigned long Tick0, Tick1;
 	vector<float> ends;
+	CVar* process_block(const AstNode* pnode);
+	CVar* process_statement(const AstNode* pnode);
 private:
 	bool done;
 	bool nodeAllocated;
 	bool fBreak;
 	bool fExit;
 	vector<CVar> make_check_args(const AstNode* pnode, const Cfunction& func);
+	void get_nodes_left_right_sides(const AstNode* pnode, const AstNode** plhs, const AstNode** prhs);
+	void eval_lhs(const AstNode* plhs, const AstNode* prhs, CVar& lhs_index, CVar& RHS, uint16_t& typelhs, bool& contig, const CVar* cell_item = NULL);
+	void right_to_left(const AstNode* plhs, const CVar& lhs_index, const CVar& robj, uint16_t typelhs, bool contig, CVar* lobj = NULL);
+	void eval_index(const AstNode* pInd, const CVar& varLHS, CVar& index);
+	void insertreplace(const AstNode* pnode, const CVar& sec, const CVar& indsig, CVar* lobj = NULL);
+	const CVar* get_cell_item(const AstNode* plhs, const CVar& cellobj);
 };
 
 class CNodeProbe

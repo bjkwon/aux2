@@ -389,7 +389,7 @@ public:
 	CTimeSeries & removeafter(float timems);
 	CTimeSeries & Squeeze();
 	CTimeSeries & Crop(float begin_ms, float end_ms);
-	CTimeSeries & ReplaceBetweenTPs(CTimeSeries &newsig, float t1, float t2);
+	CTimeSeries & ReplaceBetweenTPs(const CTimeSeries &newsig, float t1, float t2);
 	CTimeSeries & NullIn(float tpoint);
 
 	CTimeSeries & operator=(const CSignal & rhs);
@@ -525,7 +525,7 @@ public:
 	CSignals & operator>>=(float delta);
 	CSignals & Crop(float begin_ms, float end_ms);
 
-	CSignals & ReplaceBetweenTPs(CSignals &newsig, float t1, float t2);
+	CSignals & ReplaceBetweenTPs(const CSignals &newsig, float t1, float t2);
 	CSignals & LogOp(CSignals &rhs, int type);
 
 	void setsnap(int set=1) {	CTimeSeries::setsnap(set); if (next) next->CTimeSeries::setsnap(set);	};

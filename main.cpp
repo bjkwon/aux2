@@ -123,6 +123,7 @@ int main()
 	}
 	historyfstream.close();
 #endif
+	int commandid = 0;
 	while (1)
 	{
 		try {

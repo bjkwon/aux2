@@ -31,7 +31,6 @@ void CNodeProbe::tree_NARGS(const AstNode* ptree, AstNode* ppar)
 
 CVar* CNodeProbe::cell_indexing(CVar* pBase, AstNode* pn)
 {
-	char buf[256];
 	size_t cellind = (size_t)(int)pbase->Compute(pn->alt->child)->value(); // check the validity of ind...probably it will be longer than this.
 	ostringstream oss;
 	if (pBase->type() & TYPEBIT_CELL)

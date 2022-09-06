@@ -116,7 +116,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>HAVE_CONFIG_H;HAVE_MPGLIB;_DEBUG;_CONSOLE;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <DisableSpecificWarnings>4996</DisableSpecificWarnings>
+      <DisableSpecificWarnings>4996; 4244; 4267</DisableSpecificWarnings>
       <AdditionalIncludeDirectories>$(ProjectDir); $(ProjectDir)\include\</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
@@ -155,6 +155,7 @@
     <ClCompile Include="lame\timestatus.c" />
     <ClCompile Include="skope2.cpp" />
     <ClCompile Include="skope_flow.cpp" />
+    <ClCompile Include="skope_process.cpp" />
     <ClCompile Include="skope_read_xtree.cpp" />
     <ClCompile Include="AuxFunc.cpp" />
     <ClCompile Include="Built_in_Funcs.cpp" />

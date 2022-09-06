@@ -175,11 +175,13 @@ body& body::operator=(const body & rhs)
 // DO NOT CALL this function with empty buf
 float body::_max(unsigned int id, int unsigned len, void* pind) const
 {
+	if (len == 0) len = nSamples;
 	return *max_element(buf + id, buf + id + len);
 }
 
 float body::_min(unsigned int id, unsigned int len, void* pind) const
 {
+	if (len == 0) len = nSamples;
 	return *min_element(buf + id, buf + id + len);
 }
 
@@ -1998,7 +2000,7 @@ CSignal& CSignal::movespec(unsigned int id0, unsigned int len, void *parg)
 
 #endif 
 
-CTimeSeries& CTimeSeries::ReplaceBetweenTPs(CTimeSeries &newsig, float t1, float t2)
+CTimeSeries& CTimeSeries::ReplaceBetweenTPs(const CTimeSeries &newsig, float t1, float t2)
 { // signal portion between t1 and t2 is replaced by newsig
  // t1 and t2 are in ms
 //	float lastendtofnewsig = newsig.GetDeepestChain()->endt();
@@ -2016,10 +2018,10 @@ CTimeSeries& CTimeSeries::ReplaceBetweenTPs(CTimeSeries &newsig, float t1, float
 	if (t1 > 0. && fabs(deviationfromgrid) > 1.e-8 && deviationfromgrid > -samplegrid && deviationfromgrid < samplegrid)
 		t1 -= 1000.f*samplegrid;  // because its in ms
 	Crop(0, t1);
-	if (inbet)
-		newsig >>= t1 - (tmark + _dur());
-	if (newsig.chain) { delete newsig.chain; newsig.chain = NULL; }
-	*this += &newsig;
+	//if (inbet)
+	//	newsig >>= t1 - (tmark + _dur());
+	//if (newsig.chain) { delete newsig.chain; newsig.chain = NULL; }
+	*this += (CTimeSeries*)&newsig;
 	//if t2 coincides with the sampling grid, don't take that point here (it will be taken twice)
 	deviationfromgrid = t2 - ((float)(int)(t2*fs)) / fs;
 	// deviationfromgrid of zero can masquerade as a very small number
@@ -2658,7 +2660,7 @@ CSignals& CSignals::Crop(float begin_ms, float end_ms)
 	return *this;
 }
 
-CSignals& CSignals::ReplaceBetweenTPs(CSignals &newsig, float t1, float t2)
+CSignals& CSignals::ReplaceBetweenTPs(const CSignals &newsig, float t1, float t2)
 {
 	CTimeSeries::ReplaceBetweenTPs(newsig, t1, t2);
 	if (next)	next->ReplaceBetweenTPs(newsig, t1, t2);

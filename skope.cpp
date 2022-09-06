@@ -197,8 +197,14 @@ vector<CVar*> skope::Compute()
 	}
 	else
 	{
+		CVar* r;
 		baselevel.push_back(level);
-		res.push_back(Compute(node));
+		if (node->type == T_IF || node->type == T_FOR || node->type == T_WHILE || node->type == T_TRY || node->type == T_CATCH)
+		{
+		}
+		else
+			r = process_statement(node);
+		res.push_back(r);
 		baselevel.pop_back();
 	}
 //	Tick1 = GetTickCount0();
@@ -2080,12 +2086,12 @@ CVar* skope::SetLevel(const AstNode* pnode, AstNode* p)
 	return &Sig;
 }
 
-float skope::find_endpoint(const AstNode* p, CVar* pvar)
+float skope::find_endpoint(const AstNode* p, const CVar &var)
 {  // p is the node the indexing starts (e.g., child of N_ARGS... wait is it also child of conditional p?
 	if (p->next) // first index in 2D
-		return (float)pvar->nGroups;
+		return (float)var.nGroups;
 	else
-		return (float)pvar->nSamples;
+		return (float)var.nSamples;
 }
 
 void skope::interweave_indices(CVar& isig, CVar& isig2, unsigned int len)
