@@ -13,6 +13,8 @@
 #include <readline/readline.h>
 #include <readline/history.h>
 #endif
+#include "unit_test.cpp"
+
 extern vector<skope*> xscope;
 
 void echo(int depth, skope& ctx, const AstNode* pnode, CVar* pvar)
@@ -129,6 +131,12 @@ int main()
 		try {
 #ifdef _WIN32
 			printf("AUX> ");
+			if (commandid < N_COMMANDS)
+			{
+				input = cmd[commandid++];
+				cout << input << endl;
+			}
+			else
 			getline(cin, input);
 #else
 			input.clear();
