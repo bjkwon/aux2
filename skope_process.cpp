@@ -146,7 +146,6 @@ void skope::eval_lhs(const AstNode* plhs, const AstNode* prhs, CVar &lhs_index, 
 			typelhs = TYPEBIT_NULL;
 			return;
 		}
-		// check type.. mask with 0xFFF4 -- to mask the last two bits zero (clean the length bits) to check the type only (no length)
 		typelhs = pvarLHS->type();
 		if ((typelhs & TYPEBIT_CELL)) {
 			// check if ind is valid in x{ind} -- todo 9/5/2022
@@ -156,14 +155,12 @@ void skope::eval_lhs(const AstNode* plhs, const AstNode* prhs, CVar &lhs_index, 
 				return;
 			}
 			cellind = (size_t)(int)Compute(plhs->alt->child)->value(); // check the validity of ind...probably it will be longer than this.
-	//		if (plhs->alt->alt) {
-	//			assert(plhs->alt->alt->type == N_TIME_EXTRACT);
 				lhs_index.SetValue(cellind);
 				return;
-		//	}
 		}
+		// check type.. mask with 0xFFF4 -- to mask the last two bits zero (clean the length bits) to check the type only (no length)
 		auto typerhs = RHS.type();
-		if ( (typelhs & (uint16_t)0xFFF4) != (typerhs & (uint16_t)0xFFF4) ) // (typerhs != typelhs)
+		if (typerhs > 0 && (typelhs & (uint16_t)0xFFF4) != (typerhs & (uint16_t)0xFFF4) )
 		{
 			out << "LHS and RHS have different object type.";
 			throw exception_etc(*this, plhs, out.str()).raise();
