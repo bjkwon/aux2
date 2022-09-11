@@ -185,6 +185,7 @@ public:
 	bool checkcond(const AstNode* p);
 	void switch_case_handler(const AstNode* pnode);
 	int GetFs(void) { return pEnv->Fs; }
+	void outputbinding_for_eval_lhs(const AstNode* pnode);
 	void outputbinding(const AstNode* pnode);
 	void outputbinding(const AstNode* pnode, size_t nArgout);
 	void bind_psig(AstNode* pn, CVar* psig);
@@ -226,8 +227,11 @@ private:
 	void eval_lhs(const AstNode* plhs, const AstNode* prhs, CVar& lhs_index, CVar& RHS, uint16_t& typelhs, bool& contig, const CVar* cell_item = NULL);
 	void right_to_left(const AstNode* plhs, const CVar& lhs_index, const CVar& robj, uint16_t typelhs, bool contig, CVar* lobj = NULL);
 	void eval_index(const AstNode* pInd, const CVar& varLHS, CVar& index);
-	void insertreplace(const AstNode* pnode, const CVar& sec, const CVar& indsig, CVar* lobj = NULL);
+	void insertreplace(const AstNode* pnode, const CVar& sec, const CVar& indsig, CVar* lobj);
 	const CVar* get_cell_item(const AstNode* plhs, const CVar& cellobj);
+	void assign_adjust(const AstNode* pn, CVar* lobj, const CVar& lhs_index, const CVar& robj, bool contig);
+	void assign_struct(CVar* lobj, const AstNode* plhs, const AstNode* pstruct, const CVar& robj);
+	const CVar* get_available_struct_item(const AstNode* plhs, const AstNode** pstruct);
 };
 
 class CNodeProbe

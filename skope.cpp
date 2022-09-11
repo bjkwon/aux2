@@ -44,9 +44,23 @@ CAstSigEnv::~CAstSigEnv()
 
 }
 
-void skope::outputbinding(const AstNode* plhs)
+void skope::outputbinding_for_eval_lhs(const AstNode* plhs)
 {
 	assert(plhs->type == N_VECTOR);
+	if (SigExt.empty())
+	{
+		AstNode* p = ((AstNode*)plhs->str)->alt;
+		if (p->next)
+			throw exception_etc(*this, p, "Too many output arguments.").raise();
+	}
+	else
+	{
+		// add something if you want to impose any other conditions example not allowing [a(id) b] = func(x,y)
+	}
+}
+
+void skope::outputbinding(const AstNode* plhs)
+{
 	if (SigExt.empty())
 	{
 		AstNode* p = ((AstNode*)plhs->str)->alt;
@@ -847,6 +861,9 @@ CVar* skope::TID(AstNode* pnode, AstNode* pRHS, CVar* psig)
 		CVar* pres;
 		//if (!np.psigBase)
 		//	Script = np.varname.empty() ? pnode->str : np.varname;
+		// // 9/8/2022
+		// a.pro1.pro2.pro3 = RHS ==> if a has not been defined, pnode and pLast point to a
+		// a.pro1.pro2.pro3 = RHS ==> if a has been defined, pnode points to a, pLast points to pro3
 		pres = np.TID_RHS2LHS(pnode, pLast, pRHS);
 //		replica.Reset();
 		lhs = lhsCopy;

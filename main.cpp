@@ -131,12 +131,12 @@ int main()
 		try {
 #ifdef _WIN32
 			printf("AUX> ");
-			if (commandid < N_COMMANDS)
-			{
-				input = cmd[commandid++];
-				cout << input << endl;
-			}
-			else
+			//if (commandid < N_COMMANDS)
+			//{
+			//	input = cmd[commandid++];
+			//	cout << input << endl;
+			//}
+			//else
 			getline(cin, input);
 #else
 			input.clear();

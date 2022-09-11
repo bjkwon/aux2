@@ -320,6 +320,7 @@ CVar * CNodeProbe::TID_assign(const AstNode *pnode, AstNode *p, AstNode *pRHS)
 		}
 		else if ( (p->type == T_ID || p->type == N_STRUCT) && p->alt->type == N_STRUCT) // Definition of a struct member variable, but the struct var hasn't beend initialized.
 		{ // Initialize the variable and define the member variable from the tip and go reverse
+			// 9/8/2022 a.pro1.pro2.pro3 = RHS where nothing has been defined
 			CVar* psigRHS = pbase->Compute(pRHS);
 			deque<string> strchain;
 			deque<CVar> cvarchain;
