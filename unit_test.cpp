@@ -96,17 +96,17 @@
 //	"a",
 //};
 
-#define N_COMMANDS 11
-const char cmd[N_COMMANDS][256] = {
-	"x.val(4)=100", // error
-	"x.val{4}=100", // error
-	"x.val(4~5)=100", // error
-	"x=100;",
-	"x.val=200;",
-	"x.name=\"auxlab console\"; ",
-	"x.val = x.val+x;",
-	"x", // ok up to this line
-	"x.name = 999"
-	"x", 
-	"x.name(2) = noise(40) " // error
-};
+//#define N_COMMANDS 11
+//const char cmd[N_COMMANDS][256] = {
+//	"x.val(4)=100", // error
+//	"x.val{4}=100", // error
+//	"x.val(4~5)=100", // error
+//	"x=100;",
+//	"x.val=200;",
+//	"x.name=\"auxlab console\"; ",
+//	"x.val = x.val+x;",
+//	"x", // ok up to this line
+//	"x.name = 999"
+//	"x", 
+//	"x.name(2) = noise(40) " // error
+//};

@@ -1,7 +1,7 @@
 #include "skope.h"
 #include "skope_exception.h"
 #include <assert.h>
-
+#include <deque>
 
 void skope::get_nodes_left_right_sides(const AstNode* pnode, const AstNode** plhs, const AstNode** prhs)
 {
@@ -75,7 +75,7 @@ void skope::eval_index(const AstNode* pInd, const CVar &varLHS, CVar &index)
 const CVar* skope::get_cell_item(const AstNode* plhs, const CVar &cellobj)
 { // from CNodeProbe::cell_indexing
 	CVar* out;
-	size_t cellind = (size_t)(int)Compute(plhs->alt->child)->value(); // check the validity of ind...probably it will be longer than this.
+	size_t cellind = (size_t)(plhs->alt->dval); // check the validity of ind...probably it will be longer than this.
 	ostringstream oss;
 	if (cellobj.type() & TYPEBIT_CELL)
 	{
@@ -157,6 +157,10 @@ void skope::eval_lhs(const AstNode* plhs, const AstNode* prhs, CVar &lhs_index, 
 						if (pstruct->type== N_ARGS || pstruct->type == N_TIME_EXTRACT || pstruct->type == N_CELL)
 							alert_undefinedLHS = true;
 						break;
+					case N_CELL:
+						if (plhs->alt->dval != 0.)
+							alert_undefinedLHS = true;
+						break;
 					case N_ARGS:
 					case N_TIME_EXTRACT:
 						alert_undefinedLHS = true;
@@ -182,8 +186,6 @@ void skope::eval_lhs(const AstNode* plhs, const AstNode* prhs, CVar &lhs_index, 
 			typelhs = TYPEBIT_NULL;
 			return;
 		}
-		// Todo---make a list of commands that you expect to work and to issue an error
-		// work on each... 9/11/2022
 		if (plhs->alt->type == N_STRUCT) // look at the prop item, not the base one
 		{
 			// x.prop1.prop2...propk...propn = RHS
@@ -194,7 +196,11 @@ void skope::eval_lhs(const AstNode* plhs, const AstNode* prhs, CVar &lhs_index, 
 			//go down to the prop item. x.prop1.prop2.prop3....prop7 
 			// If any of these items are not present, return with TYPEBIT_NULL
 			struct_item = get_available_struct_item(plhs, &pstruct);
-			if (!struct_item || struct_item->strut.empty()) {
+			// struct_item NULL means nothing has been defined from prop1 through propn
+			// struct_item not NULL but if it doesn't have strut means prop(k+1) is defined without indexing 
+			// pstruct->alt->type == N_STRUCT means .prop(k+1) has a decendent node that was not defined--> no need to check
+			// (pstruct->alt->type == T_ID or N_TIME_EXTRACT) means .prop(k+1) has a decendent node accessed with indexing--need to check
+			if (!struct_item || !pstruct->alt || pstruct->alt->type == N_STRUCT) {
 				typelhs = TYPEBIT_NULL;
 				return;
 			}
@@ -204,30 +210,20 @@ void skope::eval_lhs(const AstNode* plhs, const AstNode* prhs, CVar &lhs_index, 
 		if ((typelhs & TYPEBIT_CELL)) {
 			// check if ind is valid in x{ind} -- todo 9/5/2022
 			size_t cellind;
-			if (plhs->alt->type == N_ARGS) {
-				out << "Items in the cell array on LHS should be accessed with {}";
-				throw exception_etc(*this, plhs, out.str()).raise();
-			}
-			cellind = (size_t)(int)Compute(plhs->alt->child)->value(); // check the validity of ind...probably it will be longer than this.
-				lhs_index.SetValue(cellind);
-				return;
+			if (plhs->alt->type == N_ARGS)
+				throw exception_etc(*this, plhs, "Items in the cell array on LHS should be accessed with {}").raise();
+			lhs_index.SetValue(plhs->alt->dval);
+			return;
 		}
 		// check type.. mask with 0xFFF4 -- to mask the last two bits zero (clean the length bits) to check the type only (no length)
 		auto typerhs = RHS.type();
 		if (!pstruct || pstruct->alt)
 			if (typerhs > 0 && plhs->alt->type != N_STRUCT && (typelhs & (uint16_t)0xFFF4) != (typerhs & (uint16_t)0xFFF4) )
-			{
-				out << "LHS and RHS have different object type.";
-				throw exception_etc(*this, plhs, out.str()).raise();
-			}
+				throw exception_etc(*this, plhs, "LHS and RHS have different object type.").raise();
 		if (plhs->alt->type == N_TIME_EXTRACT)
 		{
 			// if lhs var is not audio, throw
 			if (!ISAUDIO(typelhs))
-			{
-				out << "LHS must be audio.";
-				throw exception_etc(*this, plhs, out.str()).raise();
-			}
 			lhs_index.UpdateBuffer(2); // use it for time indices
 			Compute(plhs->alt->child);
 			lhs_index.buf[0] = Sig.buf[0];
@@ -244,20 +240,15 @@ void skope::eval_lhs(const AstNode* plhs, const AstNode* prhs, CVar &lhs_index, 
 		}
 		// x(ind): process ind
 		eval_index(plhs->alt->child, *pvarLHS, lhs_index);
-
 		//Check if index is within range 
 		if (lhs_index._max() > pvarLHS->nSamples) {
 			out << lhs_index._max();
 			throw exception_range(*this, plhs, out.str(),"").raise();
 		}
-
 		//check size
 		if (RHS.nSamples>1 && lhs_index.nSamples > 1)
 		if (lhs_index.nSamples != RHS.nSamples || lhs_index.nGroups != RHS.nGroups)
-		{
-			out << "LHS and RHS have different dimension (lengths).";
-			throw exception_etc(*this, plhs, out.str()).raise();
-		}
+			throw exception_etc(*this, plhs, "LHS and RHS have different dimension (lengths).").raise();
 		for (uint64_t k = 0; k < lhs_index.nSamples-1; k++)
 		{
 			if (lhs_index.buf[k] + 1. != lhs_index.buf[k + 1])
@@ -269,20 +260,33 @@ void skope::eval_lhs(const AstNode* plhs, const AstNode* prhs, CVar &lhs_index, 
 	}
 }
 
-// vv.prop1.prop2...prop5 = RHS
-// --> define or update (if it already exists) .prop1, .prop2, ... to .prop5
-// lobj points to the available object. 
-// If vv is not available, lobj is NULL
-// If prop1 is available and prop2 is not; lobj points to prop1; plhs->str is prop1; pstruct->str is prop2
 void skope::assign_struct(CVar* lobj, const AstNode* plhs, const AstNode* pstruct, const CVar& robj)
 {
-	if (!lobj) {
-		CVar newobj = CVar();
-		newobj.strut[pstruct->str] = robj;
-		Vars[plhs->str] = newobj;
+	deque<string> strchain;
+	deque<CVar> cvarchain;
+	const AstNode* p = pstruct;
+	if (plhs->alt != p)
+		p = pstruct->alt;
+	for (auto q = p; q; q = q->alt)
+	{
+		strchain.push_back(q->str);
+		cvarchain.push_back(CVar());
 	}
+	auto pvar = (CVar*)&robj;
+	for (auto rit = cvarchain.end(); !strchain.empty(); strchain.pop_back())
+	{
+		rit--;
+		auto str = strchain.back();
+		(*rit).strut[str] = pvar;
+		pvar = &(*rit);
+	}
+	if (plhs->alt == p)
+		SetVar(plhs->str, pvar);
 	else
-		SetVar(pstruct->str, (CVar *)&robj, lobj);
+	{
+		// At this point, pbase must have pnode->str in Vars
+		lobj->strut[pstruct->str] = pvar;
+	}
 }
 const CVar* skope::get_available_struct_item(const AstNode* plhs, const AstNode** pstruct)
 {
@@ -304,51 +308,6 @@ const CVar* skope::get_available_struct_item(const AstNode* plhs, const AstNode*
 	return pvarLHS;
 }
 
-//{ // vv.prop = RHS
-//	// case 1: vv is not present
-//	// case 2: vv is present, but not as a struct obj
-//	// case 3: vv is present as a struct obj, but no .prop is present
-//	// case 4: vv is present as a struct obj, and .prop has been defined
-//	// cases 1 and 2: typelhs is TYPEBIT_NULL, lobj is N/A; cases 3 and 4 it is not. lobj is available, but won't need it
-//	auto itvar = Vars.find(plhs->str);
-//	if (itvar == Vars.end()) {
-//		// case 1
-//		// define vv as an object with struct, item .prop with RHS
-//		CVar newobj = new CVar();
-//		CVar* pvar = (CVar*)&robj;
-//		newobj.strut[pstruct->str] = robj;
-//		Vars[plhs->str] = newobj;
-//	}
-//	else {
-//		CVar * pvarLHS = &(itvar->second);
-//		if (pvarLHS->strut.empty()) {
-//			// case 2
-//			// update vv (the same action as case 1)
-//			CVar newobj = new CVar();
-//			CVar* pvar = (CVar*)&robj;
-//			newobj.strut[pstruct->str] = robj;
-//			Vars[plhs->str] = newobj;
-//		}
-//		else {
-//			auto itvar2 = pvarLHS->strut.find(pstruct->str);
-//			if (itvar2 == pvarLHS->strut.end()) {
-//				// case 3
-//				// define .prop with RHS (don't define vv as a whole)
-//				CVar* leftobj = &Vars[plhs->str];
-//				CVar* pvar = (CVar*)&robj;
-//				leftobj->strut[pstruct->str] = robj;
-//			}
-//			else {
-//				// case 4
-//				// update .prop with RHS (the same actin as case 3)
-//				CVar* leftobj = &Vars[plhs->str];
-//				CVar* pvar = (CVar*)&robj;
-//				leftobj->strut[pstruct->str] = robj;
-//			}
-//		}
-//	}
-//}
-
 void skope::assign_adjust(const AstNode* pn, CVar* lobj, const CVar& lhs_index, const CVar& robj, bool contig)
 {
 	ostringstream out;
@@ -358,13 +317,6 @@ void skope::assign_adjust(const AstNode* pn, CVar* lobj, const CVar& lhs_index, 
 	}
 	else
 	{
-
-
-		//if (pn->alt->type == N_STRUCT) {
-		//	assign_struct(pn, )
-		//		// do this  tomorrow 9/7/2022.... a.prop = RHS
-		//		SetVar(pn->str, (CVar*)&robj); //???
-		//}
 		float* pv;
 		if (robj.nSamples == 0)
 		{ // truncate the LHS var buffer
@@ -375,10 +327,7 @@ void skope::assign_adjust(const AstNode* pn, CVar* lobj, const CVar& lhs_index, 
 			}
 			else
 			{
-				{
-					out << "a(range)=[] -- range should be consecutive.";
-					throw exception_etc(*this, pn, out.str()).raise();
-				}
+				throw exception_etc(*this, pn, "a(range)=[] -- range should be consecutive.").raise();
 			}
 		}
 		else if (robj.nSamples == 1)
@@ -405,25 +354,22 @@ void skope::assign_adjust(const AstNode* pn, CVar* lobj, const CVar& lhs_index, 
 					lobj->buf[(uint64_t)lhs_index.buf[k] - 1] = robj.buf[k];
 		}
 		else
-		{
-			out << "no way...";
-			throw exception_etc(*this, pn, out.str()).raise();
-		}
+			throw exception_etc(*this, pn, "Unexpected case").raise();
 	}
 }
 
-void skope::right_to_left(const AstNode* plhs, const CVar& lhs_index, const CVar& robj, uint16_t typelhs, bool contig, CVar* cellitem)
+void skope::right_to_left(const AstNode* plhs, const CVar& lhs_index, const CVar& robj, uint16_t typelhs, bool contig, CVar* lobj)
 {
 	ostringstream out;
 	if (typelhs == TYPEBIT_NULL) {
-		if (cellitem) {
-			*cellitem = robj;
+		if (lobj) {
+			*lobj = robj;
 		}
 		else if (plhs->alt && plhs->alt->type == N_STRUCT) {
 			const AstNode* pstruct;
 			const CVar* struct_item = get_available_struct_item(plhs, &pstruct);
 			// p.prop1.prop2.prop3=[3 5 2] --> not working 9/11/2022
-			assign_struct((CVar*)struct_item, plhs, plhs->alt, robj);
+			assign_struct((CVar*)struct_item, plhs, pstruct, robj);
 		}
 		else
 			SetVar(plhs->str, &Sig);
@@ -437,10 +383,7 @@ void skope::right_to_left(const AstNode* plhs, const CVar& lhs_index, const CVar
 	}
 	else
 	{
-		CVar* lobj;
-		if (cellitem)
-			lobj = cellitem;
-		else
+		if (!lobj)
 			lobj = &Vars.find(plhs->str)->second;
 		if (typelhs & TYPEBIT_CELL) {
 			const CVar* cellitem = get_cell_item(plhs, *lobj);
@@ -450,8 +393,6 @@ void skope::right_to_left(const AstNode* plhs, const CVar& lhs_index, const CVar
 				return;
 			}
 			if (plhs->alt->alt) {
-//				assert(plhs->alt->alt->type == N_TIME_EXTRACT);
-				// compute for RHS is skipped because robj is already prepared.
 				eval_lhs(plhs->alt, NULL, index, (CVar&)robj, typelhs, contig, cellitem); // robj is not updated, just provided only as a reference
 				right_to_left(plhs->alt, index, robj, typelhs, contig, (CVar*)cellitem);
 				return;
@@ -461,20 +402,25 @@ void skope::right_to_left(const AstNode* plhs, const CVar& lhs_index, const CVar
 			return;
 		}
 
-		if (cellitem && plhs->alt->type == N_TIME_EXTRACT)
+		if (lobj && plhs->alt->type == N_TIME_EXTRACT)
 		{
-			insertreplace(plhs, robj, lhs_index, cellitem);
+			insertreplace(plhs, robj, lhs_index, lobj);
 		}
 		else
 		{
+			const AstNode* pn = plhs->alt;
 			if (plhs->alt->type == N_STRUCT) {
 				// go til the tip of prop item and call assign_adjust
 				const AstNode* pstruct;
 				const CVar* struct_item = get_available_struct_item(plhs, &pstruct);
-				assign_struct((CVar*)struct_item, plhs, pstruct, robj);
-				return;
+				pn = pstruct;
+				if (struct_item) lobj = (CVar*)struct_item;
+				if (pstruct->alt->type != N_ARGS) {
+					assign_struct((CVar*)struct_item, plhs, pstruct, robj);
+					return;
+				}
 			}
-			assign_adjust(plhs->alt, lobj, lhs_index, robj, contig);
+			assign_adjust(pn, lobj, lhs_index, robj, contig);
 		}
 	}
 }
@@ -483,6 +429,18 @@ CVar* skope::process_block(const AstNode* pnode)
 {
 	CVar* res = NULL;
 	return res;
+}
+void skope::sanitize_cell_node(const AstNode* p)
+{ // evaluate cell indexing in child into dval
+	if (p->alt && p->alt->type == N_CELL)
+	{
+		Compute(p->alt->child);
+		if (Sig.type() != 1)
+			throw exception_etc(*this, p, "Invalid cell index").raise();
+		p->alt->dval = Sig.value();
+		yydeleteAstNode(p->alt->child, 0);
+		p->alt->child = NULL;
+	}
 }
 
 CVar* skope::process_statement(const AstNode* pnode)
@@ -496,6 +454,7 @@ CVar* skope::process_statement(const AstNode* pnode)
 		uint16_t typelhs;
 		bool contig;
 		CVar index, RHS;
+		sanitize_cell_node(plhs);
 		eval_lhs(plhs, prhs, index, RHS, typelhs, contig);
 		right_to_left(plhs, index, RHS, typelhs, contig);
 	}
@@ -505,15 +464,13 @@ CVar* skope::process_statement(const AstNode* pnode)
 void skope::insertreplace(const AstNode* plhs, const CVar& robj, const CVar& indsig, CVar *lobj)
 {
 	const AstNode* p = plhs;
-	//if (!lobj)
-	//	lobj = &Vars.find(plhs->str)->second;
 	uint64_t id1;
 	if ((p->alt && p->alt->type == N_TIME_EXTRACT) || // x{id}(t1~t2) = ...sqrt
 		p->type == N_TIME_EXTRACT || (p->next && p->next->type == N_IDLIST))  // s(repl_RHS1~repl_RHS2)   or  cel{n}(repl_RHS1~repl_RHS2)
 	{
 		if (0)//(repl_RHS) //direct update of buf
 		{
-			id1 = (unsigned int)round(indsig.buf[0] * lobj->GetFs() / 1000.);
+			id1 = (uint64_t)round(indsig.buf[0] * lobj->GetFs() / 1000.);
 			memcpy(lobj->logbuf + id1 * lobj->bufBlockSize, robj.buf, robj.nSamples * robj.bufBlockSize);
 			if (lobj->next)
 				memcpy(lobj->next->logbuf + id1 * lobj->bufBlockSize, robj.next->buf, robj.nSamples * robj.bufBlockSize);

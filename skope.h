@@ -232,6 +232,7 @@ private:
 	void assign_adjust(const AstNode* pn, CVar* lobj, const CVar& lhs_index, const CVar& robj, bool contig);
 	void assign_struct(CVar* lobj, const AstNode* plhs, const AstNode* pstruct, const CVar& robj);
 	const CVar* get_available_struct_item(const AstNode* plhs, const AstNode** pstruct);
+	void sanitize_cell_node(const AstNode* p);
 };
 
 class CNodeProbe
