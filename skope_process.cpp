@@ -2,6 +2,7 @@
 #include "skope_exception.h"
 #include <assert.h>
 #include <deque>
+#include <iostream>
 
 void skope::get_nodes_left_right_sides(const AstNode* pnode, const AstNode** plhs, const AstNode** prhs)
 {
@@ -265,9 +266,7 @@ void skope::assign_struct(CVar* lobj, const AstNode* plhs, const AstNode* pstruc
 	deque<string> strchain;
 	deque<CVar> cvarchain;
 	const AstNode* p = pstruct;
-	if (plhs->alt != p)
-		p = pstruct->alt;
-	for (auto q = p; q; q = q->alt)
+	for (auto q = pstruct->alt; q; q = q->alt)
 	{
 		strchain.push_back(q->str);
 		cvarchain.push_back(CVar());
@@ -280,13 +279,10 @@ void skope::assign_struct(CVar* lobj, const AstNode* plhs, const AstNode* pstruc
 		(*rit).strut[str] = pvar;
 		pvar = &(*rit);
 	}
-	if (plhs->alt == p)
+	if (!lobj)
 		SetVar(plhs->str, pvar);
 	else
-	{
-		// At this point, pbase must have pnode->str in Vars
 		lobj->strut[pstruct->str] = pvar;
-	}
 }
 const CVar* skope::get_available_struct_item(const AstNode* plhs, const AstNode** pstruct)
 {

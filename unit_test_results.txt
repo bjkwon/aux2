@@ -59,3 +59,14 @@ myudf=2
     temp + 2 crashed the application
 yy(1:444)=0
 --> this should be acceptable, but issued this "Error: LHS and RHS have different object type."
+=========================================================
+5:21 PM 9/12/2022
+Undetected error found.
+
+p.val=200 --> OK
+p.name="str" --> This erases the existing p.val
+
+Fixed. 6:39 PM 9/12/2022
+committed again
+==============================================================
+
