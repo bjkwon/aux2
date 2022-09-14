@@ -284,6 +284,7 @@ void CAstSigEnv::InitBuiltInFunctions()
 	builtin["fwrite"] = SET_BUILTIN_FUNC(fwrite);
 	builtin["write"] = SET_BUILTIN_FUNC(write);
 	builtin["file"] = SET_BUILTIN_FUNC(file);
+	builtin["json"] = SET_BUILTIN_FUNC(json);
 
 	builtin["resample"] = SET_BUILTIN_FUNC(resample);
 

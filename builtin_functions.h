@@ -169,6 +169,7 @@ DECL_GATE(_fwrite)
 DECL_GATE(_fread)
 DECL_GATE(_write)
 DECL_GATE(_file)
+DECL_GATE(_json)
 
 DECL_GATE(_resample)
 

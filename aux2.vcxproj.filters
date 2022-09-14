@@ -69,6 +69,9 @@
     <ClCompile Include="echo.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="_func\json.cpp">
+      <Filter>Source Files\_functions</Filter>
+    </ClCompile>
     <ClCompile Include="_func\_tparamonly.cpp">
       <Filter>Source Files\_functions</Filter>
     </ClCompile>
