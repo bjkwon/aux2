@@ -23,59 +23,35 @@ Cfunction set_builtin_function_json(fGate fp)
 	return ft;
 }
 
-static void json2CVar2(CVar& out, const json& in)
-{
-	auto uvect = in.get<vector<string>>();
-	for (auto st : uvect)
-	{
-		std::cout << st << endl;
-	}
-}
-static void json2CVar(CVar& out, const json& in)
+static void json2CVar(CVar& out, const json& in, skope* past, const AstNode* pnode, const string& fname)
 {
 	auto umap = in.get<unordered_map<string, json>>();
 	for (auto v : umap) {
-		auto vfirst = v.first;
-		float conf = 0;
-		{
-			int j = 5;
-		}
 		if (v.second.type_name() == "object") {
 			CVar childobj;
-			json2CVar(childobj, v.second);
-			if (v.first=="confidence" && childobj.strut.find("confidence") != childobj.strut.end())
-			{
-				if (childobj.strut.find("confidence")->second.strut.empty())
-					conf = childobj.strut["confidence"].value();
-			}
+			json2CVar(childobj, v.second, past, pnode, fname);
 			out.strut[v.first] = childobj;
 		}
 		else if (v.second.type_name() == "array") {
-			if (vfirst == "model") {
-				for (auto st : v.second.get<vector<string>>())
-					out.strut[v.first].cell.push_back(CVar(st));
-				return;
-			}
 			CVar cellarrayobj;
-			string word;
 			for (auto element : v.second) {
 				CVar tempobj;
-				if (vfirst == "model")
-					json2CVar2(tempobj, element);
-				else
-					json2CVar(tempobj, element);
-				if (tempobj.strut.find("confidence") != tempobj.strut.end())
-					conf = tempobj.strut["confidence"].value();
-				if (tempobj.strut.find("word")!= tempobj.strut.end())
-					word = tempobj.strut["word"].str();
-				cellarrayobj.cell.push_back(tempobj);
+				if (element.type_name() == "object" || element.type_name() == "array") {
+					json2CVar(tempobj, element, past, pnode, fname);
+					cellarrayobj.cell.push_back(tempobj);
+				}
+				else {
+					if (element.type_name() == "string")
+						out.strut[v.first].cell.push_back(CVar(element.get<string>()));
+					else if (element.type_name() == "number")
+						out.strut[v.first].cell.push_back(CVar(element.get<float>()));
+					else if (element.type_name() == "boolean")
+						out.strut[v.first].cell.push_back(CVar(element.get<bool>())); // check
+					else if (element.type_name() == "null")
+						out.strut[v.first].cell.push_back(CVar());
+				}
 			}
-			if (v.first == "utterances") {
-				auto prev = out.strut[v.first];
-				out.strut[v.first] = cellarrayobj;
-			}
-			else
-				out.strut[v.first] = cellarrayobj;
+			out.strut[v.first] = cellarrayobj;
 		}
 		else if (v.second.type_name() == "string")
 			out.strut[v.first] = v.second.get<string>();
@@ -88,7 +64,7 @@ static void json2CVar(CVar& out, const json& in)
 		else if (v.second.type_name() == "null")
 			out.strut[v.first] = CVar();
 		else
-			printf("ERROR!!!!!!!!!\n"); // Clean up later 9/14/2022
+			exception_func(*past, pnode, "Error reading file", fname).raise();
 	}
 }
 
@@ -108,7 +84,7 @@ void _json(skope* past, const AstNode* pnode, const vector<CVar>& args)
 		stringstream buffer;
 		buffer << infc.rdbuf();
 		json jdata = json::parse(buffer.str());
-		json2CVar(out, jdata);
+		json2CVar(out, jdata, past, pnode, filename);
 		past->Sig = out;
 	}
 	catch (const string& fname) {
