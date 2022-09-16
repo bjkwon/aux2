@@ -108,8 +108,27 @@ CVar interpreter(skope& sc, const string& instr)
 	return sc.Sig;
 }
 
+#include <nlohmann/json.hpp>
+using json = nlohmann::json;
+
 int main()
 {
+	json json_types =
+	{
+		{"Failed", false},
+		{"app_data", {
+			"agent_channel", 0,
+			"silence", 0.403
+		} },
+		{"confidence", 0.69},
+		{"donedate", "2022-08-09T17:51:40Z"},
+		{"model", 
+			{"eng-USA-4.5.12:accurate"}
+		},
+	};
+
+	auto v8 = json_types.get<std::unordered_map<std::string, json>>();
+
 	CAstSigEnv* pglobalEnv = new CAstSigEnv(22050);
 	pglobalEnv->AppPath = get_current_dir();
 	pglobalEnv->InitBuiltInFunctions();

@@ -1,4 +1,5 @@
 #include "functions_common.h"
+#include <iostream>
 #include <fstream>
 #include "nlohmann/json.hpp"
 using json = nlohmann::json;
@@ -22,23 +23,59 @@ Cfunction set_builtin_function_json(fGate fp)
 	return ft;
 }
 
+static void json2CVar2(CVar& out, const json& in)
+{
+	auto uvect = in.get<vector<string>>();
+	for (auto st : uvect)
+	{
+		std::cout << st << endl;
+	}
+}
 static void json2CVar(CVar& out, const json& in)
 {
 	auto umap = in.get<unordered_map<string, json>>();
 	for (auto v : umap) {
+		auto vfirst = v.first;
+		float conf = 0;
+		{
+			int j = 5;
+		}
 		if (v.second.type_name() == "object") {
 			CVar childobj;
 			json2CVar(childobj, v.second);
+			if (v.first=="confidence" && childobj.strut.find("confidence") != childobj.strut.end())
+			{
+				if (childobj.strut.find("confidence")->second.strut.empty())
+					conf = childobj.strut["confidence"].value();
+			}
 			out.strut[v.first] = childobj;
 		}
 		else if (v.second.type_name() == "array") {
+			if (vfirst == "model") {
+				for (auto st : v.second.get<vector<string>>())
+					out.strut[v.first].cell.push_back(CVar(st));
+				return;
+			}
 			CVar cellarrayobj;
+			string word;
 			for (auto element : v.second) {
 				CVar tempobj;
-				json2CVar(tempobj, element);
+				if (vfirst == "model")
+					json2CVar2(tempobj, element);
+				else
+					json2CVar(tempobj, element);
+				if (tempobj.strut.find("confidence") != tempobj.strut.end())
+					conf = tempobj.strut["confidence"].value();
+				if (tempobj.strut.find("word")!= tempobj.strut.end())
+					word = tempobj.strut["word"].str();
 				cellarrayobj.cell.push_back(tempobj);
 			}
-			out.strut[v.first] = cellarrayobj;
+			if (v.first == "utterances") {
+				auto prev = out.strut[v.first];
+				out.strut[v.first] = cellarrayobj;
+			}
+			else
+				out.strut[v.first] = cellarrayobj;
 		}
 		else if (v.second.type_name() == "string")
 			out.strut[v.first] = v.second.get<string>();
