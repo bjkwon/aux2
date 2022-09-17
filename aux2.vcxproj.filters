@@ -156,6 +156,9 @@
     <ClCompile Include="_func\_dir.cpp">
       <Filter>Source Files\_functions</Filter>
     </ClCompile>
+    <ClCompile Include="_func\type_same.cpp">
+      <Filter>Source Files\_functions</Filter>
+    </ClCompile>
     <ClCompile Include="skope_process.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>

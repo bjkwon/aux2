@@ -12,7 +12,7 @@ and Cfunction decl:
 
 In CAstSigEnv::InitBuiltInFunctions(),
 	builtin["tone"] = set_builtin_function_tone(&_tone); 
-simplied to -->
+simplified to -->
 	builtin["tone"] = SET_BUILTIN_FUNC(tone);
     (LHS: func_name in quotation;  RHS: name of gate function, no quotation)
 
@@ -108,6 +108,8 @@ DECL_GATE(_group)
 DECL_GATE(_ungroup)
 DECL_GATE(_clear)
 DECL_GATE(_dir)
+DECL_GATE(_veq)
+DECL_GATE(_datatype)
 //DECL_GATE(_buffer)
 void _interp1(skope* past, const AstNode* pnode, const vector<CVar>& args);
 void _fdelete(skope* past, const AstNode* pnode, const vector<CVar>& args);
@@ -124,8 +126,6 @@ void _tsq_settimes(skope* past, const AstNode* pnode, const vector<CVar>& args);
 void _tsq_isrel(skope* past, const AstNode* pnode, const vector<CVar>& args);
 void _str2num(skope* past, const AstNode* pnode, const vector<CVar>& args);
 void _esc(skope* past, const AstNode* pnode, const vector<CVar>& args);
-void _datatype(skope* past, const AstNode* pnode, const vector<CVar>& args);
-void _veq(skope* past, const AstNode* pnode, const vector<CVar>& args);
 void _varcheck(skope* past, const AstNode* pnode, const vector<CVar>& args);
 void _and(skope* past, const AstNode* pnode, const vector<CVar>& args);
 void _or(skope* past, const AstNode* pnode, const vector<CVar>& args);

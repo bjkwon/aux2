@@ -300,6 +300,9 @@ void CAstSigEnv::InitBuiltInFunctions()
 
 	builtin["dir"] = SET_BUILTIN_FUNC(dir);
 
+	builtin["issame"] = SET_BUILTIN_FUNC(veq);
+	builtin["otype"] = SET_BUILTIN_FUNC(datatype);
+
 //	name = "setfs"; // check this... is narg1 one correct?
 //	ft.alwaysstatic = true;
 //	ft.funcsignature = "(filename)";
@@ -464,15 +467,6 @@ void CAstSigEnv::InitBuiltInFunctions()
 //		ft.func = _varcheck;
 //		builtin[name] = ft;
 //	}
-//	ft.narg1 = 1;	ft.narg2 = 1;
-//	name = "otype";
-//	ft.func = _datatype;
-//	builtin[name] = ft;
-//	ft.alwaysstatic = true;
-//	ft.narg1 = 2;	ft.narg2 = 2;
-//	name = "issame";
-//	ft.func = _veq;
-//	builtin[name] = ft;
 //
 //	ft.narg1 = 1;	ft.narg2 = 2;
 //	ft.funcsignature = "(signal_or_vector [, positive_for_acending_negative_for_descending = 1])";
