@@ -249,7 +249,7 @@ void CAstSigEnv::InitBuiltInFunctions()
 
 	builtin["sum"] = SET_BUILTIN_FUNC(sums);
 	builtin["mean"] = SET_BUILTIN_FUNC(sums);
-	builtin["stdev"] = SET_BUILTIN_FUNC(sums);
+	builtin["stdev"] = SET_BUILTIN_FUNC(sums); // to do---support unnormalized stdev (break out of sums and make one for stdev)
 	builtin["length"] = SET_BUILTIN_FUNC(lens);
 	builtin["size"] = SET_BUILTIN_FUNC(lens);
 
@@ -302,6 +302,7 @@ void CAstSigEnv::InitBuiltInFunctions()
 
 	builtin["issame"] = SET_BUILTIN_FUNC(veq);
 	builtin["otype"] = SET_BUILTIN_FUNC(datatype);
+
 
 //	name = "setfs"; // check this... is narg1 one correct?
 //	ft.alwaysstatic = true;
@@ -658,6 +659,28 @@ void check(const skope& ths, const AstNode* pnode, const vector<CVar>& args, con
 	}
 }
 
+static bool this_is_one_of_allowedset(uint16_t thistype, const vector<set<uint16_t>>::const_iterator& allowed)
+{
+	for (auto it = allowed->begin(); it != allowed->end(); it++)
+	{
+		if (thistype == *it) return true;
+	}
+	return false;
+}
+
+void skope::make_check_args_math(const AstNode* pnode)
+{
+	ostringstream ostr;
+	set<uint16_t> allowed = { 1, 2, 3, ALL_AUDIO_TYPES };
+	vector<set<uint16_t>> allowedvector;
+	allowedvector.push_back(allowed);
+	auto it = allowedvector.begin();
+	if (!this_is_one_of_allowedset(Sig.type(), it)) {
+		ostr << "type " << Sig.type();
+		throw exception_func(*this, pnode, ostr.str(), pnode->str).raise();
+	}
+}
+
 vector<CVar> skope::make_check_args(const AstNode* pnode, const Cfunction& func)
 { // Goal: make args vector for the function gate
   // the first arg is always Sig. The second arg is the first output vector.
@@ -667,9 +690,6 @@ vector<CVar> skope::make_check_args(const AstNode* pnode, const Cfunction& func)
 	vector<CVar> out;
 	ostringstream ostr;
 
-	// if pnode is N_STRUCT, Sig was already computed, no need to redo it.
-	// Just get the 
-
 	bool struct_call = pnode->type == N_STRUCT;
 	string fname = pnode->str;
 	if (func.alwaysstatic && struct_call)
@@ -677,37 +697,19 @@ vector<CVar> skope::make_check_args(const AstNode* pnode, const Cfunction& func)
 		ostr << "function " << fname << " does not allow . (dot) notation call.";
 		throw exception_func(*this, pnode, ostr.str(), fname).raise();
 	}
+	if (Sig.type() == TYPEBIT_NULL && func.narg1 == 0 && func.narg2 > 0)
+		Sig = func.defaultarg.front();
+	vector<set<uint16_t>>::const_iterator allowedset = func.allowed_arg_types.begin();
+	// 0xFFFF accepts all type; i.e., 0xFFFF bypasses checking
+	if (*allowedset->begin() != 0xFFFF && !this_is_one_of_allowedset(Sig.type(), allowedset))
+	{
+		ostr << "type " << Sig.type();
+		throw exception_func(*this, pnode, ostr.str(), fname, 1).raise();
+	}
+	allowedset++;
+	int count = 2;
 	const AstNode* p2 = get_second_arg(pnode, struct_call);
-	uint16_t thistype;
-	int count = 1;
-	auto allowedset = func.allowed_arg_types.begin();
-	thistype = Sig.type();
-	bool pass0 = false;
-	if (thistype && *allowedset->begin() != 0xFFFF)
-	{
-		for (auto it = allowedset->begin(); it != allowedset->end(); it++)
-		{
-			pass0 = thistype == *it;
-			if (pass0)
-				break;
-		}
-		if (!pass0)
-		{
-			ostr << "type " << thistype;
-			throw exception_func(*this, pnode, ostr.str(), fname, count).raise();
-		}
-	}
-	if (thistype) 
-	{
-		allowedset++;
-		count++;
-	}
-	else
-	{
-		Sig = func.defaultarg[0];
-		count++;
-	}
-	for (const AstNode* pn = p2; pn; pn = pn->next, count++)
+	for (auto pn = p2; pn; pn = pn->next, count++)
 	{
 		if (func.narg2 >= 0 && count > func.narg2)
 		{
@@ -722,36 +724,19 @@ vector<CVar> skope::make_check_args(const AstNode* pnode, const Cfunction& func)
 			else
 			{
 				// for arguments with any type (e.g., fwrite), bypass checking with 0xFFFF and add the result of Compute to the out vector
-				if (allowedset->size() == 1 && *allowedset->begin() == 0xFFFF)
+				if (*allowedset->begin() == 0xFFFF || this_is_one_of_allowedset(smallskope.Sig.type(), allowedset))
 				{
 					out.push_back(smallskope.Sig);
-					allowedset++;
-					continue;
 				}
-				thistype = smallskope.Sig.type();
-				bool pass = false;
-				for (auto it = allowedset->begin(); it != allowedset->end(); it++)
+				else
 				{
-					pass = thistype == *it;
-					if (pass)
-					{
-						out.push_back(smallskope.Sig);
-						break;
-					}
-				}
-				if (!pass)
-				{
-					ostringstream ostr1;
-					ostr1 << "Invalid type " << thistype;
-					throw exception_etc(*this, pnode, ostr1.str()).raise(); // throwing to the line below
+					ostr << "type " << smallskope.Sig.type();
+					throw exception_func(*this, pnode, ostr.str(), fname, count).raise();
 				}
 				allowedset++;
 			}
 		}
-		catch (skope_exception e)
-		{
-			ostr << " for arg " << count << " of " + fname + "()";
-			e.outstr += ostr.str();
+		catch (skope_exception e) {
 			throw e;
 		}
 	}
@@ -815,20 +800,23 @@ void skope::HandleAuxFunctions(const AstNode *pnode, AstNode *pRoot)
 	if ((*ft).second.func)
 	{
 		vector<CVar> args = make_check_args(pnode, (*ft).second);
-
 		/* IMPORTANT--
 		* When the gate function is called, Sig is always the first argument (this is to avoid going through a copy constructor when used inside a gate function)
 		* Just make sure to avoid calling Compute() inside the gate function before Sig is used for actual builtin function operation
 		* If you still need to call Compute(); make a copy of Sig and do so and accept that a tiny performance degradation may occur
 		*/
-		(*ft).second.func(this, pnode, args);
+
+		// if arg0 is the only arg and is null, bypass everything and the output is null
+		if (args.size()!=0 || Sig.type()!=TYPEBIT_NULL || (*(*ft).second.allowed_arg_types.front().begin())==0xFFFF)
+			(*ft).second.func(this, pnode, args);
 	}
 	else
 	{
-		if (structCall)
-		{
-			if (arg0 && arg0->type != N_STRUCT) throw exception_etc(*this, pnode, string("Too many arg : " + fname)).raise();
-		}
+		//if (structCall)
+		//{
+		//	if (arg0 && arg0->type != N_STRUCT) throw exception_etc(*this, pnode, string("Too many arg : " + fname)).raise();
+		//}
+
 		if (Sig.IsStruct() || !Sig.cell.empty() || Sig.GetFs() == 3)
 		{
 			if (structCall)
@@ -839,11 +827,13 @@ void skope::HandleAuxFunctions(const AstNode *pnode, AstNode *pRoot)
 			else
 				throw exception_etc(*this, arg0, string("Cannot take cell, class or handle object " + fname)).raise();
 		}
+		make_check_args_math(pnode);
 		const AstNode* p2 = get_second_arg(pnode, pnode->type == N_STRUCT);
 		if (p2)
 		{ // only for those math functions taking two args, e.g., mod, pow
 			skope smallskope(this);
 			smallskope.Compute(p2);
+			smallskope.make_check_args_math(p2);
 			HandleMathFunc(fname, smallskope.Sig);
 		}
 		else

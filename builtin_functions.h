@@ -98,7 +98,6 @@ void udf_error(skope* past, const AstNode* pnode, const vector<CVar>& args);
 void udf_warning(skope* past, const AstNode* pnode, const vector<CVar>& args);
 void udf_rethrow(skope* past, const AstNode* pnode, const vector<CVar>& args);
 void _msgbox(skope* past, const AstNode* pnode, const vector<CVar>& args);
-void _dir(skope* past, const AstNode* pnode, const vector<CVar>& args);
 void _include(skope* past, const AstNode* pnode, const vector<CVar>& args);
 void _eval(skope* past, const AstNode* pnode, const vector<CVar>& args);
 void _zeros(skope* past, const AstNode* pnode, const vector<CVar>& args);

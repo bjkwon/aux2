@@ -23,7 +23,7 @@
 
 AstNode* goto_try_line(const AstNode* pnode, int line)
 {
-	AstNode* pp, * p = (AstNode*)pnode;
+	AstNode* p = (AstNode*)pnode;
 	for (; p; p = p->next)
 	{
 		if (p->type == T_IF || p->type == T_FOR || p->type == T_WHILE || p->type == T_TRY) // line should be inside of block, i.e., T_FOR T_IF or T_WHILE

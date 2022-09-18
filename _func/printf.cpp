@@ -16,7 +16,7 @@ Cfunction set_builtin_function_printf(fGate fp)
 	ft.defaultarg = default_arg;
 	set<uint16_t> allowedTypes1 = { TYPEBIT_STRING, TYPEBIT_STRING + 1, TYPEBIT_STRING + 2, };
 	ft.allowed_arg_types.push_back(allowedTypes1);
-	set<uint16_t> allowedTypes2 = { 0xFFFF, }; // 
+	set<uint16_t> allowedTypes2 = { 0xFFFF, }; // accepting all
 	ft.allowed_arg_types.push_back(allowedTypes2);
 	ft.desc_arg_req = desc_arg_req;
 	ft.desc_arg_opt = desc_arg_opt;
@@ -39,7 +39,7 @@ Cfunction set_builtin_function_fprintf(fGate fp)
 	ft.allowed_arg_types.push_back(allowedTypes1);
 	set<uint16_t> allowedTypes2 = { TYPEBIT_STRING, TYPEBIT_STRING + 1, TYPEBIT_STRING + 2, };
 	ft.allowed_arg_types.push_back(allowedTypes2);
-	set<uint16_t> allowedTypes3 = { 0xFFFF, }; // 
+	set<uint16_t> allowedTypes3 = { 0xFFFF, }; // accepting all
 	ft.allowed_arg_types.push_back(allowedTypes3);
 	ft.desc_arg_req = desc_arg_req;
 	ft.desc_arg_opt = desc_arg_opt;

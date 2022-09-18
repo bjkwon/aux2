@@ -169,7 +169,7 @@ Cfunction set_builtin_function_fwrite(fGate fp)
 	ft.defaultarg = default_arg;
 	set<uint16_t> allowedTypes1 = { TYPEBIT_BYTE + 2 };
 	ft.allowed_arg_types.push_back(allowedTypes1);
-	set<uint16_t> allowedTypes2 = { 0xFFFF }; // bypass
+	set<uint16_t> allowedTypes2 = { 0xFFFF }; // accepting all
 	ft.allowed_arg_types.push_back(allowedTypes2);
 	set<uint16_t> allowedTypes3 = { TYPEBIT_STRING, TYPEBIT_STRING + 1, TYPEBIT_STRING + 2, };
 	ft.allowed_arg_types.push_back(allowedTypes3);
@@ -251,11 +251,7 @@ void _fopen(skope* past, const AstNode* pnode, const vector<CVar>& args)
 
 void _fclose(skope* past, const AstNode* pnode, const vector<CVar>& args)
 {
-//	auto sz = sizeof(INT_PTR);
-//	char* tempbuf = new char[sz];
-//	memcpy(tempbuf, past->Sig.buf, sz);
 	auto fp = (FILE*)*(uint64_t*)past->Sig.buf;
-//	delete[] tempbuf;
 	if (fclose(fp) == EOF)
 	{
 		past->Sig.SetValue(-1.);
