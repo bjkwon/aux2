@@ -102,6 +102,8 @@ static void show_result(skope& sc)
 CVar interpreter(skope& sc, const string& instr)
 {
 	auto nodes = sc.makenodes(instr);
+	if (!nodes)
+		throw sc.emsg.c_str();
 	sc.node = nodes;
 	sc.Compute();
 	show_result(sc);

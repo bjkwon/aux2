@@ -1,0 +1,10 @@
+function [res, emsg] = catcherror0(stmt)
+// If there's an error in stmt, res = 0 and emsg is the error message
+// and returns!! (not thrown with error).
+try
+	res = eval(stmt)
+	emsg = ""
+catch me
+	res = []
+	emsg = me.body ++ " (by catcherror)"
+end

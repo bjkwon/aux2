@@ -1,0 +1,33 @@
+function test_error_handle1
+cmdx = "x = noise(1000);"
+cmdc = "a={1:2:20, noise(1000)};"
+
+//cmd1 = cmdx ++ " x(40~50)=[1 2 3] "
+//display_cmd_error_result(cmd1)
+
+cmd2 = cmdc ++ " a(2)={1:2:20, noise(1000)} "
+display_cmd_error_result(cmd2)
+
+
+function display_cmd_error_result(cmd)
+printf("%s\n", cmd)
+[r,mesg]=catch_err(cmd)
+if r.otype==0
+	printf("\t--> Error correctly handled:\n\t%s", mesg)
+else
+	printf("\t--> Error should have been handled----\n%s")
+end
+//====== display_cmd_error_result
+
+
+function [res, emsg] = catch_err(stmt)
+// If there's an error in stmt, res = 0 and emsg is the error message
+// and returns!! (not thrown with error).
+try
+	res = eval(stmt)
+	emsg = ""
+catch me
+	res = []
+	emsg = me.body
+end
+//====== catch_err

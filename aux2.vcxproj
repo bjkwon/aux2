@@ -172,6 +172,7 @@
     <ClCompile Include="support.cpp" />
     <ClCompile Include="typecheck.cpp" />
     <ClCompile Include="utils.cpp" />
+    <ClCompile Include="_func\eval_include.cpp" />
     <ClCompile Include="_func\json.cpp" />
     <ClCompile Include="_func\fft.cpp" />
     <ClCompile Include="_func\filt.cpp" />

@@ -176,7 +176,7 @@ AstNode* skope::makenodes(const string& instr)
 			out = NULL;
 		}
 		emsg = errmsg;
-		throw emsg.c_str();
+		return NULL;
 	}
 	script = instr;
 	return out;
@@ -1421,6 +1421,8 @@ AstNode* CAstSigEnv::checkin_udf(const string& udfname, const string& fullpath, 
 			qscope.node = NULL;
 		return pout;
 	}
+	else
+		emsg = qscope.emsg;
 	return NULL;
 }
 

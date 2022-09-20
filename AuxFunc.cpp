@@ -302,6 +302,7 @@ void CAstSigEnv::InitBuiltInFunctions()
 
 	builtin["issame"] = SET_BUILTIN_FUNC(veq);
 	builtin["otype"] = SET_BUILTIN_FUNC(datatype);
+	builtin["eval"] = SET_BUILTIN_FUNC(eval);
 
 
 //	name = "setfs"; // check this... is narg1 one correct?
