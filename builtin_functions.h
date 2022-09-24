@@ -87,6 +87,9 @@ DECL_GATE(_tparamonly)
 DECL_GATE(_rand)
 DECL_GATE(_irand)
 DECL_GATE(_randperm)
+DECL_GATE(_andor)
+DECL_GATE(_mostleast)
+DECL_GATE(_sort)
 void _sprintf(skope* past, const AstNode* pnode, const vector<CVar>& args);
 void _record(skope* past, const AstNode* pnode, const vector<CVar>& args);
 void _play(skope* past, const AstNode* pnode, const vector<CVar>& args);
@@ -101,8 +104,6 @@ void _msgbox(skope* past, const AstNode* pnode, const vector<CVar>& args);
 void _include(skope* past, const AstNode* pnode, const vector<CVar>& args);
 DECL_GATE(_eval)
 //void _eval(skope* past, const AstNode* pnode, const vector<CVar>& args);
-void _zeros(skope* past, const AstNode* pnode, const vector<CVar>& args);
-void _ones(skope* past, const AstNode* pnode, const vector<CVar>& args);
 void _cell(skope* past, const AstNode* pnode, const vector<CVar>& args);
 DECL_GATE(_group)
 DECL_GATE(_ungroup)
@@ -118,6 +119,8 @@ void _isaudioat(skope* past, const AstNode* pnode, const vector<CVar>& args);
 DECL_GATE(_fft)
 DECL_GATE(_ifft)
 DECL_GATE(_tone)
+DECL_GATE(_diff)
+DECL_GATE(_cumsum)
 void _fm(skope* past, const AstNode* pnode, const vector<CVar>& args);
 void _tsq_getvalues(skope* past, const AstNode* pnode, const vector<CVar>& args);
 void _tsq_setvalues(skope* past, const AstNode* pnode, const vector<CVar>& args);
@@ -152,6 +155,7 @@ DECL_GATE(_minmax)
 DECL_GATE(_sums)
 DECL_GATE(_lens)
 DECL_GATE(_rmsetc)
+DECL_GATE(_onezero)
 DECL_GATE(_sam)
 DECL_GATE(_blackman)
 DECL_GATE(_hamming)

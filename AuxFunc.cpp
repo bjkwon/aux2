@@ -259,6 +259,14 @@ void CAstSigEnv::InitBuiltInFunctions()
 	builtin["dur"] = SET_BUILTIN_FUNC(rmsetc);
 	builtin["endt"] = SET_BUILTIN_FUNC(rmsetc);
 
+	builtin["ones"] = SET_BUILTIN_FUNC(onezero);
+	builtin["zeros"] = SET_BUILTIN_FUNC(onezero);
+	builtin["and"] = SET_BUILTIN_FUNC(andor);
+	builtin["or"] = SET_BUILTIN_FUNC(andor);
+	builtin["sort"] = SET_BUILTIN_FUNC(sort);
+	//builtin["atmost"] = SET_BUILTIN_FUNC(mostleast);
+	//builtin["atleast"] = SET_BUILTIN_FUNC(mostleast);
+
 	builtin["hamming"] = SET_BUILTIN_FUNC(hamming);
 	builtin["blackman"] = SET_BUILTIN_FUNC(blackman);
 	builtin["hann"] = SET_BUILTIN_FUNC(blackman);
@@ -303,6 +311,9 @@ void CAstSigEnv::InitBuiltInFunctions()
 	builtin["issame"] = SET_BUILTIN_FUNC(veq);
 	builtin["otype"] = SET_BUILTIN_FUNC(datatype);
 	builtin["eval"] = SET_BUILTIN_FUNC(eval);
+
+	builtin["diff"] = SET_BUILTIN_FUNC(diff);
+	builtin["cumsum"] = SET_BUILTIN_FUNC(cumsum);
 
 
 //	name = "setfs"; // check this... is narg1 one correct?
@@ -367,14 +378,7 @@ void CAstSigEnv::InitBuiltInFunctions()
 //	name = "setnextchan";
 //	ft.func = &_setnextchan;
 //	builtin[name] = ft;
-//	const char *f4[] = { "atleast", "atmost", 0 };
-//	ft.funcsignature = "(array_or_value, array_or_value_of_limit)";
-//	for (int k = 0; f4[k]; k++)
-//	{
-//		name = f4[k];
-//		ft.func = &_mostleast;
-//	builtin[name] = ft;
-//	}
+
 //	ft.funcsignature = "(obj, member_variable_string)";
 //	name = "erase";
 //	ft.func = &_erase;
@@ -394,11 +398,6 @@ void CAstSigEnv::InitBuiltInFunctions()
 //	ft.func = &_replicate;
 //	builtin[name] = ft;
 //
-//	ft.narg1 = 1;	ft.narg2 = 2;
-//	ft.funcsignature = "(array_or_signal[, order=1])";
-//	name = "diff";
-//	ft.func =  &_diff;
-//	builtin[name] = ft;
 //
 //	ft.narg1 = 2;	ft.narg2 = 2;
 //	ft.funcsignature = "(audio_signal)";
@@ -410,18 +409,6 @@ void CAstSigEnv::InitBuiltInFunctions()
 //	ft.func = &_contig;
 //	builtin[name] = ft;
 //
-//	ft.narg1 = 1;	ft.narg2 = 1;
-//	ft.funcsignature = "(array_or_signal)";
-//	name = "cumsum";
-//	ft.func = &_cumsum;
-//	builtin[name] = ft;
-//
-//	name = "zeros";
-//	ft.func =  &_zeros;
-//	builtin[name] = ft;
-//	name = "ones";
-//	ft.func =  &_ones;
-//	builtin[name] = ft;
 //	name = "cell";
 //	ft.func =  &_cell;
 //	builtin[name] = ft;

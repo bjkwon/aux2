@@ -119,7 +119,7 @@ void __sam(float* buf, uint64_t len, void* parg, void* parg2)
 	}
 }
 
-void __hamming(float* buf, uint64_t len, void* parg, void* parg2)
+static void __hamming(float* buf, uint64_t len, void* parg, void* parg2)
 {
 	for (unsigned int k = 0; k < len; k++)
 		buf[k] *= 0.54 - 0.46 * cos(2.0 * PI * k / (len - 1.0));
@@ -130,7 +130,7 @@ void _hamming(skope* past, const AstNode* pnode, const vector<CVar>& args)
 	past->Sig.evoke_modsig(__hamming, NULL);
 }
 
-void __blackman(float* buf, uint64_t len, void* parg, void* parg2)
+static void __blackman(float* buf, uint64_t len, void* parg, void* parg2)
 {
 	float alpha = *(float*)parg;
 	for (unsigned int k = 0; k < len; k++)

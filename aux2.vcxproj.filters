@@ -162,6 +162,12 @@
     <ClCompile Include="_func\type_same.cpp">
       <Filter>Source Files\_functions</Filter>
     </ClCompile>
+    <ClCompile Include="_func\ones_z.cpp">
+      <Filter>Source Files\_functions</Filter>
+    </ClCompile>
+    <ClCompile Include="_func\and_or_sort.cpp">
+      <Filter>Source Files\_functions</Filter>
+    </ClCompile>
     <ClCompile Include="skope_process.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
