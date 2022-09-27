@@ -33,15 +33,16 @@ inline static float _getdB(double x)
 
 CSignal __rms(float *buf, unsigned int len, void* pargin, void* pargout)
 {
-	float res;
-	if (len == 0) res = std::numeric_limits<float>::infinity();
+	CSignal out(*(int*)pargin);
+	out.UpdateBuffer(1);
+	if (len == 0) out.buf[0] = std::numeric_limits<float>::infinity();
 	else
 	{
 		float val = 0.f;
 		for_each(buf, buf + len, [&val](float& v) {val += v * v; });
-		res = _getdB(sqrt(val / len));
+		out.buf[0] = _getdB(sqrt(val / len));
 	}
-	return CSignal(res);
+	return out;
 }
 
 
@@ -49,7 +50,7 @@ void _rmsetc(skope* past, const AstNode* pnode, const vector<CVar>& args)
 {
 	string fname = pnode->str;
 	if (fname == "rms")
-		past->Sig = past->Sig.evoke_getsig2(__rms);
+		past->Sig = past->Sig.evoke_getsig2(__rms, (void*)&past->Sig.fs);
 	else if (fname == "begint")
 		past->Sig = past->Sig.evoke_getval(&CSignal::begint);
 	else if (fname == "endt")

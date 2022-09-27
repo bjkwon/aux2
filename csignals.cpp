@@ -3034,7 +3034,7 @@ CSignal __rms(float* buf, unsigned int len, void* pargin, void* pargout); // fro
 CSignals& CSignals::RMS()
 { // calculating the RMS of the entire CSignals as if all chain's were concatenated.
 	// CAUTION--This function will replace the existing data with computed RMS.
-	CSignals rmsComputed = evoke_getsig2(__rms);
+	CSignals rmsComputed = evoke_getsig2(__rms, (void*)&fs);
 	// at this point rmsComputed is chain'ed with next (also possibly chain'ed) and nSamples = 1 for each of them 
 	CSignals out(1);
 	float rmsnow;
