@@ -23,7 +23,6 @@ class CNodeProbe;
 const AstNode* get_first_arg(const AstNode* pnode, bool staticfunc = false); // from support.cpp
 const AstNode* get_second_arg(const AstNode* , bool); // from support.cpp
 
-
 enum DEBUG_STATUS
 {
 	null = -1,
@@ -59,7 +58,12 @@ public:
 class Cfunction
 {
 public:
-	Cfunction() {};
+	Cfunction() {
+		funcsignature = ""; 
+		alwaysstatic = false;
+		narg1 = 0;
+		narg2 = 0;
+	};
 	virtual ~Cfunction() {};
 	string funcsignature;
 	vector<string> desc_arg_req;
@@ -87,7 +91,7 @@ public:
 	void InitErrorCodes();
 	string path_delimited_semicolon();
 	vector<string> InitBuiltInFunctionsExt(const vector<string>& externalModules);
-	map<string, Cfunction> builtin;
+	multimap<string, Cfunction> builtin;
 
 	CAstSigEnv(const int fs = 1);
 	virtual ~CAstSigEnv();
@@ -222,7 +226,7 @@ private:
 	bool nodeAllocated;
 	bool fBreak;
 	bool fExit;
-	vector<CVar> make_check_args(const AstNode* pnode, const Cfunction& func);
+	vector<CVar> make_check_args(const AstNode* pnode, const Cfunction& func, void* pskope_exception); // using void* because "skope_exception.h" can't be included here
 	void make_check_args_math(const AstNode* pnode);
 	void get_nodes_left_right_sides(const AstNode* pnode, const AstNode** plhs, const AstNode** prhs);
 	void eval_lhs(const AstNode* plhs, const AstNode* prhs, CVar& lhs_index, CVar& RHS, uint16_t& typelhs, bool& contig, const CVar* cell_item = NULL);

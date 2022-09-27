@@ -210,7 +210,8 @@ string Cfunction::make_funcsignature()
 	return out;
 }
 
-#define SET_BUILTIN_FUNC(NAME) set_builtin_function_##NAME(&_##NAME);
+#define SET_BUILTIN_FUNC(AUXNAME,GATENAME) builtin.emplace(AUXNAME, set_builtin_function_##GATENAME(&_##GATENAME));
+#define SET_PSEUDO_VARS(AUXNAME,GATENAME) pseudo_vars.emplace(AUXNAME, set_builtin_function_constant(&_##GATENAME));
 
 void CAstSigEnv::InitBuiltInFunctions()
 {
@@ -222,99 +223,85 @@ void CAstSigEnv::InitBuiltInFunctions()
 	set<uint16_t> allowedTypes;
 	vector<string> arg_desc;
 
-	builtin["tone"] = SET_BUILTIN_FUNC(tone);
-	builtin["noise"] = SET_BUILTIN_FUNC(tparamonly);
-	builtin["gnoise"] = SET_BUILTIN_FUNC(tparamonly);
-	builtin["dc"] = SET_BUILTIN_FUNC(tparamonly);
-	builtin["silence"] = SET_BUILTIN_FUNC(tparamonly);
-	builtin["wave"] = SET_BUILTIN_FUNC(wave);
-	builtin["wavwrite"] = SET_BUILTIN_FUNC(wavwrite);
-	builtin["ramp"] = SET_BUILTIN_FUNC(ramp);
-	builtin["sam"] = SET_BUILTIN_FUNC(sam);
-	builtin["pow"] = SET_BUILTIN_FUNC(pow);
-	builtin["^"] = SET_BUILTIN_FUNC(pow);
-	builtin["mod"] = SET_BUILTIN_FUNC(mod);
-	builtin["%"] = SET_BUILTIN_FUNC(mod);
-	
-	builtin["group"] = SET_BUILTIN_FUNC(group);
-	builtin["matrix"] = SET_BUILTIN_FUNC(group);
-	builtin["ungroup"] = SET_BUILTIN_FUNC(ungroup);
-	builtin["fft"] = SET_BUILTIN_FUNC(fft);
-	builtin["ifft"] = SET_BUILTIN_FUNC(ifft);
+	SET_BUILTIN_FUNC("tone", tone);
+	SET_BUILTIN_FUNC("noise", tparamonly);
+	SET_BUILTIN_FUNC("gnoise", tparamonly);
+	SET_BUILTIN_FUNC("dc", tparamonly);
+	SET_BUILTIN_FUNC("silence", tparamonly);
+	SET_BUILTIN_FUNC("wave", wave);
+	SET_BUILTIN_FUNC("wavwrite", wavwrite);
+	SET_BUILTIN_FUNC("ramp", ramp);
+	SET_BUILTIN_FUNC("sam", sam);
+	SET_BUILTIN_FUNC("pow", pow);
+	SET_BUILTIN_FUNC("^", pow);
+	SET_BUILTIN_FUNC("mod", mod);
+	SET_BUILTIN_FUNC("%", mod);
+	SET_BUILTIN_FUNC("group", group);
+	SET_BUILTIN_FUNC("ungroup", group);
+	SET_BUILTIN_FUNC("matrix", group);
+	SET_BUILTIN_FUNC("fft", fft);
+	SET_BUILTIN_FUNC("ifft", ifft);
+	SET_BUILTIN_FUNC(":", colon);
+	SET_BUILTIN_FUNC("min", minmax);
+	SET_BUILTIN_FUNC("max", minmax);
+	SET_BUILTIN_FUNC("sum", sums);
+	SET_BUILTIN_FUNC("mean", sums);
+	SET_BUILTIN_FUNC("stdev", sums); // to do---support unnormalized stdev (break out of sums and make one for stdev)
+	SET_BUILTIN_FUNC("length", lens);
+	SET_BUILTIN_FUNC("size", lens);
+	SET_BUILTIN_FUNC("rmsall", rmsetc);
+	SET_BUILTIN_FUNC("rms", rmsetc);
+	SET_BUILTIN_FUNC("begint", rmsetc);
+	SET_BUILTIN_FUNC("endt", rmsetc);
+	SET_BUILTIN_FUNC("dur", rmsetc);
+	SET_BUILTIN_FUNC("ones", onezero);
+	SET_BUILTIN_FUNC("zeros", onezero);
+	SET_BUILTIN_FUNC("and", andor);
+	SET_BUILTIN_FUNC("and", andor2);
+	SET_BUILTIN_FUNC("or", andor);
+	SET_BUILTIN_FUNC("or", andor2);
+	SET_BUILTIN_FUNC("sort", sort);
+	SET_BUILTIN_FUNC("atmost", mostleast);
+	SET_BUILTIN_FUNC("atleast", mostleast);
+	SET_BUILTIN_FUNC("hamming", hamming);
+	SET_BUILTIN_FUNC("blackman", blackman);
+	SET_BUILTIN_FUNC("filthann", blackman);
+	SET_BUILTIN_FUNC("", filt);
+	SET_BUILTIN_FUNC("filtfilt", filt);
+	SET_BUILTIN_FUNC("conv", conv);
+	SET_BUILTIN_FUNC("audio", audio);
+	SET_BUILTIN_FUNC("vector", vector);
+	SET_BUILTIN_FUNC("left", leftright);
+	SET_BUILTIN_FUNC("right", leftright);
+	SET_BUILTIN_FUNC("hilbert", hilbenvlope);
+	SET_BUILTIN_FUNC("envlope", hilbenvlope);
+	SET_BUILTIN_FUNC("fopen", fopen);
+	SET_BUILTIN_FUNC("fclose", fclose);
+	SET_BUILTIN_FUNC("printf", printf);
+	SET_BUILTIN_FUNC("fprintf", fprintf);
+	SET_BUILTIN_FUNC("fread", fread);
+	SET_BUILTIN_FUNC("fwrite", fwrite);
+	SET_BUILTIN_FUNC("write", write);
+	SET_BUILTIN_FUNC("file", file);
+	SET_BUILTIN_FUNC("json", json);
 
-	builtin[":"] = SET_BUILTIN_FUNC(colon);
+	SET_BUILTIN_FUNC("clear", clear);
 
-	builtin["min"] = SET_BUILTIN_FUNC(minmax);
-	builtin["max"] = SET_BUILTIN_FUNC(minmax);
+	SET_BUILTIN_FUNC("resample", resample);
+	SET_BUILTIN_FUNC("rand", rand);
+	SET_BUILTIN_FUNC("irand", irand);
+	SET_BUILTIN_FUNC("randperm", randperm);
+	SET_BUILTIN_FUNC("dir", dir);
+	SET_BUILTIN_FUNC("issame", veq);
+	SET_BUILTIN_FUNC("otype", datatype);
+	SET_BUILTIN_FUNC("eval", eval);
+	SET_BUILTIN_FUNC("diff", diff);
+	SET_BUILTIN_FUNC("cumsum", cumsum);
+	//SET_BUILTIN_FUNC("", );
 
-	builtin["sum"] = SET_BUILTIN_FUNC(sums);
-	builtin["mean"] = SET_BUILTIN_FUNC(sums);
-	builtin["stdev"] = SET_BUILTIN_FUNC(sums); // to do---support unnormalized stdev (break out of sums and make one for stdev)
-	builtin["length"] = SET_BUILTIN_FUNC(lens);
-	builtin["size"] = SET_BUILTIN_FUNC(lens);
-
-	builtin["rms"] = SET_BUILTIN_FUNC(rmsetc);
-	builtin["begint"] = SET_BUILTIN_FUNC(rmsetc);
-	builtin["rmsall"] = SET_BUILTIN_FUNC(rmsetc);
-	builtin["dur"] = SET_BUILTIN_FUNC(rmsetc);
-	builtin["endt"] = SET_BUILTIN_FUNC(rmsetc);
-
-	builtin["ones"] = SET_BUILTIN_FUNC(onezero);
-	builtin["zeros"] = SET_BUILTIN_FUNC(onezero);
-	builtin["and"] = SET_BUILTIN_FUNC(andor);
-	builtin["or"] = SET_BUILTIN_FUNC(andor);
-	builtin["sort"] = SET_BUILTIN_FUNC(sort);
-	builtin["atmost"] = SET_BUILTIN_FUNC(mostleast);
-	builtin["atleast"] = SET_BUILTIN_FUNC(mostleast);
-
-	builtin["hamming"] = SET_BUILTIN_FUNC(hamming);
-	builtin["blackman"] = SET_BUILTIN_FUNC(blackman);
-	builtin["hann"] = SET_BUILTIN_FUNC(blackman);
-
-	builtin["filt"] = SET_BUILTIN_FUNC(filt);
-	builtin["filtfilt"] = SET_BUILTIN_FUNC(filt);
-	builtin["conv"] = SET_BUILTIN_FUNC(conv);
-
-
-	builtin["audio"] = SET_BUILTIN_FUNC(audio);
-	builtin["vector"] = SET_BUILTIN_FUNC(vector);
-	builtin["left"] = SET_BUILTIN_FUNC(leftright);
-	builtin["right"] = SET_BUILTIN_FUNC(leftright);
-	builtin["hilbert"] = SET_BUILTIN_FUNC(hilbenvlope);
-	builtin["envelope"] = SET_BUILTIN_FUNC(hilbenvlope);
-
-	builtin["fopen"] = SET_BUILTIN_FUNC(fopen);
-	builtin["fclose"] = SET_BUILTIN_FUNC(fclose);
-	builtin["printf"] = SET_BUILTIN_FUNC(printf);
-	builtin["fprintf"] = SET_BUILTIN_FUNC(fprintf);
-	builtin["sprintf"] = SET_BUILTIN_FUNC(printf);
-	builtin["fread"] = SET_BUILTIN_FUNC(fread);
-	builtin["fwrite"] = SET_BUILTIN_FUNC(fwrite);
-	builtin["write"] = SET_BUILTIN_FUNC(write);
-	builtin["file"] = SET_BUILTIN_FUNC(file);
-	builtin["json"] = SET_BUILTIN_FUNC(json);
-
-	builtin["resample"] = SET_BUILTIN_FUNC(resample);
-
-	builtin["clear"] = SET_BUILTIN_FUNC(clear);
-
-	builtin["rand"] = SET_BUILTIN_FUNC(rand);
-	builtin["randperm"] = SET_BUILTIN_FUNC(randperm);
-	builtin["irand"] = SET_BUILTIN_FUNC(irand);
-
-	pseudo_vars["i"] = set_builtin_function_constant(&_imaginary_unit);
-	pseudo_vars["e"] = set_builtin_function_constant(&_natural_log_base);
-	pseudo_vars["pi"] = set_builtin_function_constant(&_pi);
-
-	builtin["dir"] = SET_BUILTIN_FUNC(dir);
-
-	builtin["issame"] = SET_BUILTIN_FUNC(veq);
-	builtin["otype"] = SET_BUILTIN_FUNC(datatype);
-	builtin["eval"] = SET_BUILTIN_FUNC(eval);
-
-	builtin["diff"] = SET_BUILTIN_FUNC(diff);
-	builtin["cumsum"] = SET_BUILTIN_FUNC(cumsum);
-
+	SET_PSEUDO_VARS("i", imaginary_unit);
+	SET_PSEUDO_VARS("e", natural_log_base);
+	SET_PSEUDO_VARS("pi", pi);
 
 //	name = "setfs"; // check this... is narg1 one correct?
 //	ft.alwaysstatic = true;
@@ -567,7 +554,7 @@ void CAstSigEnv::InitBuiltInFunctions()
 	{
 		name = fmath1[k];
 		ft.func =  NULL;
-		builtin[name] = ft;
+		builtin.emplace(name, ft);
 	}
 
 	//name = "input";
@@ -669,7 +656,7 @@ void skope::make_check_args_math(const AstNode* pnode)
 	}
 }
 
-vector<CVar> skope::make_check_args(const AstNode* pnode, const Cfunction& func)
+vector<CVar> skope::make_check_args(const AstNode* pnode, const Cfunction& func, void* pexc )
 { // Goal: make args vector for the function gate
   // the first arg is always Sig. The second arg is the first output vector.
   // check the arg types; if a type of a given arg is not one of allowed ones, throw.
@@ -680,10 +667,12 @@ vector<CVar> skope::make_check_args(const AstNode* pnode, const Cfunction& func)
 
 	bool struct_call = pnode->type == N_STRUCT;
 	string fname = pnode->str;
+	skope_exception* exc = (skope_exception*)pexc;
 	if (func.alwaysstatic && struct_call)
 	{
 		ostr << "function " << fname << " does not allow . (dot) notation call.";
-		throw exception_func(*this, pnode, ostr.str(), fname).raise();
+		*exc = exception_func(*this, pnode, ostr.str(), fname);
+		return out;
 	}
 	if (Sig.type() == TYPEBIT_NULL && func.narg1 == 0 && func.narg2 > 0)
 		Sig = func.defaultarg.front();
@@ -692,7 +681,8 @@ vector<CVar> skope::make_check_args(const AstNode* pnode, const Cfunction& func)
 	if (*allowedset->begin() != 0xFFFF && !this_is_one_of_allowedset(Sig.type(), allowedset))
 	{
 		ostr << "type " << Sig.type();
-		throw exception_func(*this, pnode, ostr.str(), fname, 1).raise();
+		*exc = exception_func(*this, pnode, ostr.str(), fname, 1);
+		return out;
 	}
 	allowedset++;
 	int count = 2;
@@ -702,7 +692,8 @@ vector<CVar> skope::make_check_args(const AstNode* pnode, const Cfunction& func)
 		if (func.narg2 >= 0 && count > func.narg2)
 		{
 			ostr << fname << "(): too many args; maximum number of args is " << func.narg2 << ".";
-			throw exception_etc(*this, pnode, ostr.str()).raise();
+			*exc = exception_etc(*this, pnode, ostr.str());
+			return out;
 		}
 		skope smallskope(this);
 		try {
@@ -719,7 +710,8 @@ vector<CVar> skope::make_check_args(const AstNode* pnode, const Cfunction& func)
 				else
 				{
 					ostr << "type " << smallskope.Sig.type();
-					throw exception_func(*this, pnode, ostr.str(), fname, count).raise();
+					*exc = exception_func(*this, pnode, ostr.str(), fname, count);
+					return out;
 				}
 				allowedset++;
 			}
@@ -732,7 +724,8 @@ vector<CVar> skope::make_check_args(const AstNode* pnode, const Cfunction& func)
 	if (count < func.narg1)
 	{
 		ostr << fname << "(): the number of arg should be at least " << func.narg1 << "; Only " << count << " given.";
-		throw exception_etc(*this, pnode, ostr.str()).raise();
+		*exc = exception_etc(*this, pnode, ostr.str());
+		return out;
 	}
 	for (; count < func.narg2; count++)
 		out.push_back(CVar(func.defaultarg[count - func.narg1]));
@@ -771,12 +764,13 @@ const AstNode* arg0node(const AstNode* pnode, const AstNode* pRoot0)
 	}
 }
 
+#include "skope_exception.h"
+
 void skope::HandleAuxFunctions(const AstNode *pnode, AstNode *pRoot)
 {
 	string fnsigs;
-	int res, nArgs;
 	string fname = pnode->str;
-	auto ft = pEnv->builtin.find(fname);
+	auto ftlist = pEnv->builtin.find(fname);
 	bool structCall = pnode->type == N_STRUCT;
 	const AstNode* arg0 = arg0node(pnode, node);
 	if (!structCall)
@@ -785,9 +779,21 @@ void skope::HandleAuxFunctions(const AstNode *pnode, AstNode *pRoot)
 		if (!arg0)
 			Sig.Reset();
 	}
-	if ((*ft).second.func)
+	if ((*ftlist).second.func)
 	{
-		vector<CVar> args = make_check_args(pnode, (*ft).second);
+		exception_func exc(*this, pnode, "");
+		exc.msgonly.clear();
+		vector<CVar> args = make_check_args(pnode, (*ftlist).second, &exc);
+		if (!exc.msgonly.empty()) {
+			ftlist++;
+			if (ftlist != pEnv->builtin.end()) {
+				exc.msgonly.clear();
+				args = make_check_args(pnode, (*ftlist).second, &exc);
+				if (!exc.msgonly.empty()) throw exc.raise();
+			}
+			else
+				throw exc.raise();
+		}
 		/* IMPORTANT--
 		* When the gate function is called, Sig is always the first argument (this is to avoid going through a copy constructor when used inside a gate function)
 		* Just make sure to avoid calling Compute() inside the gate function before Sig is used for actual builtin function operation
@@ -795,16 +801,11 @@ void skope::HandleAuxFunctions(const AstNode *pnode, AstNode *pRoot)
 		*/
 
 		// if arg0 is the only arg and is null, bypass everything and the output is null
-		if (args.size()!=0 || Sig.type()!=TYPEBIT_NULL || (*(*ft).second.allowed_arg_types.front().begin())==0xFFFF)
-			(*ft).second.func(this, pnode, args);
+		if (args.size()!=0 || Sig.type()!=TYPEBIT_NULL || (*(*ftlist).second.allowed_arg_types.front().begin())==0xFFFF)
+			(*ftlist).second.func(this, pnode, args);
 	}
 	else
 	{
-		//if (structCall)
-		//{
-		//	if (arg0 && arg0->type != N_STRUCT) throw exception_etc(*this, pnode, string("Too many arg : " + fname)).raise();
-		//}
-
 		if (Sig.IsStruct() || !Sig.cell.empty() || Sig.GetFs() == 3)
 		{
 			if (structCall)

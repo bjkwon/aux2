@@ -11,10 +11,10 @@ and Cfunction decl:
    Cfunction set_builtin_function_tone(fGate fp); --> arg number/types of tone() are registered here.
 
 In CAstSigEnv::InitBuiltInFunctions(),
-	builtin["tone"] = set_builtin_function_tone(&_tone); 
+	builtin.emplace("tone", set_builtin_function_tone(&_tone)); 
 simplified to -->
-	builtin["tone"] = SET_BUILTIN_FUNC(tone);
-    (LHS: func_name in quotation;  RHS: name of gate function, no quotation)
+	SET_BUILTIN_FUNC("tone", tone)
+    (1st arg: aux func name in quotation;  2nd arg: gate function in the source code, no quotation)
 
     DECL_GATE(_tone) in builtin_functions.h
 
@@ -27,25 +27,45 @@ One Cfunction decl:
     Cfunction set_builtin_function_constant(fGate fp);
 
 In CAstSigEnv::InitBuiltInFunctions(),
-	pseudo_vars["i"] = set_builtin_function_constant(&_imaginary_unit);
-	pseudo_vars["pi"] = set_builtin_function_constant(&_pi);
-	pseudo_vars["e"] = set_builtin_function_constant(&_natural_log_base);
+	pseudo_vars.emplace("i", set_builtin_function_constant(&_imaginary_unit));
+	pseudo_vars.emplace("pi", set_builtin_function_constant(&_pi));
+	pseudo_vars.emplace("e", set_builtin_function_constant(&_natural_log_base));
 
 	DECL_GATE(_constant) in builtin_functions.h
 
 Case 3) One gate function to multiple built-in's, shared Cfunction decl
-Gate functions:
+Gate function:
     void _tparamonly(skope* past, const AstNode* pnode, const vector<CVar>& args);
 One Cfunction decl:
 	Cfunction set_builtin_function_tparamonly(fGate fp)
 In CAstSigEnv::InitBuiltInFunctions(),
-    builtin["noise"] = set_builtin_function_tparamonly(&_tparamonly);
-	builtin["gnoise"] = set_builtin_function_tparamonly(&_tparamonly);
+	builtin.emplace("noise", set_builtin_function_tone(&_tparamonly));
+	builtin.emplace("gnoise", set_builtin_function_tone(&_tparamonly));
 Simplify -->
-	builtin["noise"] = SET_BUILTIN_FUNC(tparamonly);
-	builtin["gnoise"] = SET_BUILTIN_FUNC(tparamonly);
+	SET_BUILTIN_FUNC("noise", tparamonly);
+	SET_BUILTIN_FUNC("gnoise", tparamonly);
 
-   DECL_GATE(_tparamonly) in builtin_functions.h
+    DECL_GATE(_tparamonly) in builtin_functions.h
+
+Case 4) One AUX build-in function, multiple calling prototype (i.e., multiple gate functions)
+If an aux built-in function offers multiple prototypes---
+Gate functions:
+void _andor(skope* past, const AstNode* pnode, const vector<CVar>& args)
+void _andor2(skope* past, const AstNode* pnode, const vector<CVar>& args)
+Cfunction decls:
+Cfunction set_builtin_function_andor(fGate fp)
+Cfunction set_builtin_function_andor2(fGate fp)
+In CAstSigEnv::InitBuiltInFunctions(),
+	builtin.emplace("and", set_builtin_function_tone(&_andor));
+	builtin.emplace("and", set_builtin_function_tone(&_andor2));
+Simplify -->
+	SET_BUILTIN_FUNC("and", andor);
+	SET_BUILTIN_FUNC("and", andor2);
+Add to builtin_functions.h
+	DECL_GATE(_andor)
+	DECL_GATE(_andor2) 
+
+	9/27/2022
 */
 
 /* types
@@ -88,6 +108,7 @@ DECL_GATE(_rand)
 DECL_GATE(_irand)
 DECL_GATE(_randperm)
 DECL_GATE(_andor)
+DECL_GATE(_andor2)
 DECL_GATE(_mostleast)
 DECL_GATE(_sort)
 void _sprintf(skope* past, const AstNode* pnode, const vector<CVar>& args);

@@ -1,22 +1,38 @@
 #include "functions_common.h"
 
-// 9/24/2022 Todo----think about a good way to handle allowedTypes1 when arg2 is given instead of default arg
-// example: and(a,b) where both a and b are an array
-// Also, sort doesn't work
 Cfunction set_builtin_function_andor(fGate fp)
 {
 	Cfunction ft;
 	set<uint16_t> allowedTypes;
 	ft.func = fp;
-	// The count of default_arg: same as desc_arg_opt.size()
-	// Each of allowedTypes_n should list all allowed types
-	// ft.allowed_arg_types.push_back(allowedTypes_n) should be called as many times as desc_arg_req.size() + desc_arg_opt.size()
 	// Edit from this line ==============
 	ft.alwaysstatic = false;
 	vector<string> desc_arg_req = { "array" };
-	vector<string> desc_arg_opt = { "null or another array" };
-	vector<CVar> default_arg = { CVar() };
+	vector<string> desc_arg_opt = {  };
+	vector<CVar> default_arg = {  };
 	set<uint16_t> allowedTypes1 = { 0, 1, 2, 3, TYPEBIT_LOGICAL + 1, TYPEBIT_LOGICAL + 2, TYPEBIT_LOGICAL + 3, };
+	ft.allowed_arg_types.push_back(allowedTypes1);
+	// til this line ==============
+	ft.desc_arg_req = desc_arg_req;
+	ft.desc_arg_opt = desc_arg_opt;
+	ft.defaultarg = default_arg;
+	ft.narg1 = desc_arg_req.size();
+	ft.narg2 = ft.narg1 + default_arg.size();
+	return ft;
+}
+
+Cfunction set_builtin_function_andor2(fGate fp)
+{
+	Cfunction ft;
+	set<uint16_t> allowedTypes;
+	ft.func = fp;
+	// Edit from this line ==============
+	ft.alwaysstatic = false;
+	vector<string> desc_arg_req = { "array", "array"  };
+	vector<string> desc_arg_opt = { };
+	vector<CVar> default_arg = { };
+	set<uint16_t> allowedTypes1 = { 0, TYPEBIT_LOGICAL + 1, TYPEBIT_LOGICAL + 2, TYPEBIT_LOGICAL + 3, };
+	ft.allowed_arg_types.push_back(allowedTypes1);
 	ft.allowed_arg_types.push_back(allowedTypes1);
 	// til this line ==============
 	ft.desc_arg_req = desc_arg_req;
@@ -57,9 +73,6 @@ Cfunction set_builtin_function_mostleast(fGate fp)
 	Cfunction ft;
 	set<uint16_t> allowedTypes;
 	ft.func = fp;
-	// The count of default_arg: same as desc_arg_opt.size()
-	// Each of allowedTypes_n should list all allowed types
-	// ft.allowed_arg_types.push_back(allowedTypes_n) should be called as many times as desc_arg_req.size() + desc_arg_opt.size()
 	// Edit from this line ==============
 	ft.alwaysstatic = false;
 	vector<string> desc_arg_req = { "array1", "array2" };
@@ -77,66 +90,53 @@ Cfunction set_builtin_function_mostleast(fGate fp)
 	return ft;
 }
 
+void _andor2(skope* past, const AstNode* pnode, const vector<CVar>& args)
+{ // two arguments
+	CVar arg0 = past->Sig;
+	past->Sig.Reset(1);
+	past->Sig.UpdateBuffer(min(arg0.nSamples, args.front().nSamples));
+	past->Sig.MakeLogical();
+	if (!strcmp(pnode->str, "and")) {
+		for (uint64_t k = 0; k < min(arg0.nSamples, args.front().nSamples); k++)
+			past->Sig.logbuf[k] = arg0.logbuf[k] && args.front().logbuf[k];
+	}
+	else
+	{
+		for (uint64_t k = 0; k < min(arg0.nSamples, args.front().nSamples); k++)
+			past->Sig.logbuf[k] = arg0.logbuf[k] || args.front().logbuf[k];
+	}
+}
 void _andor(skope* past, const AstNode* pnode, const vector<CVar>& args)
-{
-	if (pnode->str == "and") {
-		if (args.front().type() == 0) // single arg
+{ // single arguments
+	float res;
+	if (!strcmp(pnode->str, "and")) {
+		res = 1.f;
+		if (past->Sig.IsLogical())
 		{
-			double res(1.);
-			if (past->Sig.IsLogical())
-			{
-				for (uint64_t k = 0; k < past->Sig.nSamples; k++)
-					if (!past->Sig.logbuf[k]) { res = 0.; break; }
-			}
-			else
-			{
-				for (uint64_t k = 0; k < past->Sig.nSamples; k++)
-					if (past->Sig.buf[k] == 0.) { res = 0.;	break; }
-			}
-			past->Sig.SetValue(res);
-			past->Sig.MakeLogical();
+			for (uint64_t k = 0; k < past->Sig.nSamples; k++)
+				if (!past->Sig.logbuf[k]) { res = 0.; break; }
 		}
 		else
 		{
-			CVar x1 = past->Sig;
-			if (!args.front().IsLogical())
-				throw exception_func(*past, pnode, "argument must be logical", pnode->str, 1).raise();
-			past->Sig.Reset(1);
-			past->Sig.UpdateBuffer(min(x1.nSamples, args.front().nSamples));
-			past->Sig.MakeLogical();
-			for (uint64_t k = 0; k < min(x1.nSamples, args.front().nSamples); k++)
-				past->Sig.logbuf[k] = x1.logbuf[k] && args.front().logbuf[k];
+			for (uint64_t k = 0; k < past->Sig.nSamples; k++)
+				if (past->Sig.buf[k] == 0.) { res = 0.;	break; }
 		}
 	}
 	else {
-		if (args.front().type() == 0) // single arg
+		res = 0.;
+		if (past->Sig.IsLogical())
 		{
-			double res(0.);
-			if (past->Sig.IsLogical())
-			{
-				for (uint64_t k = 0; k < past->Sig.nSamples; k++)
-					if (past->Sig.logbuf[k]) { res = 1.; break; }
-			}
-			else
-			{
-				for (uint64_t k = 0; k < past->Sig.nSamples; k++)
-					if (past->Sig.buf[k] == 0.) { res = 1.;	break; }
-			}
-			past->Sig.SetValue(res);
-			past->Sig.MakeLogical();
+			for (uint64_t k = 0; k < past->Sig.nSamples; k++)
+				if (past->Sig.logbuf[k]) { res = 1.f; break; }
 		}
 		else
 		{
-			CVar x1 = past->Sig;
-			if (!args.front().IsLogical())
-				throw exception_func(*past, pnode, "argument must be logical", pnode->str, 1).raise();
-			past->Sig.Reset(1);
-			past->Sig.UpdateBuffer(min(x1.nSamples, args.front().nSamples));
-			past->Sig.MakeLogical();
-			for (uint64_t k = 0; k < min(x1.nSamples, args.front().nSamples); k++)
-				past->Sig.logbuf[k] = x1.logbuf[k] || args.front().logbuf[k];
+			for (uint64_t k = 0; k < past->Sig.nSamples; k++)
+				if (past->Sig.buf[k] != 0.) { res = 1.f;	break; }
 		}
 	}
+	past->Sig.SetValue(res);
+	past->Sig.MakeLogical();
 }
 
 template <class T>
@@ -184,29 +184,29 @@ void _sort(skope* past, const AstNode* pnode, const vector<CVar>& args)
 
 static void __atmost(float* buf, uint64_t len, void* parg, void* parg2)
 {
-	CVar param = *(CVar*)parg;
-	if (param.IsScalar()) {
-		float limit = param.value();
+	CVar *param = (CVar*)parg;
+	if (param->IsScalar()) {
+		float limit = param->value();
 		for (uint64_t k = 0; k < len; k++)
 			if (buf[k] > limit) buf[k] = limit;
 	}
 	else {
 		for (uint64_t k = 0; k < len; k++)
-			if (buf[k] > param.buf[k]) buf[k] = param.buf[k];
+			if (buf[k] > param->buf[k]) buf[k] = param->buf[k];
 	}
 }
 
 static void __atleast(float* buf, uint64_t len, void* parg, void* parg2)
 {
-	CVar param = *(CVar*)parg;
-	if (param.IsScalar()) {
-		float limit = param.value();
+	CVar *param = (CVar*)parg;
+	if (param->IsScalar()) {
+		float limit = param->value();
 		for (uint64_t k = 0; k < len; k++)
 			if (buf[k] < limit) buf[k] = limit;
 	}
 	else {
 		for (uint64_t k = 0; k < len; k++)
-			if (buf[k] < param.buf[k]) buf[k] = param.buf[k];
+			if (buf[k] < param->buf[k]) buf[k] = param->buf[k];
 	}
 }
 
