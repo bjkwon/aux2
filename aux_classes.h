@@ -336,7 +336,7 @@ public:
 		else if (bufBlockSize == 1) out += TYPEBIT_SIZE1;
 		else if (bufBlockSize == sizeof(float)) out += TYPEBIT_REAL;
 		else if (bufBlockSize == sizeof(float) *2) out += TYPEBIT_COMPLEX;
-		if (tmark > 0 || (fs == 0 || fs > 500) && nSamples > 2) out += TYPEBIT_TEMPO_ONE;
+		if (tmark > 0 || (fs == 0 || fs > 500) && nSamples > 1) out += TYPEBIT_TEMPO_ONE;
 		return out;
 	};
 
