@@ -264,8 +264,8 @@ void CAstSigEnv::InitBuiltInFunctions()
 	builtin["and"] = SET_BUILTIN_FUNC(andor);
 	builtin["or"] = SET_BUILTIN_FUNC(andor);
 	builtin["sort"] = SET_BUILTIN_FUNC(sort);
-	//builtin["atmost"] = SET_BUILTIN_FUNC(mostleast);
-	//builtin["atleast"] = SET_BUILTIN_FUNC(mostleast);
+	builtin["atmost"] = SET_BUILTIN_FUNC(mostleast);
+	builtin["atleast"] = SET_BUILTIN_FUNC(mostleast);
 
 	builtin["hamming"] = SET_BUILTIN_FUNC(hamming);
 	builtin["blackman"] = SET_BUILTIN_FUNC(blackman);

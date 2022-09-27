@@ -182,47 +182,43 @@ void _sort(skope* past, const AstNode* pnode, const vector<CVar>& args)
 	past->Sig.evoke_modsig(__sort, &bufBlockSize, &order);
 }
 
-//void _atmost(float* buf, uint64_t len, void* parg, void* parg2)
-//(unsigned int id, int unsigned len, void* parg)
-//{
-//	double limit;
-//	if (len == 0) len = nSamples;
-//	CVar param = *(CVar*)parg;
-//	if (param.IsScalar())
-//		limit = param.value();
-//	else
-//		limit = (id / len < nSamples) ? param.buf[id / len] : std::numeric_limits<double>::infinity();
-//	for (unsigned int k = id; k < id + len; k++)
-//		if (buf[k] > limit) buf[k] = limit;
-//	return *this;
-//}
-//
-//CSignal& CSignal::_atleast(unsigned int id, int unsigned len, void* parg)
-//{
-//	double limit;
-//	if (len == 0) len = nSamples;
-//	CVar param = *(CVar*)parg;
-//	if (param.IsScalar())
-//		limit = param.value();
-//	else
-//		limit = (id / len < nSamples) ? param.buf[id / len] : -std::numeric_limits<double>::infinity();
-//	for (unsigned int k = id; k < id + len; k++)
-//		if (buf[k] < limit) buf[k] = limit;
-//	return *this;
-//}
-//
-//
-//void _mostleast(skope* past, const AstNode* pnode, const vector<CVar>& args)
-//{
-//	const AstNode* p = get_first_arg(pnode, (*(past->pEnv->builtin.find(pnode->str))).second.alwaysstatic);
-//	if (past->Sig.IsEmpty()) return; //for empty input, empty output
-//	past->checkVector(pnode, past->Sig);
-//	string func = pnode->str;
-//	CVar sig = past->Sig;
-//	CVar param = past->Compute(p);
-//	if (func == "atmost") past->Sig = sig.fp_mod(&CSignal::_atmost, &param);
-//	else if (func == "atleast") past->Sig = sig.fp_mod(&CSignal::_atleast, &param);
-//	if (past->Sig.type() & TYPEBIT_TEMPORAL) past->Sig.setsnap();
-//}
+static void __atmost(float* buf, uint64_t len, void* parg, void* parg2)
+{
+	CVar param = *(CVar*)parg;
+	if (param.IsScalar()) {
+		float limit = param.value();
+		for (uint64_t k = 0; k < len; k++)
+			if (buf[k] > limit) buf[k] = limit;
+	}
+	else {
+		for (uint64_t k = 0; k < len; k++)
+			if (buf[k] > param.buf[k]) buf[k] = param.buf[k];
+	}
+}
+
+static void __atleast(float* buf, uint64_t len, void* parg, void* parg2)
+{
+	CVar param = *(CVar*)parg;
+	if (param.IsScalar()) {
+		float limit = param.value();
+		for (uint64_t k = 0; k < len; k++)
+			if (buf[k] < limit) buf[k] = limit;
+	}
+	else {
+		for (uint64_t k = 0; k < len; k++)
+			if (buf[k] < param.buf[k]) buf[k] = param.buf[k];
+	}
+}
+
+void _mostleast(skope* past, const AstNode* pnode, const vector<CVar>& args)
+{
+	uint64_t len = args.front().nSamples;
+	if (len > 1 && len != past->Sig.nSamples)
+		throw exception_func(*past, pnode, "must be a scalar or array with the same length of arg1", pnode->str, 2).raise();
+	if (!strcmp(pnode->str, "atmost"))
+		past->Sig.evoke_modsig(__atmost, (void*)&args.front());
+	else
+		past->Sig.evoke_modsig(__atleast, (void*)&args.front());
+}
 
 
