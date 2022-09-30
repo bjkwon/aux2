@@ -1581,65 +1581,31 @@ string skope::makefullfile(const string& fname, string extension)
 	return fullfilename;
 }
 
-int skope::checkArgsType(const AstNode* pnode, const AstNode* p, const Cfunction& fn)
-{
-	bool pass = false;
-	//for (auto sets : fn.allowed_arg_types)
-	//{
-	//	for (auto tp : sets)
-	//	{
-	//		pass = 
-
-	//	}
-	//}
-	return 1;
-}
-int skope::checkNumArgs(const AstNode* pnode, const AstNode* p, string& FuncSigs, int minArgs, int maxArgs)
-{
-	ostringstream msg;
-	if (minArgs > 0 && !p) msg << "must have at least 1 argument.";
-	else
-	{
-		int nArgs(0);
-		if (!p || p->type == N_STRUCT) return nArgs;
-		for (const AstNode* cp = p; cp; cp = cp->next)
-			++nArgs;
-		msg << "must have ";
-		if (minArgs == 0 && maxArgs == 0 && nArgs > 0)
-			msg << "0 argument.";
-		else if (nArgs < minArgs && maxArgs == 0)
-			msg << "at least " << minArgs << (minArgs > 1 ? " arguments." : " argument.");
-		else if (nArgs < minArgs || maxArgs > 0 && nArgs > maxArgs) {
-			msg << minArgs;
-			for (int i = minArgs + 1; i < maxArgs; ++i)
-				msg << ", " << i;
-			if (minArgs != maxArgs)
-				msg << " or " << maxArgs;
-			msg << (maxArgs > 1 ? " arguments." : " argument.");
-		}
-		else
-			return nArgs;
-	}
-	throw exception_etc(*this, pnode, msg.str()).raise();
-}
-
 unsigned long skope::tic()
-{
-	// FInd out something equivalent to GetTickCount in Linux
-//	return Tick0 = 0; // GetTickCount0();
-	return 0;
+{ // tic toc gives away time elapsed in milliseconds (approximately)
+	struct timespec ts;
+	timespec_get(&ts, TIME_UTC);
+	Tick0 = (intmax_t)ts.tv_sec * 1000;
+	double ms = ts.tv_nsec / (double)1000000.;
+	Tick0 += (int)ms;
+	return Tick0;
 }
 
 unsigned long skope::toc(const AstNode* p)
 {
-	return 0;
-	//if (Tick0 == 1)
-	//	throw CAstException(USAGE, *this, p).proc("toc called without tic");
-	//return Tick1 = (GetTickCount0() - Tick0);
+	if (Tick0 == 1)
+		throw exception_etc(*this, p, "toc called without tic").raise();
+	struct timespec ts;
+	timespec_get(&ts, TIME_UTC);
+	Tick1 = (intmax_t)ts.tv_sec * 1000;
+	double ms = ts.tv_nsec / (double)1000000.;
+	Tick1 += (int)ms;
+	Tick1 -= Tick0;
+	return Tick1;
 }
 
 
-//Maybe move to SAstSigEnv?? 11/19/2021
+//Maybe move to AstSigEnv?? 11/19/2021
 bool skope::HandlePseudoVar(const AstNode* pnode)
 {
 	string fname = pnode->str;

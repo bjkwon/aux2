@@ -132,7 +132,7 @@ DECL_GATE(_clear)
 DECL_GATE(_dir)
 DECL_GATE(_veq)
 DECL_GATE(_datatype)
-//DECL_GATE(_buffer)
+DECL_GATE(_noargs)
 void _interp1(skope* past, const AstNode* pnode, const vector<CVar>& args);
 void _fdelete(skope* past, const AstNode* pnode, const vector<CVar>& args);
 void _ismember(skope* past, const AstNode* pnode, const vector<CVar>& args);

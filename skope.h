@@ -68,7 +68,6 @@ public:
 	string funcsignature;
 	vector<string> desc_arg_req;
 	vector<string> desc_arg_opt;
-	string make_funcsignature();
 	bool alwaysstatic; // true means the function cannot be called as a member function
 	int narg1, narg2; // narg1 is min number of args; narg2 is max number of args
 	vector<CVar> defaultarg;
@@ -170,8 +169,6 @@ public:
 	CVar* pseudoVar(const AstNode* pnode, AstNode* p, CSignals* pout);
 	CVar* TSeq(const AstNode* pnode, AstNode* p);
 	bool HandlePseudoVar(const AstNode* pnode);
-	int checkArgsType(const AstNode* pnode, const AstNode* p, const Cfunction& fn);
-	int checkNumArgs(const AstNode* pnode, const AstNode* p, string& FuncSigs, int minArgs, int maxArgs);
 	void HandleMathFunc(string& fname, const body& arg);
 	vector<float> gettimepoints(const AstNode* pnode, AstNode* p);
 	CVar* NodeVector(const AstNode* pn);

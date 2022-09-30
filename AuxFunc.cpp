@@ -56,20 +56,6 @@ void _contig(skope *past, const AstNode *pnode)
 	past->Sig.MakeChainless();
 }
 
-void _tictoc(skope *past, const AstNode *pnode)
-{
-	const AstNode* p = get_first_arg(pnode, (*(past->pEnv->builtin.find(pnode->str))).second.alwaysstatic);
-	string fname = pnode->str;
-	if (fname == "tic")
-	{
-		past->Sig.SetValue((float)past->tic()); // Internal timer value--not really useful for the user other than showing it was working
-	}
-	else
-	{
-		past->Sig.SetValue((float)past->toc(pnode)); // milliseconds since tic was called.
-	}
-}
-
 Cfunction set_builtin_function_colon(fGate fp)
 {
 	Cfunction ft;
@@ -116,11 +102,7 @@ void _colon(skope* past, const AstNode* pnode, const vector<CVar>& args)
 //	past->Sig.Reset();
 //}
 
-void _squeeze(skope *past, const AstNode *pnode)
-{
-	const AstNode* p = get_first_arg(pnode, (*(past->pEnv->builtin.find(pnode->str))).second.alwaysstatic);
-	past->Sig.Squeeze();
-}
+
 
 AstNode *searchstr(AstNode *p, int findthis)
 { // if there's a node with "type" in the tree, return that node
@@ -204,11 +186,6 @@ int findcol(AstNode *past, const char* pstr, int line)
 //	return out;
 //}
 
-string Cfunction::make_funcsignature()
-{
-	string out;
-	return out;
-}
 
 #define SET_BUILTIN_FUNC(AUXNAME,GATENAME) builtin.emplace(AUXNAME, set_builtin_function_##GATENAME(&_##GATENAME));
 #define SET_PSEUDO_VARS(AUXNAME,GATENAME) pseudo_vars.emplace(AUXNAME, set_builtin_function_constant(&_##GATENAME));
@@ -297,6 +274,12 @@ void CAstSigEnv::InitBuiltInFunctions()
 	SET_BUILTIN_FUNC("eval", eval);
 	SET_BUILTIN_FUNC("diff", diff);
 	SET_BUILTIN_FUNC("cumsum", cumsum);
+	
+	// Functions with no argument
+	SET_BUILTIN_FUNC("getfs", noargs);
+	SET_BUILTIN_FUNC("tic", noargs);
+	SET_BUILTIN_FUNC("toc", noargs);
+
 	//SET_BUILTIN_FUNC("", );
 
 	SET_PSEUDO_VARS("i", imaginary_unit);
@@ -667,6 +650,8 @@ vector<CVar> skope::make_check_args(const AstNode* pnode, const Cfunction& func,
 
 	bool struct_call = pnode->type == N_STRUCT;
 	string fname = pnode->str;
+	if (func.allowed_arg_types.empty() && !pnode->alt && !pnode->child)
+		return out;
 	skope_exception* exc = (skope_exception*)pexc;
 	if (func.alwaysstatic && struct_call)
 	{
@@ -801,7 +786,10 @@ void skope::HandleAuxFunctions(const AstNode *pnode, AstNode *pRoot)
 		*/
 
 		// if arg0 is the only arg and is null, bypass everything and the output is null
-		if (args.size()!=0 || Sig.type()!=TYPEBIT_NULL || (*(*ftlist).second.allowed_arg_types.front().begin())==0xFFFF)
+		if (args.size()!=0 || 
+			Sig.type()!=TYPEBIT_NULL ||
+			((*ftlist).second.narg1==0 && args.empty()) ||
+			(*(*ftlist).second.allowed_arg_types.front().begin())==0xFFFF)
 			(*ftlist).second.func(this, pnode, args);
 	}
 	else
