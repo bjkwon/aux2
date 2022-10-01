@@ -647,6 +647,7 @@ public:
 	CVar & appendcell(CVar &sec);
 	CVar & setcell(unsigned int id, CVar &sec);
 	CVar & length();
+	void set_class_head(const CSignals& rhs);
 
 	// Constructors
 	CVar(const CSignals & src);

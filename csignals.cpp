@@ -2930,10 +2930,10 @@ CVar& CVar::Reset(int fs2set)
 	return *this;
 }
 
-//void CVar::set_class_head(const CSignals & rhs)
-//{
-//	CSignals::operator=(rhs);
-//}
+void CVar::set_class_head(const CSignals & rhs)
+{
+	CSignals::operator=(rhs);
+}
 
 int CSignals::getBufferLength(float& lasttp, float& lasttp_with_silence, float blockDur) const
 {

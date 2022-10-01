@@ -89,20 +89,11 @@ void _colon(skope* past, const AstNode* pnode, const vector<CVar>& args)
 		step = args[1].value();
 	else
 		step = (val1 > val2) ? -1.f : 1.f;
-	int nItems = max(1, (int)((val2-val1)/step)+1);
+	int nItems = max(1, (int)((val2 - val1) / step) + 1);
 	past->Sig.UpdateBuffer(nItems);
-	for (int k=0; k<nItems; k++)
-		past->Sig.buf[k] = val1 + step*k;
+	for (int k = 0; k < nItems; k++)
+		past->Sig.buf[k] = val1 + step * k;
 }
-
-//void _clear(skope *past, const AstNode *pnode)
-//{
-//	const AstNode* p = get_first_arg(pnode, (*(past->pEnv->builtin.find(pnode->str))).second.alwaysstatic);
-//	past->ClearVar((AstNode *)past->xtree, &past->Sig);
-//	past->Sig.Reset();
-//}
-
-
 
 AstNode *searchstr(AstNode *p, int findthis)
 { // if there's a node with "type" in the tree, return that node
@@ -265,6 +256,7 @@ void CAstSigEnv::InitBuiltInFunctions()
 	SET_BUILTIN_FUNC("clear", clear);
 
 	SET_BUILTIN_FUNC("resample", resample);
+	SET_BUILTIN_FUNC("cell", rand);
 	SET_BUILTIN_FUNC("rand", rand);
 	SET_BUILTIN_FUNC("irand", irand);
 	SET_BUILTIN_FUNC("randperm", randperm);
@@ -279,6 +271,10 @@ void CAstSigEnv::InitBuiltInFunctions()
 	SET_BUILTIN_FUNC("getfs", noargs);
 	SET_BUILTIN_FUNC("tic", noargs);
 	SET_BUILTIN_FUNC("toc", noargs);
+
+	SET_BUILTIN_FUNC("head", cellstruct);
+	SET_BUILTIN_FUNC("ismember", cellstruct);
+	SET_BUILTIN_FUNC("erase", cellstruct);
 
 	//SET_BUILTIN_FUNC("", );
 
@@ -379,10 +375,6 @@ void CAstSigEnv::InitBuiltInFunctions()
 //	ft.func = &_contig;
 //	builtin[name] = ft;
 //
-//	name = "cell";
-//	ft.func =  &_cell;
-//	builtin[name] = ft;
-//
 //	ft.narg1 = 2;	ft.narg2 = 2;
 //	name = "respeed";
 //	ft.funcsignature = "(audio_signal, playback_rate_change_ratio)";
@@ -393,18 +385,6 @@ void CAstSigEnv::InitBuiltInFunctions()
 //	name = "interp";
 //	ft.funcsignature = "(refX, refY, query_x_points)";
 //	ft.func = &_interp1;
-//	builtin[name] = ft;
-//
-//	ft.narg1 = 0;	ft.narg2 = 0;
-//	name = "getfs";
-//	ft.funcsignature = "()";
-//	ft.func =  &_getfs;
-//	builtin[name] = ft;
-//	name = "tic";
-//	ft.func = &_tictoc;
-//	builtin[name] = ft;
-//	name = "toc";
-//	ft.func = &_tictoc;
 //	builtin[name] = ft;
 //
 //	ft.narg1 = 1;	ft.narg2 = 1;
@@ -426,12 +406,6 @@ void CAstSigEnv::InitBuiltInFunctions()
 //		ft.func = _varcheck;
 //		builtin[name] = ft;
 //	}
-//
-//	ft.narg1 = 1;	ft.narg2 = 2;
-//	ft.funcsignature = "(signal_or_vector [, positive_for_acending_negative_for_descending = 1])";
-//	name = "sort";
-//	ft.func =  &_sort;
-//	builtin[name] = ft;
 //
 //#ifndef NO_PLAYSND
 //	ft.alwaysstatic = false;
@@ -509,25 +483,12 @@ void CAstSigEnv::InitBuiltInFunctions()
 //	builtin[name] = ft;
 //
 //	ft.alwaysstatic = false;
-//	ft.narg1 = 1;	ft.narg2 = 2;
-//	ft.funcsignature = "(logical_variable) or (logical_variable1, logical_variable2) ";
-//	name = "and";
-//	ft.func =  &_and;
-//	builtin[name] = ft;
-//	name = "or";
-//	ft.func =  &_or;
-//	builtin[name] = ft;
-//
-//	ft.alwaysstatic = false;
 //	ft.narg1 = 1;	ft.narg2 = 1;
 //	ft.funcsignature = "(string)";
 //	name = "str2num";
 //	ft.func =  &_str2num;
 //	builtin[name] = ft;
 //	ft.alwaysstatic = true;
-//	name = "eval";
-//	ft.func =  &_eval;
-//	builtin[name] = ft;
 //
 
 	ft.narg1 = 1;	ft.narg2 = 1;
@@ -591,30 +552,6 @@ string dotstring(const AstNode *pnode, AstNode *pRoot)
 		if (p == pnode) break;
 	}
 	return out;
-}
-
-void check(const skope& ths, const AstNode* pnode, const vector<CVar>& args, const Cfunction& fn, const string& fname)
-{
-	int ind = 0;
-	auto allowedset = fn.allowed_arg_types.begin();
-	for (auto arg : args)
-	{
-		auto thistype = arg.type();
-		bool pass = false;
-		for (auto it = allowedset->begin(); it!= allowedset->end(); it++)
-		{
-			pass = thistype == *it;
-			if (pass) break;
-		}
-		ind++;
-		if (!pass)
-		{
-			ostringstream emsgstr;
-			emsgstr << "type " << thistype;
-			throw exception_func(ths, pnode, emsgstr.str(), fname, ind).raise();
-		}
-		allowedset++;
-	}
 }
 
 static bool this_is_one_of_allowedset(uint16_t thistype, const vector<set<uint16_t>>::const_iterator& allowed)

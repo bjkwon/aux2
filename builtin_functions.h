@@ -135,13 +135,13 @@ DECL_GATE(_datatype)
 DECL_GATE(_noargs)
 void _interp1(skope* past, const AstNode* pnode, const vector<CVar>& args);
 void _fdelete(skope* past, const AstNode* pnode, const vector<CVar>& args);
-void _ismember(skope* past, const AstNode* pnode, const vector<CVar>& args);
 void _isaudioat(skope* past, const AstNode* pnode, const vector<CVar>& args);
 DECL_GATE(_fft)
 DECL_GATE(_ifft)
 DECL_GATE(_tone)
 DECL_GATE(_diff)
 DECL_GATE(_cumsum)
+DECL_GATE(_cellstruct)
 void _fm(skope* past, const AstNode* pnode, const vector<CVar>& args);
 void _tsq_getvalues(skope* past, const AstNode* pnode, const vector<CVar>& args);
 void _tsq_setvalues(skope* past, const AstNode* pnode, const vector<CVar>& args);
@@ -151,20 +151,12 @@ void _tsq_isrel(skope* past, const AstNode* pnode, const vector<CVar>& args);
 void _str2num(skope* past, const AstNode* pnode, const vector<CVar>& args);
 void _esc(skope* past, const AstNode* pnode, const vector<CVar>& args);
 void _varcheck(skope* past, const AstNode* pnode, const vector<CVar>& args);
-void _and(skope* past, const AstNode* pnode, const vector<CVar>& args);
-void _or(skope* past, const AstNode* pnode, const vector<CVar>& args);
-void _sort(skope* past, const AstNode* pnode, const vector<CVar>& args);
 DECL_GATE(_ramp)
 void _std(skope* past, const AstNode* pnode, const vector<CVar>& args);
 void _size(skope* past, const AstNode* pnode, const vector<CVar>& args);
 void _mostleast(skope* past, const AstNode* pnode, const vector<CVar>& args);
 void _setnextchan(skope* past, const AstNode* pnode, const vector<CVar>& args);
-void _getfs(skope* past, const AstNode* pnode, const vector<CVar>& args);
 void _setfs(skope* past, const AstNode* pnode, const vector<CVar>& args);
-void _erase(skope* past, const AstNode* pnode, const vector<CVar>& args);
-void _head(skope* past, const AstNode* pnode, const vector<CVar>& args);
-void _cumsum(skope* past, const AstNode* pnode, const vector<CVar>& args);
-void _diff(skope* past, const AstNode* pnode, const vector<CVar>& args);
 void _conv(skope* past, const AstNode* pnode, const vector<CVar>& args);
 void _imaginary_unit(skope* past, const AstNode* pnode, const vector<CVar>& args);
 void _pi(skope* past, const AstNode* pnode, const vector<CVar>& args);

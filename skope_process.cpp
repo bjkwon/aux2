@@ -139,7 +139,7 @@ void skope::eval_lhs(const AstNode* plhs, const AstNode* prhs, CVar &lhs_index, 
 				out << "LHS must be an l-value. " << plhs->str << " is a built-in function.";
 				throw exception_etc(*this, plhs, out.str()).raise();
 			}
-			RHS = Compute(prhs); // DO SOMETHING--- RHS is computed twice..... 9/14/2022
+//			RHS = Compute(prhs); // DO SOMETHING--- RHS is computed twice..... 9/14/2022
 			// if var is not defined, type is null
 			auto itvar = Vars.find(plhs->str);
 			if (itvar == Vars.end())

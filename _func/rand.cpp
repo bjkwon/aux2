@@ -72,22 +72,32 @@ Cfunction set_builtin_function_irand(fGate fp)
 	ft.narg2 = ft.narg1 + default_arg.size();
 	return ft;
 }
-
+// cell is piggy-bagging on _rand 10/1/2022
 void _rand(skope* past, const AstNode* pnode, const vector<CVar>& args)
 {
 	float val = past->Sig.value();
 	if (val < 0)
 		throw exception_func(*past, pnode, "argument must be positive", pnode->str, 1).raise();
 	int ival = (int)round(val);
-	static bool initialized(false);
-	if (!initialized)
-	{
-		srand((unsigned)time(0));
-		initialized = true;
+	if (!strcmp(pnode->str, "rand")) {
+
+		static bool initialized(false);
+		if (!initialized)
+		{
+			srand((unsigned)time(0));
+			initialized = true;
+		}
+		past->Sig.UpdateBuffer(ival);
+		for (int k = 0; k < ival; k++)
+			past->Sig.buf[k] = (float)rand() / RAND_MAX;
 	}
-	past->Sig.UpdateBuffer(ival);
-	for (int k = 0; k < ival; k++)
-		past->Sig.buf[k] = (float)rand() / RAND_MAX;
+	else // cell 
+	{
+		past->Sig.Reset();
+		CVar tp;
+		for (int k = 0; k < ival; k++)
+			past->Sig.appendcell(tp);
+	}
 }
 
 void _irand(skope* past, const AstNode* pnode, const vector<CVar>& args)
