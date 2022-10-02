@@ -276,27 +276,25 @@ void CAstSigEnv::InitBuiltInFunctions()
 	SET_BUILTIN_FUNC("ismember", cellstruct);
 	SET_BUILTIN_FUNC("erase", cellstruct);
 
+	SET_BUILTIN_FUNC("squeeze", vector);
+
+	SET_BUILTIN_FUNC("isempty", objchecker);
+	SET_BUILTIN_FUNC("isaudio", objchecker);
+	SET_BUILTIN_FUNC("isvector", objchecker);
+	SET_BUILTIN_FUNC("isstring", objchecker);
+	SET_BUILTIN_FUNC("isstereo", objchecker);
+	SET_BUILTIN_FUNC("isbool", objchecker);
+	SET_BUILTIN_FUNC("iscell", objchecker);
+	SET_BUILTIN_FUNC("isclass", objchecker);
+	SET_BUILTIN_FUNC("istseq", objchecker);
+
 	//SET_BUILTIN_FUNC("", );
+
 
 	SET_PSEUDO_VARS("i", imaginary_unit);
 	SET_PSEUDO_VARS("e", natural_log_base);
 	SET_PSEUDO_VARS("pi", pi);
 
-//	name = "setfs"; // check this... is narg1 one correct?
-//	ft.alwaysstatic = true;
-//	ft.funcsignature = "(filename)";
-//	ft.narg1 = 1;	ft.narg2 = 1;
-//	ft.func =  &_setfs;
-//	builtin[name] = ft;
-//
-//	name = "squeeze";
-//	ft.alwaysstatic = false;
-//	ft.funcsignature = "() ... to remove the null interval";
-//	ft.narg1 = 0;	ft.narg2 = 0;
-//	ft.func =  &_squeeze; // do this
-//	builtin[name] = ft;
-//
-//
 //	name = "isaudioat";
 //	ft.funcsignature = "(audio_signal, time_pt)";
 //	ft.func =  &_isaudioat;
@@ -325,14 +323,6 @@ void CAstSigEnv::InitBuiltInFunctions()
 //	builtin[name] = ft;
 //	}
 //#endif //NO_IIR
-//	ft.narg1 = 1;	ft.narg2 = 1;
-//	ft.funcsignature = "(stereo_signal)";
-//	name = "left";
-//	ft.func =  &_left; // check
-//	builtin[name] = ft;
-//	name = "right";
-//	ft.func =  &_right; // check
-//	builtin[name] = ft;
 //
 //	ft.narg1 = 1;	ft.narg2 = 2;
 //	name = "std";
@@ -345,19 +335,6 @@ void CAstSigEnv::InitBuiltInFunctions()
 //	ft.func = &_setnextchan;
 //	builtin[name] = ft;
 
-//	ft.funcsignature = "(obj, member_variable_string)";
-//	name = "erase";
-//	ft.func = &_erase;
-//	builtin[name] = ft;
-//	ft.funcsignature = "(obj, member_variable_string)";
-//	name = "ismember";
-//	ft.func = &_ismember;
-//	builtin[name] = ft;
-//	ft.funcsignature = "(obj, any_non-cell_non-class_expression)";
-//	name = "head";
-//	ft.func = &_head;
-//	builtin[name] = ft;
-//
 //	ft.narg1 = 1;	ft.narg2 = 1;
 //	ft.funcsignature = "(graphic_handle)";
 //	name = "replicate";
@@ -395,17 +372,6 @@ void CAstSigEnv::InitBuiltInFunctions()
 //	name = "fdelete";
 //	ft.func =  &_fdelete; // check
 //	builtin[name] = ft;
-//
-//	ft.alwaysstatic = false;
-//	ft.narg1 = 1;	ft.narg2 = 1;
-//	ft.funcsignature = "(object)";
-//	const char *f7[] = { "isempty", "isaudio", "isvector", "isstring", "isstereo", "isbool", "iscell", "isclass", "istseq", 0 };
-//	for (int k = 0; f7[k]; k++)
-//	{
-//		name = f7[k];
-//		ft.func = _varcheck;
-//		builtin[name] = ft;
-//	}
 //
 //#ifndef NO_PLAYSND
 //	ft.alwaysstatic = false;

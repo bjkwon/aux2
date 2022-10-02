@@ -89,15 +89,21 @@ void _audio(skope* past, const AstNode* pnode, const vector<CVar>& args)
 
 void _vector(skope* past, const AstNode* pnode, const vector<CVar>& args)
 {
-	past->Sig.SetFs(1);
-	past->Sig.snap = false;
-	if (past->Sig.next)
-	{
-		CSignal out = CSignal(1, past->Sig.nSamples * 2);
-		memcpy(out.logbuf, past->Sig.logbuf, past->Sig.nSamples * past->Sig.bufBlockSize);
-		memcpy(out.logbuf + past->Sig.nSamples * past->Sig.bufBlockSize, past->Sig.next->logbuf, past->Sig.nSamples * past->Sig.bufBlockSize);
-		out.nGroups = 2;
-		past->Sig = (CVar)(CSignals)out;
+	string fname = pnode->str;
+	if (fname == "vector") {
+		past->Sig.SetFs(1);
+		past->Sig.snap = false;
+		if (past->Sig.next)
+		{
+			CSignal out = CSignal(1, past->Sig.nSamples * 2);
+			memcpy(out.logbuf, past->Sig.logbuf, past->Sig.nSamples * past->Sig.bufBlockSize);
+			memcpy(out.logbuf + past->Sig.nSamples * past->Sig.bufBlockSize, past->Sig.next->logbuf, past->Sig.nSamples * past->Sig.bufBlockSize);
+			out.nGroups = 2;
+			past->Sig = (CVar)(CSignals)out;
+		}
+	}
+	else if (fname == "squeeze") {
+		past->Sig.Squeeze();
 	}
 }
 
