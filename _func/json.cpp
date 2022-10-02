@@ -23,7 +23,7 @@ Cfunction set_builtin_function_json(fGate fp)
 	return ft;
 }
 
-static void json2CVar(CVar& out, const json& in, skope* past, const AstNode* pnode, const string& fname)
+void json2CVar(CVar& out, const json& in, skope* past, const AstNode* pnode, const string& fname)
 {
 	auto umap = in.get<unordered_map<string, json>>();
 	for (auto v : umap) {
@@ -39,6 +39,7 @@ static void json2CVar(CVar& out, const json& in, skope* past, const AstNode* pno
 				if (element.type_name() == "object" || element.type_name() == "array") {
 					json2CVar(tempobj, element, past, pnode, fname);
 					cellarrayobj.cell.push_back(tempobj);
+					out.strut[v.first] = cellarrayobj;
 				}
 				else {
 					if (element.type_name() == "string")
@@ -51,7 +52,6 @@ static void json2CVar(CVar& out, const json& in, skope* past, const AstNode* pno
 						out.strut[v.first].cell.push_back(CVar());
 				}
 			}
-			out.strut[v.first] = cellarrayobj;
 		}
 		else if (v.second.type_name() == "string")
 			out.strut[v.first] = v.second.get<string>();

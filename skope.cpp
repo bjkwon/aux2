@@ -1549,6 +1549,27 @@ skope& skope::SetVar(const char* name, CVar* prhs, CVar* pBase)
 	return *this;
 }
 
+string CAstSigEnv::path_delimited_semicolon()
+{
+	string out;
+	for (auto s : AuxPath)
+		out += s + ';';
+	return out;
+}
+
+void CAstSigEnv::AddPath(string path)
+{
+	trim(path, "\r \n\t");
+	if (!path.empty())
+	{
+		transform(path.begin(), path.end(), path.begin(), ::tolower);
+		if (path.back() != '\\') path += '\\';
+		auto fd = find(AuxPath.begin(), AuxPath.end(), path);
+		if (fd == AuxPath.end())
+			AuxPath.push_back(path);
+	}
+}
+
 string skope::makefullfile(const string& fname, string extension)
 {
 	string fullfilename;

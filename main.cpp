@@ -15,6 +15,12 @@
 #endif
 #include "unit_test.cpp"
 
+void auxenv(CAstSigEnv* pEnv, const string& cmd); // auxenv.cpp
+
+#include "nlohmann/json.hpp"
+using json = nlohmann::json; 
+void json2CVar(CVar& out, const json& in, skope* past, const AstNode* pnode, const string& fname); // json.cpp
+
 extern vector<skope*> xscope;
 
 void echo(int depth, skope& ctx, const AstNode* pnode, CVar* pvar)
@@ -110,14 +116,37 @@ CVar interpreter(skope& sc, const string& instr)
 	return sc.Sig;
 }
 
+
 int main()
 {
 	CAstSigEnv* pglobalEnv = new CAstSigEnv(22050);
+
 	pglobalEnv->AppPath = get_current_dir();
 	pglobalEnv->InitBuiltInFunctions();
 	skope sc(pglobalEnv);
 	xscope.push_back(&sc);
 	string input, line;
+	ifstream infc; // input file stream carrier
+	CVar paths;
+	try {
+		string name = "env.json";
+		infc.open(name);
+		if (infc.fail())
+			throw name;
+		stringstream buffer;
+		buffer << infc.rdbuf();
+		json jdata = json::parse(buffer.str());
+		CVar out;
+		json2CVar(out, jdata, &sc, sc.node, name);
+		paths = out.strut["AuxPath"];
+		for (auto p : paths.cell) {
+			pglobalEnv->AuxPath.push_back(p.str());
+		}
+}
+	catch (const string& fname) {
+		exception_func(sc, sc.node, "Error reading file", fname).raise();
+	}	//json jdata = json::parse();
+
 	bool programExit = false;
 #ifndef _WIN32
 	ifstream historyfstream("aux2.history", istream::in);
@@ -161,8 +190,13 @@ int main()
 			if (!input.empty())
 			{
 				//if the line begins with #, it bypasses the usual parsing
-				if (input.front() == '#')
-					system(input.substr(1).c_str());
+				if (input.front() == '#') {
+					if (input.substr(1).front() == '#') {
+						auxenv(pglobalEnv, input.substr(2).c_str());
+					}
+					else
+						system(input.substr(1).c_str());
+				}
 				else
 					interpreter(sc, input);
 				programExit = false;
