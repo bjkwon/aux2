@@ -180,6 +180,9 @@
     <ClCompile Include="auxenv.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="_func\objchecker.cpp">
+      <Filter>Source Files\_functions</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="skope.h">

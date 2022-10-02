@@ -181,6 +181,7 @@
     <ClCompile Include="_func\hilb_env.cpp" />
     <ClCompile Include="_func\lr_aud_vec.cpp" />
     <ClCompile Include="_func\noargs.cpp" />
+    <ClCompile Include="_func\objchecker.cpp" />
     <ClCompile Include="_func\printf.cpp" />
     <ClCompile Include="_func\rand.cpp" />
     <ClCompile Include="_func\rmsandothers.cpp" />

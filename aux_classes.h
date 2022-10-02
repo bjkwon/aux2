@@ -104,6 +104,8 @@ typedef void (*fmodify) (float*, uint64_t, void*, void*);
 #define ISTEMPORAL(X)       (((X) & 0xFF0C) == TYPEBIT_TEMPO_ONE || ((X) & 0xFF0C) == TYPEBIT_TEMPO_CHAINS || ((X) & 0xFF0C) == TYPEBIT_TEMPO_CHAINS_SNAP)
 #define ISTEMPORALG(X)      (((X) & 0x000C) == TYPEBIT_TEMPO_ONE || ((X) & 0x000C) == TYPEBIT_TEMPO_CHAINS || ((X) & 0x000C) == TYPEBIT_TEMPO_CHAINS_SNAP)
 
+#define ISCELL(X)        ((X) & TYPEBIT_CELL)
+#define ISSTRUT(X)        ((X) & TYPEBIT_STRUT | (X) & TYPEBIT_STRUTS)
 
 #define ALL_AUDIO_TYPES AUDIO_TYPES_1D, AUDIO_TYPES_2D
 
