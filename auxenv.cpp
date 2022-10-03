@@ -1,4 +1,5 @@
 #include <iostream>
+#include <fstream>
 #include "aux_classes.h"
 #include "skope.h"
 #include "audstr.h"
@@ -6,6 +7,10 @@
 using namespace std;
 
 int str2vector(vector<string>& out, const string& in, const string& delim_chars); // utils.cpp
+
+#include "nlohmann/json.hpp"
+using json = nlohmann::json;
+void json2CVar(CVar& out, const json& in, skope* past, const AstNode* pnode, const string& fname); // json.cpp
 
 void auxenv_path(CAstSigEnv* pEnv, const vector<string>& cmd)
 {
@@ -99,4 +104,62 @@ void auxenv(CAstSigEnv* pEnv, const string& cmd)
 	}
 
 
+}
+
+void read_auxenv(int& fs0, vector<string>& auxpathfromenv, const string& envfilename)
+{
+	ifstream envfstream;
+	json jenv;
+	try {
+		envfstream.open(envfilename);
+		if (envfstream.fail())
+			throw envfilename;
+		stringstream buffer;
+		buffer << envfstream.rdbuf();
+		jenv = json::parse(buffer.str());
+		auto fd = jenv.find("fs");
+		if (fd != jenv.end())
+			fs0 = jenv["fs"].get<int>();
+		fd = jenv.find("AuxPath");
+		if (fd != jenv.end()) {
+			if ((*fd).type_name() == "array") {
+				for (auto el : (*fd)) {
+					auxpathfromenv.push_back(el);
+				}
+			}
+		}
+	}
+	catch (const string& fname) {
+		cout << "Environment file not found--- " << fname << endl;
+	}
+	catch (json::parse_error e) {
+		cout << e.what() << endl;
+	}
+	catch (json::type_error e) {
+		cout << e.what() << endl;
+	}
+}
+
+void save_auxenv(CAstSigEnv* pEnv, const string& envfilename)
+{
+	ofstream envfstream;
+	json jenv;
+	jenv["fs"] = pEnv->Fs;
+	for (auto s : pEnv->AuxPath)
+		jenv["AuxPath"].push_back(s);
+	try {
+		envfstream.open(envfilename);
+		if (envfstream.fail())
+			throw envfilename;
+		envfstream << jenv << endl;
+	}
+	catch (const string& fname) {
+		cout << "Environment file cannot be opened for writing--- " << fname << endl;
+	}
+	catch (json::parse_error e) {
+		cout << e.what() << endl;
+	}
+	catch (json::type_error e) {
+		cout << e.what() << endl;
+	}
 }

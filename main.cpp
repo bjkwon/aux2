@@ -2,7 +2,6 @@
 //
 
 #include <iostream>
-#include <fstream>
 #include "aux_classes.h"
 #include "skope.h"
 #include "skope_exception.h"
@@ -15,11 +14,12 @@
 #endif
 #include "unit_test.cpp"
 
-void auxenv(CAstSigEnv* pEnv, const string& cmd); // auxenv.cpp
+#define AUXENV_FILE "auxenv.json"
+#define DEFAULT_FS 22050
 
-#include "nlohmann/json.hpp"
-using json = nlohmann::json; 
-void json2CVar(CVar& out, const json& in, skope* past, const AstNode* pnode, const string& fname); // json.cpp
+void auxenv(CAstSigEnv* pEnv, const string& cmd); // auxenv.cpp
+void read_auxenv(int& fs, vector<string>& auxenvpath, const string& envfilename); // auxenv.cpp
+void save_auxenv(CAstSigEnv* pEnv, const string& envfilename); // auxenv.cpp
 
 extern vector<skope*> xscope;
 
@@ -119,33 +119,17 @@ CVar interpreter(skope& sc, const string& instr)
 
 int main()
 {
-	CAstSigEnv* pglobalEnv = new CAstSigEnv(22050);
-
+	int fs0(DEFAULT_FS);
+	vector<string> auxpathfromenv;
+	read_auxenv(fs0, auxpathfromenv, AUXENV_FILE);
+	CAstSigEnv* pglobalEnv = new CAstSigEnv(fs0);
+	pglobalEnv->AuxPath = auxpathfromenv;
 	pglobalEnv->AppPath = get_current_dir();
 	pglobalEnv->InitBuiltInFunctions();
 	skope sc(pglobalEnv);
 	xscope.push_back(&sc);
 	string input, line;
-	ifstream infc; // input file stream carrier
 	CVar paths;
-	try {
-		string name = "env.json";
-		infc.open(name);
-		if (infc.fail())
-			throw name;
-		stringstream buffer;
-		buffer << infc.rdbuf();
-		json jdata = json::parse(buffer.str());
-		CVar out;
-		json2CVar(out, jdata, &sc, sc.node, name);
-		paths = out.strut["AuxPath"];
-		for (auto p : paths.cell) {
-			pglobalEnv->AuxPath.push_back(p.str());
-		}
-}
-	catch (const string& fname) {
-		exception_func(sc, sc.node, "Error reading file", fname).raise();
-	}	//json jdata = json::parse();
 
 	bool programExit = false;
 #ifndef _WIN32
@@ -215,6 +199,8 @@ int main()
 			cout << "Error: " << msg << endl;
 		}
 	}
+	save_auxenv(pglobalEnv, AUXENV_FILE);
+
 	delete pglobalEnv;
 	return 0;
 }
