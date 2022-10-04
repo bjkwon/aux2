@@ -201,7 +201,6 @@
     <ClCompile Include="_func\and_or_sort.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="audstr.h" />
     <ClInclude Include="aux_classes.h" />
     <ClInclude Include="builtin_functions.h" />
     <ClInclude Include="include\lame_aux_api.h" />

@@ -2,7 +2,7 @@
 #include <fstream>
 #include "aux_classes.h"
 #include "skope.h"
-#include "audstr.h"
+//#include "audstr.h"
 
 using namespace std;
 
