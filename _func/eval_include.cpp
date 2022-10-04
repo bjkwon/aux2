@@ -1,41 +1,25 @@
 #include "functions_common.h"
 
-//void _include(skope* past, const AstNode* pnode)
-//{
-//	const AstNode* p = get_first_arg(pnode, (*(past->pEnv->builtin.find(pnode->str))).second.alwaysstatic);
-//	string dummy, emsg;
-//	string filename = past->ComputeString(p);
-//	if (FILE* auxfile = past->fopen_from_path(filename, "", dummy)) {
-//		try {
-//			skope qscope(past);
-//			string filecontent;
-//			if (GetFileText(auxfile, filecontent) <= 0)
-//			{ // File reading error or empty file
-//				past->statusMsg += "Cannot read specified file: " + filename;
-//				fclose(auxfile);
-//				return;
-//			}
-//			fclose(auxfile);
-//			qscope.xtree = qscope.parse_aux(filecontent.c_str(), emsg);
-//			if (!qscope.xtree)
-//				throw emsg.c_str();
-//			vector<CVar*> res = qscope.Compute();
-//			past->Sig = res.back();
-//			for (map<string, CVar>::iterator it = qscope.Vars.begin(); it != qscope.Vars.end(); it++)
-//				past->Vars[it->first] = it->second;
-//			for (auto it = qscope.GOvars.begin(); it != qscope.GOvars.end(); it++)
-//				past->GOvars[it->first] = it->second;
-//		}
-//		catch (const char* errmsg) {
-//			fclose(auxfile);
-//			throw CAstException(USAGE, *past, pnode).proc((string(errmsg) + "while including " + filename + " in the file: ").c_str());
-//		}
-//	}
-//	else
-//		throw CAstException(USAGE, *past, pnode).proc("Cannot read file: ", "", filename);
-//}
+int GetFileText(FILE* fp, string& strOut); // utils.cpp
 
-
+Cfunction set_builtin_function_include(fGate fp)
+{
+	Cfunction ft;
+	set<uint16_t> allowedTypes;
+	ft.func = fp;
+	// Edit from this line ==============
+	ft.alwaysstatic = false;
+	vector<string> desc_arg_req = { "filename", };
+	vector<string> desc_arg_opt = {  };
+	vector<CVar> default_arg = { };
+	set<uint16_t> allowedTypes1 = { TYPEBIT_STRING + 1, TYPEBIT_STRING + 2 };
+	ft.allowed_arg_types.push_back(allowedTypes1);
+	// til this line ==============
+	ft.defaultarg = default_arg;
+	ft.narg1 = desc_arg_req.size();
+	ft.narg2 = ft.narg1 + default_arg.size();
+	return ft;
+}
 Cfunction set_builtin_function_eval(fGate fp)
 {
 	Cfunction ft;
@@ -79,5 +63,41 @@ void _eval(skope* past, const AstNode* pnode, const vector<CVar>& args)
 		e.pCtx = past;
 		e.pnode = pnode;
 		throw e;
+	}
+}
+
+void _include(skope* past, const AstNode* pnode, const vector<CVar>& args)
+{
+	string dummy, errmsg;
+	string filename = past->Sig.str();
+	if (FILE* auxfile = past->fopen_from_path(filename, "", dummy)) {
+		try {
+			skope qscope(past);
+			string filecontent;
+			if (GetFileText(auxfile, filecontent) <= 0)
+			{ // File reading error or empty file
+				fclose(auxfile);
+				qscope.emsg = "Cannot read specified file";
+				throw exception_etc(*past, pnode, qscope.emsg).raise();
+			}
+			fclose(auxfile);
+			qscope.node = qscope.makenodes(filecontent.c_str());
+			if (!qscope.node) 
+				throw exception_etc(*past, pnode, qscope.emsg).raise();
+			vector<CVar*> res = qscope.Compute();
+			past->Sig = res.back();
+			for (map<string, CVar>::iterator it = qscope.Vars.begin(); it != qscope.Vars.end(); it++)
+				past->Vars[it->first] = it->second;
+			for (auto it = qscope.GOvars.begin(); it != qscope.GOvars.end(); it++)
+				past->GOvars[it->first] = it->second;
+		}
+		catch (skope_exception e) {
+			string emsg = string("Error from include ") + filename + ": " + e.msgonly;
+			throw exception_etc(*past, pnode, emsg).raise();
+		}
+	}
+	else {
+		string emsg = string("Cannot read file: ") + filename;
+		throw exception_etc(*past, pnode, emsg).raise();
 	}
 }

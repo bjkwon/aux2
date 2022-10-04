@@ -264,6 +264,7 @@ void CAstSigEnv::InitBuiltInFunctions()
 	SET_BUILTIN_FUNC("issame", veq);
 	SET_BUILTIN_FUNC("otype", datatype);
 	SET_BUILTIN_FUNC("eval", eval);
+	SET_BUILTIN_FUNC("include", include);
 	SET_BUILTIN_FUNC("diff", diff);
 	SET_BUILTIN_FUNC("cumsum", cumsum);
 	

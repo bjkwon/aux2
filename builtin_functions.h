@@ -124,6 +124,7 @@ void udf_rethrow(skope* past, const AstNode* pnode, const vector<CVar>& args);
 void _msgbox(skope* past, const AstNode* pnode, const vector<CVar>& args);
 void _include(skope* past, const AstNode* pnode, const vector<CVar>& args);
 DECL_GATE(_eval)
+DECL_GATE(_include)
 //void _eval(skope* past, const AstNode* pnode, const vector<CVar>& args);
 void _cell(skope* past, const AstNode* pnode, const vector<CVar>& args);
 DECL_GATE(_group)

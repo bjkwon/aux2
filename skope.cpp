@@ -167,7 +167,6 @@ AstNode* skope::makenodes(const string& instr)
 	if (!errmsg && res == 2)
 	{
 		throw "[INTERNAL ERROR] Out of memory!";
-		return NULL;
 	}
 	if (errmsg) {
 		if (nodeAllocated) {
