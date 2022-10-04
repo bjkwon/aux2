@@ -4,14 +4,20 @@
 skope_exception& skope_exception::raise()
 {
 	addLineCol();
-	outstr = msgonly + sourceloc;
+	outstr = msgonly + " " + sourceloc;
 	return *this;
 }
 
 void skope_exception::addLineCol()
 {
 	ostringstream oss;
-	if (pCtx->level == pCtx->baselevel.back()) return;
+	if (pCtx->level == pCtx->baselevel.back()) {
+		if (line != 1 || col != 1) {
+			oss << "line " << line << ", col " << col;
+			sourceloc = oss.str();
+		}
+		return;
+	}
 	vector<int> lines;
 	vector<string> strs;
 	const skope* tp = pCtx;

@@ -19,6 +19,8 @@ public:
 	};
 	skope_exception(const skope& base, const AstNode* _pnode) {
 		pnode = _pnode;  pCtx = &base;
+		line = pnode->line;
+		col = pnode->col;
 	};
 	virtual ~skope_exception() {};
 	skope_exception& raise(); 
@@ -50,6 +52,8 @@ public:
 		if (!fname.empty())
 			oss << " in " << fname << "()";
 		msgonly = oss.str().c_str();
+		line = pnode->line;
+		col = pnode->col;
 	};
 	~exception_func() {};
 };
@@ -65,6 +69,8 @@ public:
 			 oss << id;
 		oss << " " << msg;
 		msgonly = oss.str().c_str();
+		line = pnode->line;
+		col = pnode->col;
 	};
 	~exception_misuse() {};
 };
@@ -77,6 +83,8 @@ public:
 		pnode = _pnode;  pCtx = &base;
 		oss << "Out of range: " << idpos << " " << msg;
 		msgonly = oss.str().c_str();
+		line = pnode->line;
+		col = pnode->col;
 	};
 	~exception_range() {};
 };
@@ -87,6 +95,8 @@ public:
 	exception_etc(const skope& base, const AstNode* _pnode, const string& msg) {
 		pnode = _pnode;  pCtx = &base;
 		msgonly = msg;
+		line = pnode->line;
+		col = pnode->col;
 	};
 	~exception_etc() {};
 };

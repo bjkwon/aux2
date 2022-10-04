@@ -46,24 +46,15 @@ void _eval(skope* past, const AstNode* pnode, const vector<CVar>& args)
 	// If there's an error, the error is caught here and the error message is sent to the calling function.
 	string emsg, exp = past->Sig.str();
 	skope qscope(past);
-	try {
-		qscope.node = qscope.makenodes(exp.c_str());
-		if (!qscope.node) // syntax error in the expression
-			throw exception_etc(*past, pnode, qscope.emsg).raise();
+	qscope.node = qscope.makenodes(exp.c_str());
+	if (!qscope.node) // syntax error in the expression
+		throw exception_etc(*past, pnode, qscope.emsg).raise();
 
-		qscope.process_statement(qscope.node);
-		//transporting variables
-		for (map<string, CVar>::iterator it = qscope.Vars.begin(); it != qscope.Vars.end(); it++)
-			past->SetVar(it->first.c_str(), &it->second);
-		past->Sig = qscope.Sig; // temp hack; just to port out the last result during the eval call
-	}
-	catch (skope_exception e) {
-		e.line = pnode->line;
-		e.col = pnode->col;
-		e.pCtx = past;
-		e.pnode = pnode;
-		throw e;
-	}
+	qscope.process_statement(qscope.node);
+	//transporting variables
+	for (map<string, CVar>::iterator it = qscope.Vars.begin(); it != qscope.Vars.end(); it++)
+		past->SetVar(it->first.c_str(), &it->second);
+	past->Sig = qscope.Sig; // temp hack; just to port out the last result during the eval call
 }
 
 void _include(skope* past, const AstNode* pnode, const vector<CVar>& args)
@@ -91,9 +82,11 @@ void _include(skope* past, const AstNode* pnode, const vector<CVar>& args)
 			for (auto it = qscope.GOvars.begin(); it != qscope.GOvars.end(); it++)
 				past->GOvars[it->first] = it->second;
 		}
-		catch (skope_exception e) {
-			string emsg = string("Error from include ") + filename + ": " + e.msgonly;
-			throw exception_etc(*past, pnode, emsg).raise();
+		catch (const skope_exception &e) {
+			errmsg = string("Error from include ") + filename + ": ";
+			if (!e.sourceloc.empty()) errmsg += e.sourceloc + ", ";
+			errmsg += e.msgonly;
+			throw exception_etc(*past, pnode, errmsg).raise();
 		}
 	}
 	else {
