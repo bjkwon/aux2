@@ -530,12 +530,11 @@ CVar &CNodeProbe::ExtractByIndex(const AstNode *pnode, AstNode *p)
 	return pbase->Sig;
 }
 
-
-
 CVar * CNodeProbe::extract(const AstNode *pnode, CTimeSeries &isig)
 {
 	CSignals out((psigBase)->GetFs());
 	CTimeSeries *p = &out;
+	uint16_t tp = psigBase->type();
 	out.UpdateBuffer(isig.nSamples);
 	if (isig._min() <= 0.)
 	{
@@ -543,19 +542,19 @@ CVar * CNodeProbe::extract(const AstNode *pnode, CTimeSeries &isig)
 		outstream << "Invalid index " << "for " << varname << " : " << (int)isig._min() << " (must be positive)";
 		throw exception_etc(*pbase, pnode, outstream.str()).raise();
 	}
-	if (psigBase->IsComplex())
+	if (ISCOMPLEX(tp))
 	{
 		out.SetComplex();
 		for (unsigned int i = 0; i < isig.nSamples; i++)
 			out.cbuf[i] = (psigBase)->cbuf[(int)isig.buf[i] - 1];
 	}
-	else if (psigBase->IsLogical())
+	else if (ISBOOL(tp))
 	{
 		out.MakeLogical();
 		for (unsigned int i = 0; i < isig.nSamples; i++)
 			out.logbuf[i] = (psigBase)->logbuf[(int)isig.buf[i] - 1];
 	}
-	else if (psigBase->IsString())
+	else if (ISSTRING(tp))
 	{
 		out.UpdateBuffer(isig.nSamples + 1); // make room for null 
 		for (unsigned int i = 0; i < isig.nSamples; i++)
@@ -604,7 +603,7 @@ CVar * CNodeProbe::extract(const AstNode *pnode, CTimeSeries &isig)
 			}
 		}
 		out.SetReal();
-		if (ISAUDIO(pbase->Sig.type()))
+		if (ISAUDIO(tp))
 		{
 			CTimeSeries *_pisig = &isig;
 			while (_pisig)
@@ -662,6 +661,7 @@ CVar * CNodeProbe::extract(const AstNode *pnode, CTimeSeries &isig)
 			}
 		}
 	}
+	out.bufType = psigBase->bufType;
 	out.nGroups = isig.nGroups;
 	pbase->Sig = out;
 	return &pbase->Sig;
