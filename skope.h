@@ -91,7 +91,6 @@ public:
 	string path_delimited_semicolon();
 	vector<string> InitBuiltInFunctionsExt(const vector<string>& externalModules);
 	multimap<string, Cfunction> builtin;
-
 	CAstSigEnv(const int fs = 1);
 	virtual ~CAstSigEnv();
 	CAstSigEnv& operator=(const CAstSigEnv& rhs);
@@ -123,7 +122,6 @@ public:
 	int nargin, nargout;
 	map<string, CVar*> static_vars;
 	CDebugStatus debug;
-//	map<HWND, RECT> rt2validate;
 	string application;
 	bool repaint;
 	CUDF() { nextBreakPoint = currentLine = -1; pLastRead = NULL; repaint = false; };
@@ -138,6 +136,40 @@ public:
 	static AstNode* goto_line(const AstNode* pnode, int line);
 	static bool IsLooping(const AstNode* p);
 
+	typedef CVar* (skope::*xflow_func)(const AstNode* pnode);
+	map<int, xflow_func> xff;
+	CVar* BLOCK(const AstNode* p);
+	CVar* FOR(const AstNode* p);
+	CVar* IF(const AstNode* p);
+	CVar* WHILE(const AstNode* p);
+	CVar* TRY(const AstNode* p);
+	CVar* CATCH(const AstNode* p);
+	CVar* ID(const AstNode* pnode);
+	CVar* TSEQ(const AstNode* pnode);
+	CVar* NUMBER(const AstNode* pnode);
+	CVar* STRING(const AstNode* pnode);
+
+	CVar* MATRIX(const AstNode* pnode);
+	CVar* VECTOR(const AstNode* pnode);
+	CVar* REPLICA(const AstNode* pnode);
+	CVar* ENDPOINT(const AstNode* pnode);
+	CVar* ARITH_PLUS(const AstNode* pnode);
+	CVar* ARITH_MINUS(const AstNode* pnode);
+	CVar* ARITH_MULT(const AstNode* pnode);
+	CVar* ARITH_DIV(const AstNode* pnode);
+	CVar* MATRIXMULT(const AstNode* pnode);
+	CVar* ARITH_MOD(const AstNode* pnode);
+	CVar* TRANSPOSE(const AstNode* pnode);
+	CVar* NEGATIVE(const AstNode* pnode);
+	CVar* TIMESHIFT(const AstNode* pnode);
+	CVar* CONCAT(const AstNode* pnode);
+	CVar* LOGIC(const AstNode* pnode);
+	CVar* LEVELAT(const AstNode* pnode);
+	CVar* INITCELL(const AstNode* pnode);
+	CVar* BREAK(const AstNode* pnode);
+	CVar* RETURN(const AstNode* pnode);
+
+	
 	skope(string instr = "");
 	skope(CAstSigEnv* env);
 	skope(const skope* src);
@@ -218,6 +250,7 @@ public:
 	vector<float> ends;
 	CVar* process_block(const AstNode* pnode);
 	CVar* process_statement(const AstNode* pnode);
+
 private:
 	bool done;
 	bool nodeAllocated;
