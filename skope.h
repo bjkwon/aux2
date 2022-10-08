@@ -97,6 +97,38 @@ public:
 	void AddPath(string path);
 	AstNode* checkout_udf(const string& udf_filename, const string& filecontent);
 	AstNode* checkin_udf(const string& udf_filename, const string& fullpath, const string& filecontent, string& emsg);
+	typedef CVar* (CAstSigEnv::* xflow_func)(skope* psk, const AstNode* pnode);
+	map<int, xflow_func> xff;
+	CVar* BLOCK(skope* psk, const AstNode* p);
+	CVar* FOR(skope* psk, const AstNode* p);
+	CVar* IF(skope* psk, const AstNode* p);
+	CVar* WHILE(skope* psk, const AstNode* p);
+	CVar* TRY(skope* psk, const AstNode* p);
+	CVar* CATCH(skope* psk, const AstNode* p);
+	CVar* ID(skope* psk, const AstNode* pnode);
+	CVar* TSEQ(skope* psk, const AstNode* pnode);
+	CVar* NUMBER(skope* psk, const AstNode* pnode);
+	CVar* STRING(skope* psk, const AstNode* pnode);
+
+	CVar* MATRIX(skope* psk, const AstNode* pnode);
+	CVar* VECTOR(skope* psk, const AstNode* pnode);
+	CVar* REPLICA(skope* psk, const AstNode* pnode);
+	CVar* ENDPOINT(skope* psk, const AstNode* pnode);
+	CVar* ARITH_PLUS(skope* psk, const AstNode* pnode);
+	CVar* ARITH_MINUS(skope* psk, const AstNode* pnode);
+	CVar* ARITH_MULT(skope* psk, const AstNode* pnode);
+	CVar* ARITH_DIV(skope* psk, const AstNode* pnode);
+	CVar* MATRIXMULT(skope* psk, const AstNode* pnode);
+	CVar* ARITH_MOD(skope* psk, const AstNode* pnode);
+	CVar* TRANSPOSE(skope* psk, const AstNode* pnode);
+	CVar* NEGATIVE(skope* psk, const AstNode* pnode);
+	CVar* TIMESHIFT(skope* psk, const AstNode* pnode);
+	CVar* CONCAT(skope* psk, const AstNode* pnode);
+	CVar* LOGIC(skope* psk, const AstNode* pnode);
+	CVar* LEVELAT(skope* psk, const AstNode* pnode);
+	CVar* INITCELL(skope* psk, const AstNode* pnode);
+	CVar* BREAK(skope* psk, const AstNode* pnode);
+	CVar* RETURN(skope* psk, const AstNode* pnode);
 };
 class CDebugStatus
 {
@@ -127,6 +159,7 @@ public:
 	CUDF() { nextBreakPoint = currentLine = -1; pLastRead = NULL; repaint = false; };
 	virtual ~CUDF() {};
 	AstNode* pLastRead; //used for isthisUDFscope only, to mark the last pnode processed in 
+
 };
 
 class skope
@@ -136,40 +169,6 @@ public:
 	static AstNode* goto_line(const AstNode* pnode, int line);
 	static bool IsLooping(const AstNode* p);
 
-	typedef CVar* (skope::*xflow_func)(const AstNode* pnode);
-	map<int, xflow_func> xff;
-	CVar* BLOCK(const AstNode* p);
-	CVar* FOR(const AstNode* p);
-	CVar* IF(const AstNode* p);
-	CVar* WHILE(const AstNode* p);
-	CVar* TRY(const AstNode* p);
-	CVar* CATCH(const AstNode* p);
-	CVar* ID(const AstNode* pnode);
-	CVar* TSEQ(const AstNode* pnode);
-	CVar* NUMBER(const AstNode* pnode);
-	CVar* STRING(const AstNode* pnode);
-
-	CVar* MATRIX(const AstNode* pnode);
-	CVar* VECTOR(const AstNode* pnode);
-	CVar* REPLICA(const AstNode* pnode);
-	CVar* ENDPOINT(const AstNode* pnode);
-	CVar* ARITH_PLUS(const AstNode* pnode);
-	CVar* ARITH_MINUS(const AstNode* pnode);
-	CVar* ARITH_MULT(const AstNode* pnode);
-	CVar* ARITH_DIV(const AstNode* pnode);
-	CVar* MATRIXMULT(const AstNode* pnode);
-	CVar* ARITH_MOD(const AstNode* pnode);
-	CVar* TRANSPOSE(const AstNode* pnode);
-	CVar* NEGATIVE(const AstNode* pnode);
-	CVar* TIMESHIFT(const AstNode* pnode);
-	CVar* CONCAT(const AstNode* pnode);
-	CVar* LOGIC(const AstNode* pnode);
-	CVar* LEVELAT(const AstNode* pnode);
-	CVar* INITCELL(const AstNode* pnode);
-	CVar* BREAK(const AstNode* pnode);
-	CVar* RETURN(const AstNode* pnode);
-
-	
 	skope(string instr = "");
 	skope(CAstSigEnv* env);
 	skope(const skope* src);
@@ -251,11 +250,12 @@ public:
 	CVar* process_block(const AstNode* pnode);
 	CVar* process_statement(const AstNode* pnode);
 
+	bool fBreak;
+	bool fExit;
+
 private:
 	bool done;
 	bool nodeAllocated;
-	bool fBreak;
-	bool fExit;
 	vector<CVar> make_check_args(const AstNode* pnode, const Cfunction& func, void* pskope_exception); // using void* because "skope_exception.h" can't be included here
 	void make_check_args_math(const AstNode* pnode);
 	void get_nodes_left_right_sides(const AstNode* pnode, const AstNode** plhs, const AstNode** prhs);

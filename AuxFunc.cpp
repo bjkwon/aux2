@@ -575,8 +575,8 @@ vector<CVar> skope::make_check_args(const AstNode* pnode, const Cfunction& func,
 	}
 	allowedset++;
 	int count = 2;
-	const AstNode* p2 = get_second_arg(pnode, struct_call);
-	for (auto pn = p2; pn; pn = pn->next, count++)
+	const AstNode* pn = get_second_arg(pnode, struct_call);
+	for (skope smallskope = this; pn; pn = pn->next, count++)
 	{
 		if (func.narg2 >= 0 && count > func.narg2)
 		{
@@ -584,7 +584,7 @@ vector<CVar> skope::make_check_args(const AstNode* pnode, const Cfunction& func,
 			*exc = exception_etc(*this, pnode, ostr.str());
 			return out;
 		}
-		skope smallskope(this);
+		;
 		try {
 			smallskope.Compute(pn);
 			if (func.narg2 < 0) // unspecified max arg count, no type checking

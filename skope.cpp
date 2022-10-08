@@ -24,13 +24,6 @@ skope::skope(string instr)
 	done = false;
 	script = instr;
 	nodeAllocated = false;
-
-	xff[N_BLOCK] = &skope::BLOCK;
-	xff[T_FOR] = &skope::FOR;
-	xff[T_IF] = &skope::IF;
-	xff[T_WHILE] = &skope::WHILE;
-	xff[T_TRY] = &skope::TRY;
-	xff[T_CATCH] = &skope::CATCH;
 }
 
 skope::~skope()
@@ -44,6 +37,43 @@ CAstSigEnv::CAstSigEnv(const int fs)
 {
 	shutdown = false;
 	if (fs < 0)	throw "Internal error: Fs must be greater than 1.";
+	xff[N_BLOCK] = &CAstSigEnv::BLOCK;
+	xff[T_FOR] = &CAstSigEnv::FOR;
+	xff[T_IF] = &CAstSigEnv::IF;
+	xff[T_WHILE] = &CAstSigEnv::WHILE;
+	xff[T_TRY] = &CAstSigEnv::TRY;
+	xff[T_CATCH] = &CAstSigEnv::CATCH;
+	xff[T_ID] = &CAstSigEnv::ID;
+	xff[N_TSEQ] = &CAstSigEnv::TSEQ;
+	xff[T_NUMBER] = &CAstSigEnv::NUMBER;
+	xff[T_STRING] = &CAstSigEnv::STRING;
+	xff[N_MATRIX] = &CAstSigEnv::MATRIX;
+	xff[N_VECTOR] = &CAstSigEnv::VECTOR;
+	xff[T_REPLICA] = &CAstSigEnv::REPLICA;
+	xff[T_ENDPOINT] = &CAstSigEnv::ENDPOINT;
+	xff['+'] = &CAstSigEnv::ARITH_PLUS;
+	xff['-'] = &CAstSigEnv::ARITH_MINUS;
+	xff['*'] = &CAstSigEnv::ARITH_MULT;
+	xff['/'] = &CAstSigEnv::ARITH_DIV;
+	xff[T_MATRIXMULT] = &CAstSigEnv::MATRIXMULT; // "**"
+	xff['%'] = &CAstSigEnv::ARITH_MOD;
+	xff[T_TRANSPOSE] = &CAstSigEnv::TRANSPOSE;
+	xff[T_NEGATIVE] = &CAstSigEnv::NEGATIVE;
+	xff[T_OP_SHIFT] = &CAstSigEnv::TIMESHIFT;
+	xff[T_OP_CONCAT] = &CAstSigEnv::CONCAT;
+	xff['<'] = &CAstSigEnv::LOGIC;
+	xff['>'] = &CAstSigEnv::LOGIC;
+	xff[T_LOGIC_OR] = &CAstSigEnv::LOGIC;
+	xff[T_LOGIC_AND] = &CAstSigEnv::LOGIC;
+	xff[T_LOGIC_LE] = &CAstSigEnv::LOGIC;
+	xff[T_LOGIC_GE] = &CAstSigEnv::LOGIC;
+	xff[T_LOGIC_EQ] = &CAstSigEnv::LOGIC;
+	xff[T_LOGIC_NE] = &CAstSigEnv::LOGIC;
+	xff[T_LOGIC_NOT] = &CAstSigEnv::LOGIC;
+	xff['@'] = &CAstSigEnv::LEVELAT;
+	xff[N_INITCELL] = &CAstSigEnv::INITCELL;
+	xff[T_BREAK] = &CAstSigEnv::BREAK;
+	xff[T_RETURN] = &CAstSigEnv::RETURN;
 }
 
 CAstSigEnv::~CAstSigEnv()
@@ -229,13 +259,16 @@ vector<CVar*> skope::Compute()
 
 CVar* skope::Compute(const AstNode* pnode)
 {
-	if (xff.find(pnode->type)==xff.end())
+	if (pEnv->xff.find(pnode->type)== pEnv->xff.end())
 	{
 		ostringstream oss;
 		oss << "Unknown node type, TYPE=" << pnode->type;
 		throw exception_etc(*this, pnode, oss.str()).raise();
 	}
-	return (this->*skope::xff[pnode->type])(pnode);
+	// Leaving these lines for future references--
+	// CAstSigEnv::xflow_func fp = pEnv->xff[pnode->type];
+	// return (pEnv->*fp)(this, pnode);
+	return (pEnv->*pEnv->xff[pnode->type])(this, pnode);
 }
 
 CVar* skope::TSeq(const AstNode* pnode, AstNode* p)
@@ -1254,43 +1287,6 @@ void skope::init()
 	inTryCatch = 0;
 	level = 1;
 	baselevel.push_back(level);
-	xff[N_BLOCK] = &skope::BLOCK;
-	xff[T_FOR] = &skope::FOR;
-	xff[T_IF] = &skope::IF;
-	xff[T_WHILE] = &skope::WHILE;
-	xff[T_TRY] = &skope::TRY;
-	xff[T_CATCH] = &skope::CATCH;
-	xff[T_ID] = &skope::ID;
-	xff[N_TSEQ] = &skope::TSEQ;
-	xff[T_NUMBER] = &skope::NUMBER;
-	xff[T_STRING] = &skope::STRING;
-	xff[N_MATRIX] = &skope::MATRIX;
-	xff[N_VECTOR] = &skope::VECTOR;
-	xff[T_REPLICA] = &skope::REPLICA;
-	xff[T_ENDPOINT] = &skope::ENDPOINT;
-	xff['+'] = &skope::ARITH_PLUS;
-	xff['-'] = &skope::ARITH_MINUS;
-	xff['*'] = &skope::ARITH_MULT;
-	xff['/'] = &skope::ARITH_DIV;
-	xff[T_MATRIXMULT] = &skope::MATRIXMULT; // "**"
-	xff['%'] = &skope::ARITH_MOD;
-	xff[T_TRANSPOSE] = &skope::TRANSPOSE;
-	xff[T_NEGATIVE] = &skope::NEGATIVE;
-	xff[T_OP_SHIFT] = &skope::TIMESHIFT;
-	xff[T_OP_CONCAT] = &skope::CONCAT;
-	xff['<'] = &skope::LOGIC;
-	xff['>'] = &skope::LOGIC;
-	xff[T_LOGIC_OR] = &skope::LOGIC;
-	xff[T_LOGIC_AND] = &skope::LOGIC;
-	xff[T_LOGIC_LE] = &skope::LOGIC;
-	xff[T_LOGIC_GE] = &skope::LOGIC;
-	xff[T_LOGIC_EQ] = &skope::LOGIC;
-	xff[T_LOGIC_NE] = &skope::LOGIC;
-	xff[T_LOGIC_NOT] = &skope::LOGIC;
-	xff['@'] = &skope::LEVELAT;
-	xff[N_INITCELL] = &skope::INITCELL;
-	xff[T_BREAK] = &skope::BREAK;
-	xff[T_RETURN] = &skope::RETURN;;
 }
 
 skope& skope::SetVar(const char* name, CVar* prhs, CVar* pBase)

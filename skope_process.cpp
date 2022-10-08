@@ -444,12 +444,12 @@ CVar* skope::process_statement(const AstNode* pnode)
 	const AstNode* plhs;
 	const AstNode* prhs;
 	get_nodes_left_right_sides(pnode, &plhs, &prhs);
-	Compute(prhs); // making Sig ready
+	CVar RHS = Compute(prhs); // making Sig ready
 	if (plhs)
 	{
 		uint16_t typelhs;
 		bool contig;
-		CVar index, RHS;
+		CVar index;
 		sanitize_cell_node(plhs);
 		eval_lhs(plhs, prhs, index, RHS, typelhs, contig);
 		right_to_left(plhs, index, RHS, typelhs, contig);
