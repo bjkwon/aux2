@@ -31,7 +31,6 @@
 
 string CAstSigEnv::AppPath = "";
 
-
 bool CAstSigEnv::IsValidBuiltin(const string& funcname)
 {
 	if (pseudo_vars.find(funcname) != pseudo_vars.end())
@@ -543,48 +542,40 @@ void skope::make_check_args_math(const AstNode* pnode)
 	}
 }
 
-vector<CVar> skope::make_check_args(const AstNode* pnode, const Cfunction& func, void* pexc )
-{ // Goal: make args vector for the function gate
-  // the first arg is always Sig. The second arg is the first output vector.
-  // check the arg types; if a type of a given arg is not one of allowed ones, throw.
-  // check minimum, maximum number of args; if the number of given args is outside the range, throw. 
-  // fill default arguments in the arg vector if not specified
-	vector<CVar> out;
-	ostringstream ostr;
-
-	bool struct_call = pnode->type == N_STRUCT;
-	string fname = pnode->str;
-	if (func.allowed_arg_types.empty() && !pnode->alt && !pnode->child)
-		return out;
-	skope_exception* exc = (skope_exception*)pexc;
-	if (func.alwaysstatic && struct_call)
-	{
-		ostr << "function " << fname << " does not allow . (dot) notation call.";
-		*exc = exception_func(*this, pnode, ostr.str(), fname);
-		return out;
-	}
-	if (Sig.type() == TYPEBIT_NULL && func.narg1 == 0 && func.narg2 > 0)
-		Sig = func.defaultarg.front();
-	vector<set<uint16_t>>::const_iterator allowedset = func.allowed_arg_types.begin();
+static bool check_allowed(const vector<set<uint16_t>>::const_iterator& allowedset, uint16_t type)
+{
 	// 0xFFFF accepts all type; i.e., 0xFFFF bypasses checking
-	if (*allowedset->begin() != 0xFFFF && !this_is_one_of_allowedset(Sig.type(), allowedset))
+	if (*allowedset->begin() == 0xFFFF) return true;
+	if (this_is_one_of_allowedset(type, allowedset)) return true;
+	return false;
+}
+
+// TODO (10/8/2022): get the count of arguments from the beginning,
+// so that if there's an error for the argument count, it wouldn't proceed to the next count
+// for example, and() which takes both arguement counts of 1 and 2,
+// if the argument count was 1 and invalid, then it wouldn't proceed to the case of 2
+static bool check_more(const AstNode* pnode, bool struct_call, skope& smallskope, const Cfunction& func, vector<CVar>& out, const CVar& Sig, int& argind, int& count, string& errmsg)
+{
+	ostringstream ostr;
+	vector<set<uint16_t>>::const_iterator allowedset = func.allowed_arg_types.begin();
+	if (!check_allowed(allowedset, Sig.type()))
 	{
 		ostr << "type " << Sig.type();
-		*exc = exception_func(*this, pnode, ostr.str(), fname, 1);
-		return out;
+		errmsg = ostr.str();
+		argind = 1;
+		return false;
 	}
 	allowedset++;
-	int count = 2;
 	const AstNode* pn = get_second_arg(pnode, struct_call);
-	for (skope smallskope = this; pn; pn = pn->next, count++)
+	for (; pn; pn = pn->next, count++)
 	{
 		if (func.narg2 >= 0 && count > func.narg2)
 		{
-			ostr << fname << "(): too many args; maximum number of args is " << func.narg2 << ".";
-			*exc = exception_etc(*this, pnode, ostr.str());
-			return out;
+			ostr << pnode->str << "(): too many args; maximum number of args is " << func.narg2 << ".";
+			errmsg = ostr.str();
+			argind = -1;
+			return false;
 		}
-		;
 		try {
 			smallskope.Compute(pn);
 			if (func.narg2 < 0) // unspecified max arg count, no type checking
@@ -592,15 +583,16 @@ vector<CVar> skope::make_check_args(const AstNode* pnode, const Cfunction& func,
 			else
 			{
 				// for arguments with any type (e.g., fwrite), bypass checking with 0xFFFF and add the result of Compute to the out vector
-				if (*allowedset->begin() == 0xFFFF || this_is_one_of_allowedset(smallskope.Sig.type(), allowedset))
+				if (check_allowed(allowedset, smallskope.Sig.type()))
 				{
 					out.push_back(smallskope.Sig);
 				}
 				else
 				{
 					ostr << "type " << smallskope.Sig.type();
-					*exc = exception_func(*this, pnode, ostr.str(), fname, count);
-					return out;
+					errmsg = ostr.str();
+					argind = count;
+					return false;
 				}
 				allowedset++;
 			}
@@ -612,13 +604,54 @@ vector<CVar> skope::make_check_args(const AstNode* pnode, const Cfunction& func,
 	count--;
 	if (count < func.narg1)
 	{
-		ostr << fname << "(): the number of arg should be at least " << func.narg1 << "; Only " << count << " given.";
-		*exc = exception_etc(*this, pnode, ostr.str());
-		return out;
+		ostr << pnode->str << "(): the number of arg should be at least " << func.narg1 << "; Only " << count << " given.";
+		errmsg = ostr.str();
+		argind = count;
+		return false;
 	}
-	for (; count < func.narg2; count++)
-		out.push_back(CVar(func.defaultarg[count - func.narg1]));
-	return out;
+	return true;
+}
+
+vector<CVar> skope::make_check_args(const AstNode* pnode, const Cfunction& func1)
+{ // Goal: make args vector for the function gate
+  // the first arg is always Sig. The second arg is the first output vector.
+  // check the arg types; if a type of a given arg is not one of allowed ones, throw.
+  // check minimum, maximum number of args; if the number of given args is outside the range, throw. 
+  // fill default arguments in the arg vector if not specified
+	vector<CVar> out;
+	ostringstream ostr;
+	bool struct_call = pnode->type == N_STRUCT;
+	string fname = pnode->str;
+	auto ftlist = pEnv->builtin.find(fname); // we may assume that ftlist is not end
+	// if any of Cfunction in ftlist allows empty and pnode->alt and pnode->child are NULL, return immediately
+	for (; ftlist != pEnv->builtin.end() && (*ftlist).first == fname; ftlist++)
+		if ((*ftlist).second.allowed_arg_types.empty() && !pnode->alt && !pnode->child) 
+			return out;
+	ftlist = pEnv->builtin.find(fname);
+	auto func = (*ftlist).second;
+	if (func.alwaysstatic && struct_call)
+	{
+		ostr << "function " << fname << " does not allow . (dot) notation call.";
+		throw exception_func(*this, pnode, ostr.str(), fname).raise();
+	}
+	if (Sig.type() == TYPEBIT_NULL && func.narg1 == 0 && func.narg2 > 0)
+		Sig = func.defaultarg.front();
+	skope smallskope(this);
+	int argind;
+	string errmsg;
+	int count_ftlist = 0;
+	int count = 2;
+	for (; ftlist != pEnv->builtin.end() && (*ftlist).first == fname; count_ftlist++, ftlist++) {
+		if (check_more(pnode, struct_call, smallskope, (*ftlist).second, out, Sig, argind, count, errmsg)) {
+			for (; count < func.narg2; count++)
+				out.push_back(CVar(func.defaultarg[count - func.narg1]));
+			return out;
+		}
+	}
+	// at this point, none of function signatures fit the given argument set
+	if (count_ftlist==1) // for single function signatures, it's straightforward
+		throw exception_func(*this, pnode, errmsg, fname, argind).raise();
+	throw exception_func(*this, pnode, errmsg, fname).raise();
 }
 
 const AstNode* find_parentnode_alt(const AstNode* pnode, const AstNode* pRoot0)
@@ -653,8 +686,6 @@ const AstNode* arg0node(const AstNode* pnode, const AstNode* pRoot0)
 	}
 }
 
-#include "skope_exception.h"
-
 void skope::HandleAuxFunctions(const AstNode *pnode, AstNode *pRoot)
 {
 	string fnsigs;
@@ -670,19 +701,7 @@ void skope::HandleAuxFunctions(const AstNode *pnode, AstNode *pRoot)
 	}
 	if ((*ftlist).second.func)
 	{
-		exception_func exc(*this, pnode, "");
-		exc.msgonly.clear();
-		vector<CVar> args = make_check_args(pnode, (*ftlist).second, &exc);
-		if (!exc.msgonly.empty()) {
-			ftlist++;
-			if (ftlist != pEnv->builtin.end()) {
-				exc.msgonly.clear();
-				args = make_check_args(pnode, (*ftlist).second, &exc);
-				if (!exc.msgonly.empty()) throw exc.raise();
-			}
-			else
-				throw exc.raise();
-		}
+		vector<CVar> args = make_check_args(pnode, (*ftlist).second);
 		/* IMPORTANT--
 		* When the gate function is called, Sig is always the first argument (this is to avoid going through a copy constructor when used inside a gate function)
 		* Just make sure to avoid calling Compute() inside the gate function before Sig is used for actual builtin function operation

@@ -256,7 +256,7 @@ public:
 private:
 	bool done;
 	bool nodeAllocated;
-	vector<CVar> make_check_args(const AstNode* pnode, const Cfunction& func, void* pskope_exception); // using void* because "skope_exception.h" can't be included here
+	vector<CVar> make_check_args(const AstNode* pnode, const Cfunction& func);
 	void make_check_args_math(const AstNode* pnode);
 	void get_nodes_left_right_sides(const AstNode* pnode, const AstNode** plhs, const AstNode** prhs);
 	void eval_lhs(const AstNode* plhs, const AstNode* prhs, CVar& lhs_index, CVar& RHS, uint16_t& typelhs, bool& contig, const CVar* cell_item = NULL);
