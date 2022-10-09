@@ -289,15 +289,11 @@ public:
 	CVar& ExtractByIndex(const AstNode* pnode, AstNode* p);
 	CVar& eval_indexing(const AstNode* pInd, CVar& indSig);
 	CVar* TID_indexing(const AstNode* pnode, AstNode* p, AstNode* pRHS);
-	CVar* TID_assign(const AstNode* pnode, AstNode* p, AstNode* pRHS);
 	CVar* extract(const AstNode* pnode, CTimeSeries& isig);
-	CVar* TID_time_extract(const AstNode* pnode, AstNode* p, AstNode* pRHS);
 	CVar* TimeExtract(const AstNode* pnode, AstNode* p);
 	void insertreplace(const AstNode* pnode, CVar& sec, CVar& indsig);
 	CTimeSeries& replace(const AstNode* pnode, CTimeSeries* pobj, CSignal& sec, int id1, int id2);
 	CTimeSeries& replace(const AstNode* pnode, CTimeSeries* pobj, body& sec, body& index);
-	//CAstException ExceptionMsg(const AstNode *pnode, const string s1, const string s2);
-	//CAstException ExceptionMsg(const AstNode *pnode, const char *msg);
 	void tree_NARGS(const AstNode* pnode, AstNode* ppar);
 	CVar* cell_indexing(CVar* pBase, AstNode* pn);
 }; 

@@ -43,6 +43,7 @@ CAstSigEnv::CAstSigEnv(const int fs)
 	xff[T_WHILE] = &CAstSigEnv::WHILE;
 	xff[T_TRY] = &CAstSigEnv::TRY;
 	xff[T_CATCH] = &CAstSigEnv::CATCH;
+	xff[N_HOOK] = &CAstSigEnv::ID;
 	xff[T_ID] = &CAstSigEnv::ID;
 	xff[N_TSEQ] = &CAstSigEnv::TSEQ;
 	xff[T_NUMBER] = &CAstSigEnv::NUMBER;
@@ -638,7 +639,6 @@ void skope::bind_psig(AstNode* pn, CVar* psig)
 			SetVar(pn->alt->str, psig, pbasesig);
 		}
 	}
-
 }
 
 CVar* skope::TID(AstNode* pnode, AstNode* pRHS, CVar* psig)
@@ -657,22 +657,7 @@ CVar* skope::TID(AstNode* pnode, AstNode* pRHS, CVar* psig)
 				return np.psigBase;
 			else	return &Sig;
 		}
-		CVar* pres;
-		//if (!np.psigBase)
-		//	Script = np.varname.empty() ? pnode->str : np.varname;
-		// // 9/8/2022
-		// a.pro1.pro2.pro3 = RHS ==> if a has not been defined, pnode and pLast point to a
-		// a.pro1.pro2.pro3 = RHS ==> if a has been defined, pnode points to a, pLast points to pro3
-		pres = np.TID_RHS2LHS(pnode, pLast, pRHS);
-//		replica.Reset();
-		lhs = lhsCopy;
-		//if (np.psigBase)
-		//	Script = np.varname;
-		// At this point, Sig should be it
-		// psig : the base content of Sig
-		// pLast: the node corresponding to psig
-
-		//The rest is about SetGoProperties, f.pos(2) = 200, or the other pgo stuff
+		throw exception_etc(*this, pnode, "Unhandled path in skope::TID()").raise();
 	}
 	return &Sig;
 }

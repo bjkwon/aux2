@@ -110,3 +110,30 @@
 //	"x", 
 //	"x.name(2) = noise(40) " // error
 //};
+
+a = sin((1:10)/5*$pi)
+a(a>0)=.88
+a(a>0)=a(a>0)*2
+a(a>0)=[]
+12:08 AM 10/9/2022=====================
+This shouldn't make an error
+AUX> a(a>0)=[]
+Error: a(range)=[] -- range should be consecutive. line 1, col 3
+12:08 AM 10/9/2022======================
+To do
+a(a>0)=..*2
+a(a>0)*=2
+
+a=[3 5 -1 7 9 -22 7 2 6 0 5]
+k=1:a.length
+a(k%2==0)
+a(a%2==0)
+a(a%2==0) = a(a%2==0)*10
+To do
+a(a%2==0) *= 10
+a(a%2==0) = .. * 10
+
+To do
+"end" indexing reserved var
+To do 
+"_" indexing reserved var
