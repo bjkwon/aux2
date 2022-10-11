@@ -124,7 +124,7 @@ void skope::eval_lhs(const AstNode* plhs, const AstNode* prhs, CVar &lhs_index, 
 				throw exception_etc(*this, plhs, out.str()).raise();
 			}
 		}
-		RHS = Compute(prhs);
+		RHS = Compute(prhs); // Not to be removed 10/11/2022
 		if (lhs) {
 			outputbinding_for_eval_lhs(plhs);
 		}
@@ -468,7 +468,9 @@ CVar* skope::process_statement(const AstNode* pnode)
 	const AstNode* plhs;
 	const AstNode* prhs;
 	bool isreplica = get_nodes_left_right_sides(pnode, &plhs, &prhs);
-	CVar RHS = Compute(prhs); // making Sig ready
+	CVar RHS;
+	if (!plhs || plhs->type != N_VECTOR)
+		RHS = Compute(prhs); // if (plhs->type == N_VECTOR) in eval_lhs()
 	if (plhs)
 	{
 		uint16_t typelhs;
