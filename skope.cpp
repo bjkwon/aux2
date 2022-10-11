@@ -353,7 +353,7 @@ static AstNode* get_next_parsible_node(AstNode* pn)
 	return pn->alt;
 }
 
-static bool IsConditional(const AstNode* pnode)
+bool skope::IsConditional(const AstNode* pnode)
 {
 	if (!pnode) return false;
 	switch (pnode->type) {

@@ -168,6 +168,7 @@ public:
 	static const AstNode* find_parent(const AstNode* p, const AstNode* pME);
 	static AstNode* goto_line(const AstNode* pnode, int line);
 	static bool IsLooping(const AstNode* p);
+	static bool IsConditional(const AstNode* pnode);
 
 	skope(string instr = "");
 	skope(CAstSigEnv* env);
