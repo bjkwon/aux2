@@ -14,7 +14,7 @@ Cfunction set_builtin_function_sums(fGate fp)
 	vector<string> desc_arg_req = { "arrray"};
 	vector<string> desc_arg_opt = { "" };
 	vector<CVar> default_arg = { /*CVar(default_value), CVar(string("default_str")), same number of desc_arg_opt*/ };
-	set<uint16_t> allowedTypes1 = { 1, 2, 3, ALL_AUDIO_TYPES };
+	set<uint16_t> allowedTypes1 = { 0, 1, 2, 3, ALL_AUDIO_TYPES };
 	ft.allowed_arg_types.push_back(allowedTypes1);
 	// til this line ==============
 	ft.desc_arg_req = desc_arg_req;

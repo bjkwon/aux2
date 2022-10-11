@@ -111,29 +111,42 @@
 //	"x.name(2) = noise(40) " // error
 //};
 
-a = sin((1:10)/5*$pi)
-a(a>0)=.88
-a(a>0)=a(a>0)*2
-a(a>0)=[]
-12:08 AM 10/9/2022=====================
-This shouldn't make an error
-AUX> a(a>0)=[]
-Error: a(range)=[] -- range should be consecutive. line 1, col 3
-12:08 AM 10/9/2022======================
-To do
-a(a>0)=..*2
-a(a>0)*=2
+//a = sin((1:10)/5*$pi)
+//a(a>0)=.88
+//a(a>0)=a(a>0)*2
+//a(a>0)=[]
+//12:08 AM 10/9/2022=====================
+//This shouldn't make an error
+//AUX> a(a>0)=[]
+//Error: a(range)=[] -- range should be consecutive. line 1, col 3
+//12:08 AM 10/9/2022======================
+//To do
+//a(a>0)=..*2
+//a(a>0)*=2
+//
+//a=[3 5 -1 7 9 -22 7 2 6 0 5]
+//k=1:a.length
+//a(k%2==0)
+//a(a%2==0)
+//a(a%2==0) = a(a%2==0)*10
+//To do
+//a(a%2==0) *= 10
+//a(a%2==0) = .. * 10
+//
+//To do
+//"end" indexing reserved var
+//To do 
+//"_" indexing reserved var
 
-a=[3 5 -1 7 9 -22 7 2 6 0 5]
-k=1:a.length
-a(k%2==0)
-a(a%2==0)
-a(a%2==0) = a(a%2==0)*10
-To do
-a(a%2==0) *= 10
-a(a%2==0) = .. * 10
+a=5
+a=mean(..) //RL-N 
+a=10:10:50
+a(3:5)=mean(..) //RL-X
+x=noise(5000)
+x(20~30)=..@-20 //RL-T
 
-To do
-"end" indexing reserved var
-To do 
-"_" indexing reserved var
+mm.vals=[4 8 5 7 -1]
+mm.tag="testcase"
+mm(2)=2 // error
+mm.vals(3:5)= [ 1 3 -10]
+mm.vals(3:5)= mean(..) // RL-S RL-X

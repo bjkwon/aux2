@@ -4,17 +4,20 @@
 #include <deque>
 #include <iostream>
 
-void skope::get_nodes_left_right_sides(const AstNode* pnode, const AstNode** plhs, const AstNode** prhs)
+bool skope::get_nodes_left_right_sides(const AstNode* pnode, const AstNode** plhs, const AstNode** prhs)
 {
+	replica.Reset();
 	*plhs = NULL;
 	*prhs = pnode;
 	if (!pnode || pnode->type == N_BLOCK || pnode->type == T_IF || pnode->type == T_FOR || pnode->type == T_WHILE || pnode->type == T_TRY || pnode->type == T_CATCH)
-		return;
+		return false;
 	if (pnode->child) 
 	{
 		*plhs = pnode;
 		*prhs = pnode->child;
 	}
+	// Check if RHS includes the replica
+	return searchtree(*prhs, T_REPLICA) != NULL;
 }
 
 void skope::eval_index(const AstNode* pInd, const CVar &varLHS, CVar &index)
@@ -104,7 +107,7 @@ const CVar* skope::get_cell_item(const AstNode* plhs, const CVar &cellobj)
 	return out;
 }
 // left var is available through Vars.find
-void skope::eval_lhs(const AstNode* plhs, const AstNode* prhs, CVar &lhs_index, CVar& RHS, uint16_t &typelhs, bool &contig, const CVar* cell_item)
+void skope::eval_lhs(const AstNode* plhs, const AstNode* prhs, CVar &lhs_index, CVar& RHS, uint16_t &typelhs, bool &contig, bool isreplica, const CVar* cell_item)
 {
 	// in: plhs, prhs
 	// out: indices of left var, right CVar object
@@ -224,7 +227,10 @@ void skope::eval_lhs(const AstNode* plhs, const AstNode* prhs, CVar &lhs_index, 
 		if (plhs->alt->type == N_TIME_EXTRACT)
 		{
 			// if lhs var is not audio, throw
-			if (!ISAUDIO(typelhs))
+			if (!ISAUDIO(typelhs))	{
+				out << "LHS must be audio.";
+				throw exception_etc(*this, plhs, out.str()).raise();
+			}
 			lhs_index.UpdateBuffer(2); // use it for time indices
 			Compute(plhs->alt->child);
 			lhs_index.buf[0] = Sig.buf[0];
@@ -304,58 +310,51 @@ const CVar* skope::get_available_struct_item(const AstNode* plhs, const AstNode*
 	return pvarLHS;
 }
 
-void skope::assign_adjust(const AstNode* pn, CVar* lobj, const CVar& lhs_index, const CVar& robj, bool contig)
+void skope::assign_adjust(const AstNode* pn, CVar* lobj, const CVar& lhs_index, CVar& robj, bool contig)
 {
 	ostringstream out;
-	if (pn->type == N_TIME_EXTRACT)
-	{
-		insertreplace(pn, robj, lhs_index, lobj);
-	}
-	else
-	{
-		float* pv;
-		if (robj.nSamples == 0)
-		{ // truncate the LHS var buffer
-			if (contig)
-			{
-				memmove(lobj->buf + (uint64_t)lhs_index.buf[0] - 1, lobj->buf + (uint64_t)lhs_index.buf[lhs_index.nSamples - 1], lhs_index.nSamples * sizeof(float));
-				lobj->nSamples -= lhs_index.nSamples;
-			}
-			else
-			{
-				throw exception_etc(*this, pn, "a(range)=[] -- range should be consecutive.").raise();
-			}
-		}
-		else if (robj.nSamples == 1)
-		{ // fill the buffer with the RHS value 
-			for (uint64_t k = 0; k < lhs_index.nSamples; k++)
-				lobj->buf[(uint64_t)lhs_index.buf[k] - 1] = robj.buf[0];
-		}
-		else if (lhs_index.nSamples == 1)
+	if (robj.nSamples == 0)
+	{ // truncate the LHS var buffer
+		if (contig)
 		{
-			auto nCopied = lobj->nSamples + 1 - (uint16_t)lhs_index.buf[0];
-			lobj->UpdateBuffer(lobj->nSamples + robj.nSamples);
-			pv = lobj->buf;
-			auto j = (uint64_t)lhs_index.buf[0] - 1;
-			memmove(&pv[j + robj.nSamples], &pv[j], nCopied * sizeof(float));
-			auto val = robj.buf[0];
-			auto pval = robj.buf;
-			memcpy(&pv[j], pval, robj.nSamples * sizeof(float));
-		}
-		else if (lhs_index.nSamples == robj.nSamples) {
-			if (contig)
-				memmove(lobj->logbuf + lobj->bufBlockSize * ((uint64_t)lhs_index.buf[0] - 1), robj.buf, lobj->bufBlockSize * robj.nSamples);
-			else
-				for (uint64_t k = 0; k < robj.nSamples; k++)
-					lobj->buf[(uint64_t)lhs_index.buf[k] - 1] = robj.buf[k];
+			memmove(lobj->buf + (uint64_t)lhs_index.buf[0] - 1, lobj->buf + (uint64_t)lhs_index.buf[lhs_index.nSamples - 1], lhs_index.nSamples * sizeof(float));
+			lobj->nSamples -= lhs_index.nSamples;
 		}
 		else
-			throw exception_etc(*this, pn, "Unexpected case").raise();
+		{
+			throw exception_etc(*this, pn, "a(range)=[] -- range should be consecutive.").raise();
+		}
 	}
+	else if (robj.nSamples == 1)
+	{ // fill the buffer with the RHS value 
+		for (uint64_t k = 0; k < lhs_index.nSamples; k++)
+			lobj->buf[(uint64_t)lhs_index.buf[k] - 1] = robj.buf[0];
+	}
+	else if (lhs_index.nSamples == 1)
+	{
+		auto nCopied = lobj->nSamples + 1 - (uint16_t)lhs_index.buf[0];
+		lobj->UpdateBuffer(lobj->nSamples + robj.nSamples);
+		float* pv = lobj->buf;
+		auto j = (uint64_t)lhs_index.buf[0] - 1;
+		memmove(&pv[j + robj.nSamples], &pv[j], nCopied * sizeof(float));
+		auto val = robj.buf[0];
+		auto pval = robj.buf;
+		memcpy(&pv[j], pval, robj.nSamples * sizeof(float));
+	}
+	else if (lhs_index.nSamples == robj.nSamples) {
+		if (contig)
+			memmove(lobj->logbuf + lobj->bufBlockSize * ((uint64_t)lhs_index.buf[0] - 1), robj.buf, lobj->bufBlockSize * robj.nSamples);
+		else
+			for (uint64_t k = 0; k < robj.nSamples; k++)
+				lobj->buf[(uint64_t)lhs_index.buf[k] - 1] = robj.buf[k];
+	}
+	else
+		throw exception_etc(*this, pn, "Unexpected case").raise();
 }
 
-void skope::right_to_left(const AstNode* plhs, const CVar& lhs_index, const CVar& robj, uint16_t typelhs, bool contig, CVar* lobj)
+void skope::right_to_left(const AstNode* plhs, const CVar& lhs_index, CVar& robj, uint16_t typelhs, bool contig, const AstNode* prhs, CVar* lobj)
 {
+	bool isreplica = prhs != NULL;
 	ostringstream out;
 	if (typelhs == TYPEBIT_NULL) {
 		if (lobj) {
@@ -364,11 +363,18 @@ void skope::right_to_left(const AstNode* plhs, const CVar& lhs_index, const CVar
 		else if (plhs->alt && plhs->alt->type == N_STRUCT) {
 			const AstNode* pstruct;
 			const CVar* struct_item = get_available_struct_item(plhs, &pstruct);
-			// p.prop1.prop2.prop3=[3 5 2] --> not working 9/11/2022
+			// p.prop1.prop2.prop3=[3 5 2] 
 			assign_struct((CVar*)struct_item, plhs, pstruct, robj);
 		}
-		else
+		else {
+			if (isreplica) { //RL-N
+				if (!plhs->alt) {
+					replica = &Vars.find(plhs->str)->second;
+					Compute(prhs);
+				}
+			}
 			SetVar(plhs->str, &Sig);
+		}
 	}
 	else if (plhs->type == N_VECTOR) {
 		if (lhs) { // NULL lhs means outputbinding was done at PrepareAndCallUDF
@@ -385,27 +391,36 @@ void skope::right_to_left(const AstNode* plhs, const CVar& lhs_index, const CVar
 			const CVar* cellitem = get_cell_item(plhs, *lobj);
 			CVar index;
 			if (!plhs->alt) {
-				right_to_left(plhs->alt, index, robj, typelhs, contig, (CVar*)cellitem);
+				right_to_left(plhs->alt, index, robj, typelhs, contig, prhs, (CVar*)cellitem);
 				return;
 			}
 			if (plhs->alt->alt) {
-				eval_lhs(plhs->alt, NULL, index, (CVar&)robj, typelhs, contig, cellitem); // robj is not updated, just provided only as a reference
-				right_to_left(plhs->alt, index, robj, typelhs, contig, (CVar*)cellitem);
+				eval_lhs(plhs->alt, NULL, index, (CVar&)robj, typelhs, contig, isreplica, cellitem); // robj is not updated, just provided only as a reference
+				right_to_left(plhs->alt, index, robj, typelhs, contig, prhs, (CVar*)cellitem);
 				return;
 			}
 			typelhs = TYPEBIT_NULL;
-			right_to_left(plhs->alt, index, robj, typelhs, contig, (CVar*)cellitem);
+			right_to_left(plhs->alt, index, robj, typelhs, contig, prhs, (CVar*)cellitem);
 			return;
 		}
 
 		if (lobj && plhs->alt->type == N_TIME_EXTRACT)
 		{
+			uint64_t bufshift = 0;
+			if (isreplica) { //RL-T
+				replica = *lobj;
+				uint64_t bufshift = (lobj->GetFs() * lhs_index.buf[0] / 1000.);
+				replica.buf += (uint64_t)bufshift;
+				replica.nSamples = (uint64_t)(lobj->GetFs() * (lhs_index.buf[1] - lhs_index.buf[0]) / 1000.);
+				robj = Compute(prhs);
+			}
 			insertreplace(plhs, robj, lhs_index, lobj);
+			replica.buf -= (uint64_t)bufshift;
 		}
 		else
 		{
 			const AstNode* pn = plhs->alt;
-			if (plhs->alt->type == N_STRUCT) {
+			if (plhs->alt->type == N_STRUCT) { // RL-S
 				// go til the tip of prop item and call assign_adjust
 				const AstNode* pstruct;
 				const CVar* struct_item = get_available_struct_item(plhs, &pstruct);
@@ -416,6 +431,15 @@ void skope::right_to_left(const AstNode* plhs, const CVar& lhs_index, const CVar
 					return;
 				}
 			}
+			if (isreplica) { //RL-X
+				replica.UpdateBuffer(lhs_index.nSamples);
+				if (contig)
+					memmove(replica.logbuf, lobj->logbuf + (size_t)(lobj->bufBlockSize * (lhs_index.buf[0] - 1)), lobj->bufBlockSize * lhs_index.nSamples);
+				else
+					for (uint64_t k = 0; k < lhs_index.nSamples; k++)
+						replica.buf[k] = lobj->buf[(uint64_t)lhs_index.buf[k] - 1];
+				robj = Compute(prhs);
+			} 
 			assign_adjust(pn, lobj, lhs_index, robj, contig);
 		}
 	}
@@ -443,7 +467,7 @@ CVar* skope::process_statement(const AstNode* pnode)
 {
 	const AstNode* plhs;
 	const AstNode* prhs;
-	get_nodes_left_right_sides(pnode, &plhs, &prhs);
+	bool isreplica = get_nodes_left_right_sides(pnode, &plhs, &prhs);
 	CVar RHS = Compute(prhs); // making Sig ready
 	if (plhs)
 	{
@@ -451,8 +475,8 @@ CVar* skope::process_statement(const AstNode* pnode)
 		bool contig;
 		CVar index;
 		sanitize_cell_node(plhs);
-		eval_lhs(plhs, prhs, index, RHS, typelhs, contig);
-		right_to_left(plhs, index, RHS, typelhs, contig);
+		eval_lhs(plhs, prhs, index, RHS, typelhs, contig, isreplica);
+		right_to_left(plhs, index, RHS, typelhs, contig, isreplica ? prhs:NULL);
 	}
 	return &Sig;
 }

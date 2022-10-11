@@ -790,7 +790,6 @@ void _file(skope* past, const AstNode* pnode, const vector<CVar>& args)
 			past->Sig.Reset();
 			vector<string> line;
 			nLines = str2vector(line, content, "\r\n");
-			char buf[256];
 			for (size_t k = 0; k < nLines; k++)
 			{
 				//if there's at least one non-numeric character except for space and tab, treat the whole line as a string.

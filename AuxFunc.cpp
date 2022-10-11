@@ -727,6 +727,7 @@ void skope::HandleAuxFunctions(const AstNode *pnode, AstNode *pRoot)
 			else
 				throw exception_etc(*this, arg0, string("Cannot take cell, class or handle object " + fname)).raise();
 		}
+		if (Sig.type() == 0) return;
 		make_check_args_math(pnode);
 		const AstNode* p2 = get_second_arg(pnode, pnode->type == N_STRUCT);
 		if (p2)

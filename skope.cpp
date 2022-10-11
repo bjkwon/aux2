@@ -392,7 +392,7 @@ AstNode* skope::searchtree(const AstNode* pTarget, AstNode* pStart)
 	}
 	return NULL;
 }
-AstNode* skope::searchtree(AstNode* p, int type)
+const AstNode* skope::searchtree(const AstNode* p, int type)
 { // if there's a node with "type" in the tree, return that node
 	if (p)
 	{
@@ -967,7 +967,7 @@ size_t skope::CallUDF(const AstNode* pnode4UDFcalled, CVar* pBase)
 		u.currentLine = p->line;
 //		if (p->type == T_ID || p->type == T_FOR || p->type == T_IF || p->type == T_WHILE || p->type == N_IDLIST || p->type == N_VECTOR)
 //			hold_at_break_point(p);
-		Compute(p);
+		process_statement(p);
 		//		pgo = NULL; // without this, go lingers on the next line
 		//		Sig.Reset(1); // without this, fs=3 lingers on the next line
 		if (fExit) break;

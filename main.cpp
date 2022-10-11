@@ -12,7 +12,7 @@
 #include <readline/readline.h>
 #include <readline/history.h>
 #endif
-#include "unit_test.cpp"
+//#include "unit_test.cpp"
 
 #define AUXENV_FILE "auxenv.json"
 #define DEFAULT_FS 22050

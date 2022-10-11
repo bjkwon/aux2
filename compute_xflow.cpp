@@ -11,7 +11,7 @@ CVar* CAstSigEnv::BLOCK(skope* psk, const AstNode* pnode)
 	{
 		psk->pLast = p;
 		//				hold_at_break_point(p);
-		psk->Compute(p);
+		psk->process_statement(p);
 		//			pgo = NULL; // without this, go lingers on the next line 2/9/2019
 		psk->Sig.Reset(1); // without this, fs=3 lingers on the next line 2/9/2019
 	}
@@ -40,7 +40,7 @@ CVar* CAstSigEnv::FOR(skope* psk, const AstNode* pnode)
 		{
 			psk->pLast = pa;
 			//					hold_at_break_point(pa);
-			psk->Compute(pa);
+			psk->process_statement(pa);
 		}
 	}
 	psk->fBreak = false;
@@ -53,9 +53,9 @@ CVar* CAstSigEnv::IF(skope* psk, const AstNode* pnode)
 		AstNode* p = pnode->child;
 		psk->pLast = p;
 		if (psk->checkcond(p))
-			psk->Compute(p->next);
+			psk->process_statement(p->next);
 		else if (pnode->alt)
-			psk->Compute(pnode->alt);
+			psk->process_statement(pnode->alt);
 	}
 	return &psk->Sig;
 }
@@ -65,7 +65,7 @@ CVar* CAstSigEnv::WHILE(skope* psk, const AstNode* pnode)
 	AstNode* p = pnode->child;
 	psk->fExit = psk->fBreak = false;
 	while (psk->checkcond(p) && !psk->fExit && !psk->fBreak)
-		psk->Compute(pnode->alt);
+		psk->process_statement(pnode->alt);
 	psk->fBreak = false;
 	return &psk->Sig;
 }
@@ -84,7 +84,7 @@ CVar* CAstSigEnv::CATCH(skope* psk, const AstNode* pnode)
 	psk->inTryCatch--; //???? Maybe no longer needed?? 3/7/2020
 	// p is T_ID for ME (exception message caught)
 	// continue here............1/12/2020
-	psk->Compute(pnode->next);
+	psk->process_statement(pnode->next);
 	return &psk->Sig;
 }
 

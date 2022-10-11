@@ -64,7 +64,7 @@ const AstNode* get_base_node_for_try (const AstNode* pnode, int line)
 CVar* skope::Try_here(const AstNode* pnode, AstNode* p)
 { // to be used only for udf 
 	try {
-		Compute(p);
+		process_statement(p);
 	}
 	catch (const skope_exception& e) {
 		// If an exception is thrown inside of a try in a udf, e carries the information 
