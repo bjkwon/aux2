@@ -150,3 +150,25 @@ mm.tag="testcase"
 mm(2)=2 // error
 mm.vals(3:5)= [ 1 3 -10]
 mm.vals(3:5)= mean(..) // RL-S RL-X
+
+x=noise(100).ramp(10)@-10
+x@=-20
+x.rms==-20 // this doesn't work with float precision because x.rms is something like -20.000005
+// But abs(x.rms+20) < 0.0001 didn't work because x.rms+20 crashed   11:19 PM 10/11/2022
+// just check with x.rms
+x@@=5
+x.rms==-15
+
+x = { 1, [4 8 5 7 -1],tone(400,1000) }
+x=...length
+x = { 1, [4 8 5 7 -1],tone(400,1000) }
+x{1}*=10
+x{2}(3:5)= mean(..)
+x{3}=...rms
+x = { 1, [4 8 5 7 -1],tone(400,1000) }
+x{3}(100~200)@=-20
+y1=x{3}(0~100)
+
+x=noise(100)
+x(20~30)=..@-20
+x.group(10).rms // DIDN'T WORK 12:15 AM 10/12/2022

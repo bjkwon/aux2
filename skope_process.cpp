@@ -403,6 +403,10 @@ void skope::right_to_left(const AstNode* plhs, const CVar& lhs_index, CVar& robj
 				right_to_left(plhs->alt, index, robj, typelhs, contig, prhs, (CVar*)cellitem);
 				return;
 			}
+			if (isreplica) { //RL-C
+				replica = *cellitem;
+				robj = Compute(prhs);
+			}
 			typelhs = TYPEBIT_NULL;
 			right_to_left(plhs->alt, index, robj, typelhs, contig, prhs, (CVar*)cellitem);
 			return;
@@ -417,9 +421,10 @@ void skope::right_to_left(const AstNode* plhs, const CVar& lhs_index, CVar& robj
 				replica.buf += (uint64_t)bufshift;
 				replica.nSamples = (uint64_t)(lobj->GetFs() * (lhs_index.buf[1] - lhs_index.buf[0]) / 1000.);
 				robj = Compute(prhs);
+				replica.buf -= (uint64_t)bufshift;
+				replica.Reset();
 			}
 			insertreplace(plhs, robj, lhs_index, lobj);
-			replica.buf -= (uint64_t)bufshift;
 		}
 		else
 		{
@@ -473,7 +478,7 @@ CVar* skope::process_statement(const AstNode* pnode)
 	const AstNode* prhs;
 	bool isreplica = get_nodes_left_right_sides(pnode, &plhs, &prhs);
 	CVar RHS;
-	if (!plhs || plhs->type != N_VECTOR)
+	if (!isreplica && (!plhs || plhs->type != N_VECTOR))
 		RHS = Compute(prhs); // if (plhs->type == N_VECTOR) in eval_lhs()
 	if (plhs)
 	{
