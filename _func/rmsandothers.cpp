@@ -33,7 +33,7 @@ inline static float _getdB(double x)
 
 CSignal __rms(float *buf, unsigned int len, void* pargin, void* pargout)
 {
-	CSignal out(*(int*)pargin);
+	CSignal out(*(int*)pargin); // fs
 	out.UpdateBuffer(1);
 	if (len == 0) out.buf[0] = std::numeric_limits<float>::infinity();
 	else

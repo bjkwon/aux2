@@ -245,7 +245,6 @@ public:
 	uint64_t Len() const { if (fs == 2) return (nSamples-1) / nGroups; else  return nSamples / nGroups; }
 	bool operator < (const CSignal &rhs) const;
 
-	CSignal evoke_getsig2(CSignal(*fp) (float*, unsigned int, void*, void*), void* popt1 = NULL, void* popt = NULL);
 	CSignal& evoke_modsig(fmodify, void* popt1 = NULL, void* popt2 = NULL);
 	CSignal evoke_modsig2(CSignal(*fp) (const CSignal&, void*, void*), void* popt1 = NULL, void* popt2 = NULL);
 
@@ -375,7 +374,8 @@ public:
 	CTimeSeries evoke_getval(float (CSignal::*)(unsigned int, unsigned int, void *) const, void *popt = NULL);
 	CTimeSeries & evoke_modsig(fmodify, void* popt1 = NULL, void* popt2 = NULL);
 	CTimeSeries evoke_modsig2(CSignal(*fp) (const CSignal&, void*, void*), void* popt1 = NULL, void* popt2 = NULL);
-
+	
+	CTimeSeries evoke_group2chain(CSignal(*func) (float*, unsigned int, void*, void*), void* pargin, void* pargout);
 	CTimeSeries evoke_getsig(CTimeSeries(*fgetCSignals) (const CTimeSeries&, void*), void* popt = NULL);
 	CTimeSeries evoke_getsig2(CSignal(*fp) (float*, unsigned int, void*, void*), void *popt1 = NULL, void *popt = NULL);
 

@@ -1349,14 +1349,14 @@ CTimeSeries CTimeSeries::evoke_modsig2(CSignal(*func) (const CSignal&, void*, vo
 	}	return out;
 }
 
-CSignal CSignal::evoke_getsig2(CSignal(*func) (float*, unsigned int, void*, void*), void* pargin, void* pargout)
+CTimeSeries CTimeSeries::evoke_group2chain(CSignal(*func) (float*, unsigned int, void*, void*), void* pargin, void* pargout)
 {
 	auto len = Len();
-	CSignal extra, extra0;
+	CTimeSeries extra, extra0;
 	void* temp = &extra0;
-	CSignal out0 = func(buf, len, pargin, temp);
+	CTimeSeries out0 = func(buf, len, pargin, temp);
 	auto len0 = out0.nSamples;
-	CSignal out = out0;
+	CTimeSeries out = out0;
 	uint64_t extralen0;
 	if (pargout)
 	{
@@ -1364,24 +1364,18 @@ CSignal CSignal::evoke_getsig2(CSignal(*func) (float*, unsigned int, void*, void
 		extra.UpdateBuffer(extralen0 * nGroups);
 		memcpy(extra.buf, extra0.buf, extralen0 * bufBlockSize);
 	}
-
 	// assumption1: output of (func) does not change its characteristics while looping.
 	// assumption2: additional output of (func), temp above, does not change its characteristics while looping.
-	// therefore, the outputs of (func) are simply stacked thru the loop and make the final output
-	auto newLength = out0.nSamples * nGroups;
-	if (newLength > out.nSamples)
-		out.UpdateBuffer(newLength);
 	for (unsigned int k = 1; k < nGroups; k++)
 	{
-		auto outrow = func((float*)(strbuf + len * k * bufBlockSize), len, pargin, temp);
-		memcpy(out.strbuf + len0 * k * outrow.bufBlockSize, outrow.buf, len0 * outrow.bufBlockSize);
-		if (pargout)
-			memcpy(extra.strbuf + extralen0 * k * outrow.bufBlockSize, extra0.buf, extralen0 * outrow.bufBlockSize);
+		CTimeSeries outrow = func((float*)(strbuf + len * k * bufBlockSize), len, pargin, temp);
+		outrow.tmark = tmark + 1000.f * k * len / fs;
+		out.AddChain(outrow);
+		// pargout, How?
+		//if (pargout)
+		//	memcpy(extra.strbuf + extralen0 * k * outrow.bufBlockSize, extra0.buf, extralen0 * outrow.bufBlockSize);
 	}
-	out.nSamples = out0.nSamples * nGroups; // necessary for [b,c]=a.max
-//	out.nGroups = out0.nGroups; //  correct for y=noise(10).group(4)--- nGroups for group should be adjusted inside of _group, not here
-	out.nGroups = nGroups; // correct for necessary for [b,c]=a.max; ---nGroups should just follow nGroups, if adjustment overall is needed, should be done inside the gate function
-	if (pargout) 
+	if (pargout) // ??
 	{
 		extra.nGroups = nGroups;
 		*(CSignal*)pargout = extra;
@@ -1401,7 +1395,7 @@ CTimeSeries CTimeSeries::evoke_getsig2(CSignal(*func) (float*, unsigned int, voi
 			_pargin = pargin;
 		if (pargout)
 			_pargout = (void*)&outExt;
-		CTimeSeries outtp = p->CSignal::evoke_getsig2(func, _pargin, _pargout);
+		CTimeSeries outtp = p->evoke_group2chain(func, _pargin, _pargout);
 		if (pargout) 
 		{
 			outExt.tmark = p->tmark;
