@@ -148,6 +148,10 @@ void skope::eval_lhs(const AstNode* plhs, const AstNode* prhs, CVar &lhs_index, 
 			auto itvar = Vars.find(plhs->str);
 			if (itvar == Vars.end())
 			{ // if left var is not defined
+				if (isreplica) {
+					out << "Replicator (..) cannot be used with undefined LHS.";
+					throw exception_etc(*this, plhs, out.str()).raise();
+				}
 				// For N_STRUCT, in a....propn = RHS anything a to propn can be undefined
 				// but a....propn(id) = RHS should issue an error
 				bool alert_undefinedLHS = false;
