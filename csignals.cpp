@@ -1142,19 +1142,15 @@ CSignal& CSignal::operator+=(CSignal *yy)
 
 CTimeSeries& CTimeSeries::operator+=(CTimeSeries *yy)
 {
-	//Do THIS on 5/24/2018......................
-
-	// a little jumbled up with jhpark's previous codes and bjkwon's current codes... 7/6/2016
 	if (yy == NULL) return *this;
 	if (IsEmpty()) return (*this = *yy);
 	if (type() == TYPEBIT_NULL) return *this = *yy >>= tmark;
 	// Concatenation of CTimeSeries
-  // yy might lose its value.
+    // yy might lose its value.
 	if (GetFs() < 2)
 		SetFs(yy->GetFs());
-
 	CTimeSeries *ptail = GetDeepestChain();
-	if ((IsAudio() && yy->IsAudio()) && (yy->chain || yy->tmark)) {
+	if ((ISAUDIO(type()) && ISAUDIO(yy->type())) && (yy->chain || yy->tmark)) {
 		// when insertee has chain(s), chain it instead of copying. yy loses its value.
 		CTimeSeries *pNew = new CTimeSeries(fs);
 		if (chain && !yy->chain) // I don't know what would be the consequences of this leaving out  5/12/2016 ---check later??
@@ -1993,6 +1989,36 @@ CSignal& CSignal::movespec(unsigned int id0, unsigned int len, void *parg)
 }
 
 #endif 
+
+pair<CTimeSeries*, int> CTimeSeries::FindChainAndID(float timept, bool begin)
+{ 
+	CTimeSeries *body = NULL;
+	CTimeSeries* p = this;
+	int id;
+	for (; p; p = p->chain)
+	{
+		if (timept >= p->tmark && timept < p->CSignal::endt()) {
+			body = p;
+			id = round((timept - p->tmark) / 1000. * fs);
+			if (!begin) id--;
+			break;
+		}
+		if (begin) {
+			if (timept < p->tmark) {
+				body = p;
+				id = 0;
+				break;
+			}
+		}
+		else {
+			if (timept >= p->CSignal::endt()) {
+				body = p;
+				id = p->nSamples-1;
+			}
+		}
+	}
+	return make_pair(body, id);
+}
 
 CTimeSeries& CTimeSeries::ReplaceBetweenTPs(const CTimeSeries &newsig, float t1, float t2)
 { // signal portion between t1 and t2 is replaced by newsig

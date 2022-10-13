@@ -427,6 +427,7 @@ public:
 
 	float MakeChainless();
  	CTimeSeries * AtTimePoint(float timept);
+	pair<CTimeSeries*, int> FindChainAndID(float timept, bool begin);
 
 	// Constructors
 	CTimeSeries();

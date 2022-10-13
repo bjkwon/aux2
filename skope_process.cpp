@@ -9,7 +9,9 @@ bool skope::get_nodes_left_right_sides(const AstNode* pnode, const AstNode** plh
 	replica.Reset();
 	*plhs = NULL;
 	*prhs = pnode;
-	if (!pnode || IsConditional(pnode) || pnode->type == N_BLOCK || pnode->type == T_IF || pnode->type == T_FOR || pnode->type == T_WHILE || pnode->type == T_TRY || pnode->type == T_CATCH)
+	if (!pnode || IsConditional(pnode) || pnode->type == N_BLOCK || pnode->type == T_IF || 
+		pnode->type == T_FOR || pnode->type == T_WHILE || pnode->type == T_TRY || pnode->type == T_CATCH ||
+		pnode->type == T_TRANSPOSE)
 		return false;
 	if (pnode->child) 
 	{
@@ -417,14 +419,11 @@ void skope::right_to_left(const AstNode* plhs, const CVar& lhs_index, CVar& robj
 			uint64_t bufshift = 0;
 			if (isreplica) { //RL-T
 				replica = *lobj;
-				uint64_t bufshift = (lobj->GetFs() * lhs_index.buf[0] / 1000.);
-				replica.buf += (uint64_t)bufshift;
-				replica.nSamples = (uint64_t)(lobj->GetFs() * (lhs_index.buf[1] - lhs_index.buf[0]) / 1000.);
+				replica.Crop(lhs_index.buf[0], lhs_index.buf[1]);
 				robj = Compute(prhs);
-				replica.buf -= (uint64_t)bufshift;
 				replica.Reset();
 			}
-			insertreplace(plhs, robj, lhs_index, lobj);
+			insertreplace(plhs, robj, lhs_index, lobj, isreplica);
 		}
 		else
 		{
@@ -492,19 +491,32 @@ CVar* skope::process_statement(const AstNode* pnode)
 	return &Sig;
 }
 
-void skope::insertreplace(const AstNode* plhs, const CVar& robj, const CVar& indsig, CVar *lobj)
+void skope::insertreplace(const AstNode* plhs, const CVar& robj, const CVar& indsig, CVar *lobj, bool isreplica)
 {
 	const AstNode* p = plhs;
 	uint64_t id1;
 	if ((p->alt && p->alt->type == N_TIME_EXTRACT) || // x{id}(t1~t2) = ...sqrt
 		p->type == N_TIME_EXTRACT || (p->next && p->next->type == N_IDLIST))  // s(repl_RHS1~repl_RHS2)   or  cel{n}(repl_RHS1~repl_RHS2)
 	{
-		if (0)//(repl_RHS) //direct update of buf
+		if (isreplica) // direct update of buf
 		{
-			id1 = (uint64_t)round(indsig.buf[0] * lobj->GetFs() / 1000.);
-			memcpy(lobj->logbuf + id1 * lobj->bufBlockSize, robj.buf, robj.nSamples * robj.bufBlockSize);
-			if (lobj->next)
-				memcpy(lobj->next->logbuf + id1 * lobj->bufBlockSize, robj.next->buf, robj.nSamples * robj.bufBlockSize);
+			// find out where robj begins and ends (index and tmark for the chain of interest)
+			auto begin = lobj->FindChainAndID(indsig.buf[0], true);
+			auto end = lobj->FindChainAndID(indsig.buf[1], false);
+			if (begin.first==NULL) 
+				throw exception_etc(*this, p, "Time indexing out of range").raise();
+			int len;
+			CTimeSeries* q = (CTimeSeries*)&robj;
+			int offset = begin.second;
+			for (auto p = begin.first; p; p = p->chain, q = q->chain) {
+				if (begin.first == end.first)
+					len = end.second - begin.second + 1;
+				else
+					len = q->nSamples;
+				memcpy(p->logbuf + offset * p->bufBlockSize, q->buf, len * q->bufBlockSize);
+				offset = 0;
+			}
+			// TO DO: stereo case 10/13/2022
 		}
 		else
 			lobj->ReplaceBetweenTPs(robj, indsig.buf[0], indsig.buf[1]);

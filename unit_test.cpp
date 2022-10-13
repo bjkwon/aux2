@@ -172,3 +172,15 @@ y1=x{3}(0~100)
 x=noise(100)
 x(20~30)=..@-20
 x.group(10).rms // DIDN'T WORK 12:15 AM 10/12/2022
+
+// WORKING 05:09 PM 10/12/2022
+x=noise(100)+noise(100).ramp(10)@-20>>500
+x(10~20)@=-20
+x.group(10).rms
+
+x=noise(10)+noise(10).ramp(3)@-20>>50
+x(5~55)@=-10
+
+x=noise(100)+noise(100).ramp(30)@-20>>500
+x(50~550)@=-40
+//CHECKED 1:05 AM 10/13/2022
