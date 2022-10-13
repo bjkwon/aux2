@@ -695,8 +695,9 @@ void skope::HandleAuxFunctions(const AstNode *pnode, AstNode *pRoot)
 	const AstNode* arg0 = arg0node(pnode, node);
 	if (!structCall)
 	{
-		Compute(arg0); // Update Sig with arg0; For strucCall, it was already done in read_node()
-		if (!arg0)
+		if (arg0)
+			Compute(arg0); // Update Sig with arg0; For strucCall, it was already done in read_node()
+		else
 			Sig.Reset();
 	}
 	if ((*ftlist).second.func)
