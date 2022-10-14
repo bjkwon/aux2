@@ -23,39 +23,20 @@ void save_auxenv(CAstSigEnv* pEnv, const string& envfilename); // auxenv.cpp
 
 extern vector<skope*> xscope;
 
-void echo(int depth, skope& ctx, const AstNode* pnode, CVar* pvar)
+void echo(int depth, skope& ctx, const AstNode* pn, CVar* pvar)
 {
-	if (!pnode->suppress)
+	if (!pn->suppress)
 	{
 		if (!pvar)
 		{
-			pvar = ctx.GetVariable(pnode->str);
+			pvar = ctx.GetVariable(pn->str);
 			if (!pvar) return; // this filters out a null statement in a block such as a=1; b=100; 500
 		}
-		if (skope::IsLooping(pnode)) return; // T_IF, T_FOR, T_WHILE
+		if (skope::IsLooping(pn)) return; // T_IF, T_FOR, T_WHILE
 		// if the command required waiting, lock a mutex here
 		// ctx.xtree->alt indicates subsequent modifier of TID (e.e., x(10:20) x.sqrt, etc)
-		if (pnode->type==T_ID && !ctx.node->alt)
-		{
-			bool variablenameset = false;
-			if (ctx.node->type==N_VECTOR)
-				variablenameset = true;
-			else if (pnode == ctx.node && pnode->type == T_ID && ctx.Vars.find(pnode->str) != ctx.Vars.end())
-				variablenameset = true;
-			else if (pnode->child)
-				variablenameset = true; // pnode is LHS
-			else if (pnode->type == N_VECTOR)
-				variablenameset = true; // c=1; [a,b]=x.max ---> check this again.... 3/1/2022
-			string varname;
-			if (variablenameset)
-				varname = pnode->str;
-			else
-			{//c=1, x.max
-				varname = "ans";
-				ctx.SetVar(varname.c_str(), pvar);
-			}
-			echo_object().print(varname, *pvar, 1);
-		}
+		if (pn->type == T_ID)
+			echo_object().print(pn->str, ctx.GetVariable(pn->str), 1);
 		else
 		{ // 1+a, 2^5, a' !a a>=1 ...
 			ctx.SetVar("ans", pvar);
@@ -73,12 +54,7 @@ static void show_result(skope& sc)
 	{
 		for (const AstNode* pp = sc.node->next; pp; pp = pp->next, dt++)
 		{
-			if (pp->next)
-			{// For a block statement, screen echoing applies only to the last item. The statements in the middle are not echoed regardless of suppress (;)
-				((AstNode*)pp)->suppress = true;
-				echo(dt, sc, pp, NULL);
-			}
-			else if (pp->type == N_VECTOR)
+			if (pp->type == N_VECTOR)
 			{
 				for (AstNode* p2 = ((AstNode*)pp->str)->alt; !pp->suppress && p2; p2 = p2->next, dt++)
 					echo(dt, sc, p2, NULL);
@@ -87,9 +63,9 @@ static void show_result(skope& sc)
 				echo(dt, sc, pp, sc.Sig.IsGO() ? sc.pgo : &sc.Sig);
 		}
 	}
-	else if (sc.lhs && sc.lhs->type == N_VECTOR)// && sc.node->alt && sc.node->alt->type!=N_STRUCT) // sc.node->alt is necessary to ensure that there's a vector on the LHS
+	else if (sc.node->type == N_VECTOR)// && sc.node->alt && sc.node->alt->type!=N_STRUCT) // sc.node->alt is necessary to ensure that there's a vector on the LHS
 	{
-		for (AstNode* pp = ((AstNode*)sc.node->str)->alt; !sc.lhs->suppress && pp; pp = pp->next, dt++)
+		for (AstNode* pp = ((AstNode*)sc.node->str)->alt; !sc.node->suppress && pp; pp = pp->next, dt++)
 			echo(dt, sc, pp, NULL);
 	}
 	else // see if lhs makes more sense than xtree
@@ -115,7 +91,6 @@ CVar interpreter(skope& sc, const string& instr)
 	show_result(sc);
 	return sc.Sig;
 }
-
 
 int main()
 {
@@ -146,12 +121,6 @@ int main()
 		try {
 #ifdef _WIN32
 			printf("AUX> ");
-			//if (commandid < N_COMMANDS)
-			//{
-			//	input = cmd[commandid++];
-			//	cout << input << endl;
-			//}
-			//else
 			getline(cin, input);
 #else
 			input.clear();
@@ -200,7 +169,6 @@ int main()
 		}
 	}
 	save_auxenv(pglobalEnv, AUXENV_FILE);
-
 	delete pglobalEnv;
 	return 0;
 }
