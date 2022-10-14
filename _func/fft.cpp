@@ -52,8 +52,11 @@ Cfunction set_builtin_function_ifft(fGate fp)
 CSignal __fft2(float *buf, unsigned int len, void* pargin, void* pargout)
 {
 	const vector<CVar>* pp = (const vector<CVar> *)pargin;
-	CVar param = *pp->begin();
-	int fftsize = param.value() == 0 ? len : (int)param.value();
+	auto pit = pp->begin();
+	CVar fftlen = *pit;
+	pit++;
+	CVar fs = *pit;
+	int fftsize = fftlen.value() == 0 ? len : (int)fftlen.value();
 	fftsize = min(fftsize, (int)len);
 	int fftRealsize = fftsize / 2 + 1;
 	float* in;
@@ -67,7 +70,7 @@ CSignal __fft2(float *buf, unsigned int len, void* pargin, void* pargout)
 	p = fftwf_plan_dft_r2c_1d(fftsize, in, out, FFTW_ESTIMATE);
 	fftwf_execute(p);
 
-	CSignal res(1);
+	CSignal res((int)fs.value());
 	res.UpdateBuffer(fftsize);
 	res.SetComplex();
 	memcpy(res.cbuf, out, sizeof(*res.cbuf) * fftRealsize);
@@ -244,7 +247,9 @@ void _fft(skope* past, const AstNode* pnode, const vector<CVar>& args)
 		exception_func(*past, pnode, "argument must be an integer.", "fftsize", 2).raise();
 	if (val < 0)
 		exception_func(*past, pnode, "argument must be positive or zero (for the entire array length).", "fftsize", 2).raise();
-	past->Sig = past->Sig.evoke_getsig2(__fft2, (void*)&args);
+	vector<CVar> copy = args;
+	copy.push_back(CVar((float)past->GetFs()));
+	past->Sig = past->Sig.evoke_getsig2(__fft2, (void*)&copy);
 	past->Sig.setsnap();
 }
 

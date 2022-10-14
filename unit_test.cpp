@@ -194,3 +194,12 @@ x=randperm(24)
 y=x.group(4)
 [a,b]=y.min
 
+x=noise(10)+noise(5)>>50
+fx=x.fft
+x2=fx.ifft
+df=x-x2
+df.max
+x=[3 5 2 9 4]
+x(4) // echo as x(__) = 9
+//CHECKED 12:35 AM 10/14/2022
+

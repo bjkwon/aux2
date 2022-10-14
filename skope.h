@@ -254,12 +254,13 @@ public:
 	bool fBreak;
 	bool fExit;
 
+	bool get_nodes_left_right_sides(const AstNode* pnode, const AstNode** plhs, const AstNode** prhs);
+
 private:
 	bool done;
 	bool nodeAllocated;
 	vector<CVar> make_check_args(const AstNode* pnode, const Cfunction& func);
 	void make_check_args_math(const AstNode* pnode);
-	bool get_nodes_left_right_sides(const AstNode* pnode, const AstNode** plhs, const AstNode** prhs);
 	void eval_lhs(const AstNode* plhs, const AstNode* prhs, CVar& lhs_index, CVar& RHS, uint16_t& typelhs, bool& contig, bool isreplica, const CVar* cell_item = NULL);
 	void right_to_left(const AstNode* plhs, const CVar& lhs_index, CVar& robj, uint16_t typelhs, bool contig, const AstNode* prhs = NULL, CVar* lobj = NULL);
 	void eval_index(const AstNode* pInd, const CVar& varLHS, CVar& index);

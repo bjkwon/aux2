@@ -27,16 +27,24 @@ void echo(int depth, skope& ctx, const AstNode* pn, CVar* pvar)
 {
 	if (!pn->suppress)
 	{
-		if (!pvar)
-		{
+		const AstNode *plhs, *prhs;
+		ctx.get_nodes_left_right_sides(pn, &plhs, &prhs);
+		//  plhs NULL: a statement, not an assignment, use pvar from Sig (if that's not available, out of luck)
+		if (plhs || !pvar) {
 			pvar = ctx.GetVariable(pn->str);
 			if (!pvar) return; // this filters out a null statement in a block such as a=1; b=100; 500
 		}
 		if (skope::IsLooping(pn)) return; // T_IF, T_FOR, T_WHILE
 		// if the command required waiting, lock a mutex here
 		// ctx.xtree->alt indicates subsequent modifier of TID (e.e., x(10:20) x.sqrt, etc)
-		if (pn->type == T_ID)
-			echo_object().print(pn->str, ctx.GetVariable(pn->str), 1);
+		if (pn->type == T_ID) {
+			if (pn->alt && pn->alt->type == N_STRUCT)
+				echo_object().print(pn->alt->str, pvar, 1);
+			else if (pn->alt && pn->alt->type == N_ARGS)
+				echo_object().print(string(pn->str) + "(__)", pvar, 1);
+			else
+				echo_object().print(pn->str, pvar, 1);
+		}
 		else
 		{ // 1+a, 2^5, a' !a a>=1 ...
 			ctx.SetVar("ans", pvar);
