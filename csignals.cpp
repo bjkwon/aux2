@@ -1348,6 +1348,7 @@ CTimeSeries CTimeSeries::evoke_modsig2(CSignal(*func) (const CSignal&, void*, vo
 CTimeSeries CTimeSeries::evoke_group2chain(CSignal(*func) (float*, unsigned int, void*, void*), void* pargin, void* pargout)
 {
 	auto len = Len();
+	uint16_t tp = type();
 	CTimeSeries extra, extra0;
 	void* temp = &extra0;
 	CTimeSeries out0 = func(buf, len, pargin, temp);
@@ -1357,24 +1358,49 @@ CTimeSeries CTimeSeries::evoke_group2chain(CSignal(*func) (float*, unsigned int,
 	if (pargout)
 	{
 		extralen0 = extra0.nSamples;
-		extra.UpdateBuffer(extralen0 * nGroups);
+		if (!ISTEMPORAL(tp))
+			extra.UpdateBuffer(extralen0 * nGroups);
+		else
+			extra.UpdateBuffer(extralen0);
+		extra.SetFs(extra0.GetFs());
 		memcpy(extra.buf, extra0.buf, extralen0 * bufBlockSize);
 	}
 	// assumption1: output of (func) does not change its characteristics while looping.
 	// assumption2: additional output of (func), temp above, does not change its characteristics while looping.
+	// If this is AUDIO or TEMPORAL, group structure will turn to chain structure
+	// to show the timestamp of each group
+	if (!ISTEMPORAL(tp)) {
+		// therefore, the outputs of (func) are simply stacked thru the loop and make the final output
+		auto newLength = out0.nSamples * nGroups;
+		if (newLength > out.nSamples)
+			out.UpdateBuffer(newLength);
+	}
 	for (unsigned int k = 1; k < nGroups; k++)
 	{
-		CTimeSeries outrow = func((float*)(strbuf + len * k * bufBlockSize), len, pargin, temp);
-		outrow.tmark = tmark + 1000.f * k * len / fs;
-		out.AddChain(outrow);
-		// pargout, How?
-		//if (pargout)
-		//	memcpy(extra.strbuf + extralen0 * k * outrow.bufBlockSize, extra0.buf, extralen0 * outrow.bufBlockSize);
+		auto outrow = func((float*)(strbuf + len * k * bufBlockSize), len, pargin, temp);
+		if (!ISTEMPORAL(tp)) {
+			memcpy(out.strbuf + len0 * k * outrow.bufBlockSize, outrow.buf, len0 * outrow.bufBlockSize);
+			if (pargout)
+				memcpy(extra.strbuf + extralen0 * k * outrow.bufBlockSize, extra0.buf, extralen0 * outrow.bufBlockSize);
+		}
+		else {
+			outrow.tmark = tmark + 1000.f * k * len / fs;
+			out.AddChain(outrow);
+			if (pargout) {
+				extra0.tmark = outrow.tmark;
+				extra.AddChain(extra0);
+			}
+		}
 	}
-	if (pargout) // ??
+	if (!ISTEMPORAL(tp)) {
+		out.nSamples = out0.nSamples * nGroups; // necessary for [b,c]=a.max
+		out.nGroups = nGroups; // correct for necessary for [b,c]=a.max; ---nGroups should just follow nGroups, if adjustment overall is needed, should be done inside the gate function
+	}
+	if (pargout) // 
 	{
-		extra.nGroups = nGroups;
-		*(CSignal*)pargout = extra;
+		if (!ISTEMPORAL(tp))
+			extra.nGroups = nGroups;
+		*(CTimeSeries*)pargout = extra;
 	}
 	return out;
 } 

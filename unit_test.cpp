@@ -184,3 +184,13 @@ x(5~55)@=-10
 x=noise(100)+noise(100).ramp(30)@-20>>500
 x(50~550)@=-40
 //CHECKED 1:05 AM 10/13/2022
+
+
+x=noise(10).abs
+y=x.group(10)
+[a,b]=y.min
+
+x=randperm(24)
+y=x.group(4)
+[a,b]=y.min
+

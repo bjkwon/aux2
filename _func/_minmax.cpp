@@ -30,10 +30,12 @@ CSignal __max_aux2(float *buf, unsigned int len, void* pargin, void* pargout)
 { // assume: parg is a pointer to a CTimeSeries obj; used to store the index of max/min 
 	auto maxy = max_element(buf, buf + len);
 	CSignal out(*maxy);
+	out.SetFs(*(int*)pargin);
 	if (pargout)
 	{
 		int ind = (int)(maxy - buf);
-		((CSignal*)pargout)->SetValue((float)ind + 1); // one-based index
+		((CTimeSeries*)pargout)->SetValue((float)ind + 1); // one-based index
+		((CTimeSeries*)pargout)->SetFs(*(int*)pargin);
 	}
 	return out;
 }
@@ -42,10 +44,12 @@ CSignal __min_aux2(float* buf, unsigned int len, void* pargin, void* pargout)
 { // assume: parg is a pointer to a CTimeSeries obj; used to store the index of max/min 
 	auto miny = min_element(buf, buf + len);
 	CTimeSeries out(*miny);
+	out.SetFs(*(int*)pargin);
 	if (pargout)
 	{
 		int ind = (int)(miny - buf);
-		((CSignal*)pargout)->SetValue((float)ind + 1); // one-based index
+		((CTimeSeries*)pargout)->SetValue((float)ind + 1); // one-based index
+		((CTimeSeries*)pargout)->SetFs(*(int*)pargin);
 	}
 	return out;
 }
@@ -83,8 +87,8 @@ void _minmax(skope* past, const AstNode* pnode, const vector<CVar>& args)
 	{
 		CVar *extraOut = new CVar;
 		popt = (void*)extraOut;
-		if (fname == "max") past->Sig = past->Sig.evoke_getsig2(__max_aux2, NULL, popt);
-		else if (fname == "min") past->Sig = past->Sig.evoke_getsig2(__min_aux2, NULL, popt);
+		if (fname == "max") past->Sig = past->Sig.evoke_getsig2(__max_aux2, (void*)&past->Sig.fs, popt);
+		else if (fname == "min") past->Sig = past->Sig.evoke_getsig2(__min_aux2, (void*)&past->Sig.fs, popt);
 		past->SigExt.push_back(move(make_unique<CVar*>(&past->Sig)));
 		unique_ptr<CVar*> pt = make_unique<CVar*>(extraOut); // popt carries maximum/minimum indices
 		past->SigExt.push_back(move(pt));
@@ -92,8 +96,9 @@ void _minmax(skope* past, const AstNode* pnode, const vector<CVar>& args)
 	else
 	{
 		if (fname == "max") 
-			past->Sig = past->Sig.evoke_getsig2(__max_aux2, NULL, popt);
-		else if (fname == "min") past->Sig = past->Sig.evoke_getsig2(__min_aux2, NULL, popt);
+			past->Sig = past->Sig.evoke_getsig2(__max_aux2, (void*)&past->Sig.fs, popt);
+		else if (fname == "min") 
+			past->Sig = past->Sig.evoke_getsig2(__min_aux2, (void*)&past->Sig.fs, popt);
 	}
 }
 
