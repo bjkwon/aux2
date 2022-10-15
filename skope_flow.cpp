@@ -91,7 +91,7 @@ CVar* skope::Try_here(const AstNode* pnode, AstNode* p)
 			if (id != string::npos) errmsg = errmsg.substr(id + string("[GOTO_BASE]").size());
 			msg = errmsg;
 			SetVar("body", &msg, &Vars[name]);
-			msg = e.sourceloc;
+			msg = e.udffile;
 			SetVar("source", &msg, &Vars[name]);
 			msg.SetValue((float)e.line);
 			SetVar("errline", &msg, &Vars[name]);

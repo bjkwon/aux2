@@ -4,7 +4,7 @@
 skope_exception& skope_exception::raise()
 {
 	addLineCol();
-	outstr = msgonly + " " + sourceloc;
+	outstr = msgonly + sourceloc;
 	return *this;
 }
 
@@ -37,6 +37,7 @@ void skope_exception::addLineCol()
 	}
 	if (!strs.empty())
 	{
+		udffile = strs.front();
 		vector<string>::iterator it2 = strs.begin();
 		//at this point strs can have more items than lines and cols, because son->son is son during CallUDF()
 		//so don't use strs iterator for for 

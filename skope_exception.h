@@ -28,16 +28,14 @@ public:
 	string getErrMsg() const { return outstr; };
 	int line, col;
 
-//protected:
 	const AstNode* pnode;
 	const skope* pCtx; // pointer to the context, AKA AstSig, that threw the exception
-	void findTryLine(const skope& skope);
 	string basemsg, tidstr;
 	string msgonly; // including basemsg, tidstr, and extra
 	string sourceloc; // source location; where the error occurred (line, col and file)
+	string udffile; // udf file name, if applicable
 	string outstr; // msgonly \n sourceloc
 };
-
 
 class exception_func : public skope_exception
 {
