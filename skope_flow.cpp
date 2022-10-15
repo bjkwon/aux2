@@ -76,7 +76,7 @@ CVar* skope::Try_here(const AstNode* pnode, AstNode* p)
 		// to be captured by xcom 1/1/2021
 		if (inTryCatch)
 		{ // Make a new struct variable from child of e.pTarget (which is T_CATCH)
-			auto baseudf = get_base_node_for_try(e.pCtx->u.t_func_base, e.line);
+			auto baseudf = get_base_node_for_try(e.pCtx->u.t_func_base, p->line);
 			auto pnode_try = get_try_node(baseudf);
 			const char* name = pnode_try->alt->child->str; // the variable name of catch (as "catchme" in catch "catchme")
 //			SetVar(name, &CVar()); // new temporary variable; OK this way, the temp. var. is deep-copied
@@ -97,7 +97,7 @@ CVar* skope::Try_here(const AstNode* pnode, AstNode* p)
 			SetVar("errline", &msg, &Vars[name]);
 			msg.SetValue((float)e.col);
 			SetVar("errcol", &msg, &Vars[name]);
-			Compute(pnode_try->alt->next);
+			process_statement(pnode_try->alt->next);
 		}
 		else
 			throw e;
