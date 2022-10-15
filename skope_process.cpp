@@ -369,6 +369,10 @@ void skope::right_to_left(const AstNode* plhs, const CVar& lhs_index, CVar& robj
 		else if (plhs->alt && plhs->alt->type == N_STRUCT) {
 			const AstNode* pstruct;
 			const CVar* struct_item = get_available_struct_item(plhs, &pstruct);
+			if (isreplica) { //RL-NS
+				replica = GetVariable(pstruct->str, (CVar*)struct_item);
+				robj = Compute(prhs);
+			}
 			// p.prop1.prop2.prop3=[3 5 2] 
 			assign_struct((CVar*)struct_item, plhs, pstruct, robj);
 		}
