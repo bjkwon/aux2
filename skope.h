@@ -187,7 +187,7 @@ public:
 	AstNode* read_nodes(CNodeProbe& np, bool bRHS = false);
 	void throw_LHS_lvalue(const AstNode* pn, bool udf);
 	AstNode* searchtree(const AstNode* pTarget, AstNode* pStart);
-	const AstNode* searchtree(const AstNode* p, int type);
+	const AstNode* searchtree(const AstNode* p, int type, int line2check = -1);
 	multimap<CVar, AstNode*> register_switch_cvars(const AstNode* pnode, vector<int>& undefined);
 	AstNode* ReadUDF(string& emsg, const char* udf_filename);
 	AstNode* RegisterUDF(const AstNode* p, const char* fullfilename, const string& filecontent);

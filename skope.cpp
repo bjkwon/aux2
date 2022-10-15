@@ -392,36 +392,38 @@ AstNode* skope::searchtree(const AstNode* pTarget, AstNode* pStart)
 	}
 	return NULL;
 }
-const AstNode* skope::searchtree(const AstNode* p, int type)
+const AstNode* skope::searchtree(const AstNode* p, int type, int line2check)
 { // if there's a node with "type" in the tree, return that node
-	if (p)
+	// if line2check is specified (positive), that means search is good only for the same line, if it reaches the next line, it returns NULL
+	if (!p)
+		return NULL;
+	if (line2check > 0 && line2check != p->line)
+		return NULL;
+	if (p->type == N_VECTOR || p->type == N_MATRIX) // for [  ], search must continue through p->str
+		return searchtree(((AstNode*)p->str)->alt, type, line2check);
+	if (p->type == type) return p;
+	if (p->child)
 	{
-		if (p->type == N_VECTOR || p->type == N_MATRIX) // for [  ], search must continue through p->str
-			return searchtree(((AstNode*)p->str)->alt, type);
-		if (p->type == type) return p;
-		if (p->child)
+		if (p->child->type == type) return p->child;
+		else
 		{
-			if (p->child->type == type) return p->child;
-			else
-			{
-				if (searchtree(p->child, type)) return p->child;
-				if (searchtree(p->alt, type)) return p->alt;
-			}
+			if (searchtree(p->child, type, line2check)) return p->child;
+			if (searchtree(p->alt, type, line2check)) return p->alt;
 		}
-		if (p->alt)
+	}
+	if (p->alt)
+	{
+		if (p->alt->type == type) return p->alt;
+		else
 		{
-			if (p->alt->type == type) return p->alt;
-			else
-			{
-				if (searchtree(p->alt, type)) return p->alt;
-				if (searchtree(p->child, type)) return p->child;
-			}
+			if (searchtree(p->alt, type, line2check)) return p->alt;
+			if (searchtree(p->child, type, line2check)) return p->child;
 		}
-		if (p->next)
-		{
-			if (p->next->type == type) return p->next;
-			else return searchtree(p->next, type);
-		}
+	}
+	if (p->next)
+	{
+		if (p->next->type == type) return p->next;
+		else return searchtree(p->next, type, line2check);
 	}
 	return NULL;
 }
