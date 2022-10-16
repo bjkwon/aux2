@@ -18,8 +18,10 @@ bool skope::get_nodes_left_right_sides(const AstNode* pnode, const AstNode** plh
 		*plhs = pnode;
 		*prhs = pnode->child;
 	}
+	// if LHS is NULL, don't search replica on the RHS
+	if (!*plhs) return false;
 	// Check if RHS includes the replica
-	return searchtree(*prhs, T_REPLICA, pnode->line) != NULL;
+	return searchtree(*prhs, T_REPLICA) != NULL;
 }
 
 void skope::eval_index(const AstNode* pInd, const CVar &varLHS, CVar &index)

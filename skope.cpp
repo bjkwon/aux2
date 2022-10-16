@@ -395,6 +395,9 @@ AstNode* skope::searchtree(const AstNode* pTarget, AstNode* pStart)
 const AstNode* skope::searchtree(const AstNode* p, int type, int line2check)
 { // if there's a node with "type" in the tree, return that node
 	// if line2check is specified (positive), that means search is good only for the same line, if it reaches the next line, it returns NULL
+	// line2check was added to check replica on the RHS (to stop the search if it moves on to the next line), but it's a faulty approach because multiple statements can be on the same line
+	// The issue was resolved to limit search to the case when LHS exists (assignment, not singular expression) regardless of line
+	// so for now line2check is not needed any more, but keep this for the future 10/16/2022
 	if (!p)
 		return NULL;
 	if (line2check > 0 && line2check != p->line)
