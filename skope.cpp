@@ -43,6 +43,7 @@ CAstSigEnv::CAstSigEnv(const int fs)
 	xff[T_WHILE] = &CAstSigEnv::WHILE;
 	xff[T_TRY] = &CAstSigEnv::TRY;
 	xff[T_CATCH] = &CAstSigEnv::CATCH;
+	xff[T_CATCHBACK] = &CAstSigEnv::CATCH;
 	xff[N_HOOK] = &CAstSigEnv::ID;
 	xff[T_ID] = &CAstSigEnv::ID;
 	xff[N_TSEQ] = &CAstSigEnv::TSEQ;

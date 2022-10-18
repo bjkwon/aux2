@@ -14,6 +14,8 @@ CVar* CAstSigEnv::BLOCK(skope* psk, const AstNode* pnode)
 		psk->process_statement(p);
 		//			pgo = NULL; // without this, go lingers on the next line 2/9/2019
 		psk->Sig.Reset(1); // without this, fs=3 lingers on the next line 2/9/2019
+		if (psk->inTryCatch)
+			psk->pTryLast = p;
 	}
 	return &psk->Sig;
 }
@@ -80,10 +82,9 @@ CVar* CAstSigEnv::TRY(skope* psk, const AstNode* pnode)
 
 CVar* CAstSigEnv::CATCH(skope* psk, const AstNode* pnode)
 {
-	AstNode* p = pnode->child;
-	psk->inTryCatch--; //???? Maybe no longer needed?? 3/7/2020
-	// p is T_ID for ME (exception message caught)
-	// continue here............1/12/2020
+	// AstNode* p = pnode->child; // not necessary
+	// p is T_ID for the catch variable (exception message caught), handled in catch{} in Try_here
+	psk->inTryCatch--;
 	psk->process_statement(pnode->next);
 	return &psk->Sig;
 }
@@ -281,7 +282,6 @@ CVar* CAstSigEnv::LOGIC(skope* psk, const AstNode* pnode)
 	return psk->TID((AstNode*)pnode, NULL, &psk->Sig);
 }
 
-
 CVar* CAstSigEnv::LEVELAT(skope* psk, const AstNode* pnode)
 {
 	psk->SetLevel(pnode, pnode->child);
@@ -304,4 +304,3 @@ CVar* CAstSigEnv::RETURN(skope* psk, const AstNode* pnode)
 	psk->fExit = true;
 	return &psk->Sig;
 }
-

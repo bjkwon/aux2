@@ -55,6 +55,7 @@ void yyerror (AstNode **pproot, char **errmsg, char const *s);
 %token T_SIGMA		"sigma"
 %token T_TRY		"try"
 %token T_CATCH		"catch"
+%token T_CATCHBACK	"catchback"
 %token T_OP_SHIFT	">>"
 %token T_OP_CONCAT	"++"
 %token T_LOGIC_EQ	"=="
@@ -378,6 +379,15 @@ stmt: expcondition
 		$$ = newAstNode(T_TRY, @$);
 		$$->child = $2;
 		$$->alt = newAstNode(T_CATCH, @4);
+		$$->alt->child = newAstNode(T_ID, @4);
+		$$->alt->child->str = $4;
+		$$->alt->next = $5;
+	}
+	| T_TRY block T_CATCHBACK T_ID block T_END
+	{
+		$$ = newAstNode(T_TRY, @$);
+		$$->child = $2;
+		$$->alt = newAstNode(T_CATCHBACK, @4);
 		$$->alt->child = newAstNode(T_ID, @4);
 		$$->alt->child->str = $4;
 		$$->alt->next = $5;

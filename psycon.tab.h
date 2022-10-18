@@ -59,25 +59,26 @@
      T_SIGMA = 274,
      T_TRY = 275,
      T_CATCH = 276,
-     T_OP_SHIFT = 277,
-     T_OP_CONCAT = 278,
-     T_LOGIC_EQ = 279,
-     T_LOGIC_NE = 280,
-     T_LOGIC_LE = 281,
-     T_LOGIC_GE = 282,
-     T_LOGIC_AND = 283,
-     T_LOGIC_OR = 284,
-     T_REPLICA = 285,
-     T_MATRIXMULT = 286,
-     T_NUMBER = 287,
-     T_STRING = 288,
-     T_ID = 289,
-     T_ENDPOINT = 290,
-     T_FULLRANGE = 291,
-     T_NEGATIVE = 293,
-     T_POSITIVE = 294,
-     T_LOGIC_NOT = 295,
-     T_TRANSPOSE = 296
+     T_CATCHBACK = 277,
+     T_OP_SHIFT = 278,
+     T_OP_CONCAT = 279,
+     T_LOGIC_EQ = 280,
+     T_LOGIC_NE = 281,
+     T_LOGIC_LE = 282,
+     T_LOGIC_GE = 283,
+     T_LOGIC_AND = 284,
+     T_LOGIC_OR = 285,
+     T_REPLICA = 286,
+     T_MATRIXMULT = 287,
+     T_NUMBER = 288,
+     T_STRING = 289,
+     T_ID = 290,
+     T_ENDPOINT = 291,
+     T_FULLRANGE = 292,
+     T_NEGATIVE = 294,
+     T_POSITIVE = 295,
+     T_LOGIC_NOT = 296,
+     T_TRANSPOSE = 297
    };
 #endif
 
@@ -88,7 +89,7 @@ typedef union YYSTYPE
 {
 
 /* Line 1676 of yacc.c  */
-#line 35 "psycon.y"
+#line 34 "psycon.y"
 
 	double dval;
 	char *str;
@@ -97,7 +98,7 @@ typedef union YYSTYPE
 
 
 /* Line 1676 of yacc.c  */
-#line 101 "psycon.tab.h"
+#line 102 "psycon.tab.h"
 } YYSTYPE;
 # define YYSTYPE_IS_TRIVIAL 1
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */

@@ -79,7 +79,6 @@ CVar* skope::Try_here(const AstNode* pnode, AstNode* p)
 			auto baseudf = get_base_node_for_try(e.pCtx->u.t_func_base, p->line);
 			auto pnode_try = get_try_node(baseudf);
 			const char* name = pnode_try->alt->child->str; // the variable name of catch (as "catchme" in catch "catchme")
-//			SetVar(name, &CVar()); // new temporary variable; OK this way, the temp. var. is deep-copied
 			string errmsg = e.outstr;
 			size_t id = errmsg.find("[GOTO_BASE]");
 			if (id != string::npos) errmsg = errmsg.substr(id + string("[GOTO_BASE]").size());
@@ -97,7 +96,9 @@ CVar* skope::Try_here(const AstNode* pnode, AstNode* p)
 			SetVar("errline", &msg, &Vars[name]);
 			msg.SetValue((float)e.col);
 			SetVar("errcol", &msg, &Vars[name]);
-			process_statement(pnode_try->alt->next);
+			process_statement(pnode_try->alt);
+			if (pnode_try->alt->type == T_CATCHBACK)
+				e.pCtx->pEnv->BLOCK((skope*)e.pCtx, e.pCtx->pTryLast->next);
 		}
 		else
 			throw e;

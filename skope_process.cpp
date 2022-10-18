@@ -10,7 +10,7 @@ bool skope::get_nodes_left_right_sides(const AstNode* pnode, const AstNode** plh
 	*plhs = NULL;
 	*prhs = pnode;
 	if (!pnode || IsConditional(pnode) || pnode->type == N_BLOCK || pnode->type == T_IF || 
-		pnode->type == T_FOR || pnode->type == T_WHILE || pnode->type == T_TRY || pnode->type == T_CATCH ||
+		pnode->type == T_FOR || pnode->type == T_WHILE || pnode->type == T_TRY || pnode->type == T_CATCH || pnode->type == T_CATCHBACK ||
 		pnode->type == T_TRANSPOSE)
 		return false;
 	if (pnode->child) 

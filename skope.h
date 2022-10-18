@@ -245,6 +245,7 @@ public:
 	unique_ptr<skope> son;
 	skope* dad;
 	const AstNode* pLast;
+	const AstNode* pTryLast;
 	string statusMsg; // to display any message during processing inside of AstSig.cpp in the application
 	unsigned long Tick0, Tick1;
 	vector<float> ends;
