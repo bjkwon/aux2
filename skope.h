@@ -99,6 +99,9 @@ public:
 	AstNode* checkin_udf(const string& udf_filename, const string& fullpath, const string& filecontent, string& emsg);
 	typedef CVar* (CAstSigEnv::* xflow_func)(skope* psk, const AstNode* pnode);
 	map<int, xflow_func> xff;
+	vector<int> type_arith_op;
+	vector<int> type_condition;
+	vector<int> type_blockflow;
 	CVar* BLOCK(skope* psk, const AstNode* p);
 	CVar* FOR(skope* psk, const AstNode* p);
 	CVar* IF(skope* psk, const AstNode* p);

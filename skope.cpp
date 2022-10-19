@@ -76,6 +76,37 @@ CAstSigEnv::CAstSigEnv(const int fs)
 	xff[N_INITCELL] = &CAstSigEnv::INITCELL;
 	xff[T_BREAK] = &CAstSigEnv::BREAK;
 	xff[T_RETURN] = &CAstSigEnv::RETURN;
+
+	type_arith_op.push_back('+');
+	type_arith_op.push_back('-');
+	type_arith_op.push_back('*');
+	type_arith_op.push_back('/');
+	type_arith_op.push_back('^');
+	type_arith_op.push_back('@');
+	type_arith_op.push_back('%');
+	type_arith_op.push_back(T_POSITIVE);
+	type_arith_op.push_back(T_NEGATIVE);
+	type_arith_op.push_back(T_TRANSPOSE);
+	type_arith_op.push_back(T_MATRIXMULT);
+	type_arith_op.push_back(T_OP_SHIFT);
+	type_arith_op.push_back(T_OP_CONCAT);
+	type_condition.push_back('>');
+	type_condition.push_back('<');
+	type_condition.push_back(T_LOGIC_EQ);
+	type_condition.push_back(T_LOGIC_NE);
+	type_condition.push_back(T_LOGIC_LE);
+	type_condition.push_back(T_LOGIC_GE);
+	type_condition.push_back(T_LOGIC_NOT);
+	type_condition.push_back(T_LOGIC_AND);
+	type_condition.push_back(T_LOGIC_OR);
+	type_blockflow.push_back(T_IF);
+	type_blockflow.push_back(T_FOR);
+	type_blockflow.push_back(T_WHILE);
+	type_blockflow.push_back(T_TRY);
+	type_blockflow.push_back(T_CATCH);
+	type_blockflow.push_back(T_CATCHBACK);
+	type_blockflow.push_back(N_BLOCK);
+	
 }
 
 CAstSigEnv::~CAstSigEnv()

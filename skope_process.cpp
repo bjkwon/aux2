@@ -9,9 +9,13 @@ bool skope::get_nodes_left_right_sides(const AstNode* pnode, const AstNode** plh
 	replica.Reset();
 	*plhs = NULL;
 	*prhs = pnode;
-	if (!pnode || IsConditional(pnode) || pnode->type == N_BLOCK || pnode->type == T_IF || 
-		pnode->type == T_FOR || pnode->type == T_WHILE || pnode->type == T_TRY || pnode->type == T_CATCH || pnode->type == T_CATCHBACK ||
-		pnode->type == T_TRANSPOSE)
+	if (find(pEnv->type_arith_op.begin(), pEnv->type_arith_op.end(), pnode->type) != pEnv->type_arith_op.end())
+		return false;
+	if (find(pEnv->type_condition.begin(), pEnv->type_condition.end(), pnode->type) != pEnv->type_condition.end())
+		return false;
+	if (find(pEnv->type_blockflow.begin(), pEnv->type_blockflow.end(), pnode->type) != pEnv->type_blockflow.end())
+		return false;
+	if (!pnode)
 		return false;
 	if (pnode->child) 
 	{
