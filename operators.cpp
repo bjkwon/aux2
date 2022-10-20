@@ -860,7 +860,7 @@ float CSignal::length(unsigned int id0, unsigned int len, void* p) const
 float CSignal::dur(unsigned int id0, unsigned int len, void* p) const
 {
 	if (len == 0) len = nSamples;
-	return 1000.f / fs * len;
+	return 1000.f * len / fs;
 }
 
 inline static float _getdB(float x)
