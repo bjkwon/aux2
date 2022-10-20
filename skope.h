@@ -83,6 +83,7 @@ public:
 	map<string, UDF> udf;
 	int Fs;
 	int curLine; // used for control F10
+	int inTryCatch;
 	vector<string> AuxPath;
 	bool shutdown;
 	void InitBuiltInFunctions();
@@ -243,7 +244,6 @@ public:
 	AstNode* lhs;
 	CAstSigEnv* pEnv;
 	CUDF u;
-	int inTryCatch;
 	CVar replica;
 	unique_ptr<skope> son;
 	skope* dad;

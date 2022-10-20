@@ -33,7 +33,7 @@ skope::~skope()
 }
 
 CAstSigEnv::CAstSigEnv(const int fs)
-	: Fs(fs), curLine(-1)
+	: Fs(fs), curLine(-1), inTryCatch(0)
 {
 	shutdown = false;
 	if (fs < 0)	throw "Internal error: Fs must be greater than 1.";
@@ -261,7 +261,6 @@ vector<CVar*> skope::Compute()
 	Sig.struts.clear();
 //	Sig.SetNextChan(NULL);
 	Sig.functionEvalRes = false;
-	inTryCatch = 0;
 	//	pgo = NULL;
 	lhs = NULL;
 	if (!node) {
@@ -1306,7 +1305,6 @@ void skope::init()
 //	FsFixed = false;
 	pgo = NULL;
 	Tick0 = 1;
-	inTryCatch = 0;
 	level = 1;
 	baselevel.push_back(level);
 }

@@ -14,7 +14,7 @@ CVar* CAstSigEnv::BLOCK(skope* psk, const AstNode* pnode)
 		psk->process_statement(p);
 		//			pgo = NULL; // without this, go lingers on the next line 2/9/2019
 		psk->Sig.Reset(1); // without this, fs=3 lingers on the next line 2/9/2019
-		if (psk->inTryCatch)
+		if (inTryCatch)
 			psk->pTryLast = p;
 	}
 	return &psk->Sig;
@@ -75,7 +75,7 @@ CVar* CAstSigEnv::WHILE(skope* psk, const AstNode* pnode)
 CVar* CAstSigEnv::TRY(skope* psk, const AstNode* pnode)
 {
 	AstNode* p = pnode->child;
-	psk->inTryCatch++;
+	inTryCatch++;
 	psk->Try_here(pnode, p);
 	return &psk->Sig;
 }
@@ -84,7 +84,7 @@ CVar* CAstSigEnv::CATCH(skope* psk, const AstNode* pnode)
 {
 	// AstNode* p = pnode->child; // not necessary
 	// p is T_ID for the catch variable (exception message caught), handled in catch{} in Try_here
-	psk->inTryCatch--;
+	inTryCatch--;
 	psk->process_statement(pnode->next);
 	return &psk->Sig;
 }

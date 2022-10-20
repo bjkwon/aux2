@@ -21,6 +21,8 @@
 #include "skope_exception.h"
 #include "psycon.tab.h"
 
+extern vector<skope*> xscope;
+
 AstNode* goto_try_line(const AstNode* pnode, int line)
 {
 	AstNode* p = (AstNode*)pnode;
@@ -74,7 +76,7 @@ CVar* skope::Try_here(const AstNode* pnode, AstNode* p)
 		// i.e., the first line of catch.
 		// For other exceptions, this is bypassed and e is further thrown to the user
 		// to be captured by xcom 1/1/2021
-		if (inTryCatch)
+		if (pEnv->inTryCatch)
 		{ // Make a new struct variable from child of e.pTarget (which is T_CATCH)
 			auto baseudf = get_base_node_for_try(e.pCtx->u.t_func_base, p->line);
 			auto pnode_try = get_try_node(baseudf);
@@ -97,8 +99,13 @@ CVar* skope::Try_here(const AstNode* pnode, AstNode* p)
 			msg.SetValue((float)e.col);
 			SetVar("errcol", &msg, &Vars[name]);
 			process_statement(pnode_try->alt);
+			skope* pbaskope = NULL;
+			for (auto xs : xscope) {
+				if (xs->level == e.pCtx->level)
+					pbaskope = xs;
+			}
 			if (pnode_try->alt->type == T_CATCHBACK)
-				e.pCtx->pEnv->BLOCK((skope*)e.pCtx, e.pCtx->pTryLast->next);
+				e.pCtx->pEnv->BLOCK((skope*)pbaskope, pbaskope->pTryLast->next);
 		}
 		else
 			throw e;
