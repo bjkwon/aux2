@@ -14,6 +14,7 @@
 // so the data doesn't go with time but it is about at that particular tmark
 // 5/25/2020 
 
+#include "skope.h"
 #include <cstring> // for g++
 
 #include <math.h>
@@ -21,59 +22,8 @@
 #include <stdlib.h>
 #include <time.h>
 #include <vector>
-#include <algorithm>
-
 #include <complex>
-
 #include <math.h> // ceil
-
-//#include "psycon.tab.h"
-#include "aux_classes.h"
-
-#define PI 3.14159f
-
-enum yytokentype {
-	T_EOF = 0,
-	T_UNKNOWN = 258,
-	T_NEWLINE = 259,
-	T_IF = 260,
-	T_ELSE = 261,
-	T_ELSEIF = 262,
-	T_END = 263,
-	T_WHILE = 264,
-	T_FOR = 265,
-	T_BREAK = 266,
-	T_CONTINUE = 267,
-	T_SWITCH = 268,
-	T_CASE = 269,
-	T_OTHERWISE = 270,
-	T_FUNCTION = 271,
-	T_STATIC = 272,
-	T_RETURN = 273,
-	T_SIGMA = 274,
-	T_TRY = 275,
-	T_CATCH = 276,
-	T_OP_SHIFT = 277,
-	T_OP_CONCAT = 278,
-	T_LOGIC_EQ = 279,
-	T_LOGIC_NE = 280,
-	T_LOGIC_LE = 281,
-	T_LOGIC_GE = 282,
-	T_LOGIC_AND = 283,
-	T_LOGIC_OR = 284,
-	T_REPLICA = 285,
-	T_MATRIXMULT = 286,
-	T_NUMBER = 287,
-	T_STRING = 288,
-	T_ID = 289,
-	T_ENDPOINT = 290,
-	T_FULLRANGE = 291,
-	T_NEGATIVE = 293,
-	T_POSITIVE = 294,
-	T_LOGIC_NOT = 295,
-	T_TRANSPOSE = 296
-};
-
 
 #define CRIT  100. // Threshold for computing rms is above 100th of its max
 
