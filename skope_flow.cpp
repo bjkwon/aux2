@@ -105,7 +105,23 @@ CVar* skope::Try_here(const AstNode* pnode, AstNode* p)
 					pbaskope = xs;
 			}
 			if (pnode_try->alt->type == T_CATCHBACK)
-				e.pCtx->pEnv->BLOCK((skope*)pbaskope, pbaskope->pTryLast->next);
+			{	//	e.pCtx->pEnv->BLOCK((skope*)pbaskope, pbaskope->pTryLast->next);
+				auto tblock = (AstNode*)malloc(sizeof(AstNode));
+				memset(tblock, 0, sizeof(AstNode));
+				tblock->type = N_BLOCK;
+				tblock->next = pbaskope->pTryLast->next->next;
+				auto ttry = (AstNode*)malloc(sizeof(AstNode));
+				memset(ttry, 0, sizeof(AstNode));
+				ttry->type = T_TRY;
+				ttry->line = pbaskope->pTryLast->next->line;
+				ttry->col = pbaskope->pTryLast->next->col;
+				ttry->child = tblock;
+				ttry->alt = pnode_try->alt;
+				e.pCtx->pEnv->TRY((skope*)pbaskope, ttry);
+				ttry->child = ttry->alt = NULL;
+				free(tblock);
+				free(ttry);
+			}
 		}
 		else
 			throw e;
