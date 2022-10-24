@@ -141,6 +141,7 @@ void skope::eval_lhs(const AstNode* plhs, const AstNode* prhs, CVar &lhs_index, 
 	}
 	else // assume TID
 	{
+		lhs = NULL;
 		const CVar* pvarLHS;
 		const CVar* struct_item = NULL;
 		const AstNode* pstruct = NULL;

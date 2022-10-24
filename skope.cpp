@@ -553,12 +553,11 @@ AstNode* skope::read_node(CNodeProbe& np, AstNode* ptree, AstNode* ppar, bool& R
 					// if static function, np.psigBase must be NULL
 					if (t_func->suppress == 3 && np.psigBase)
 						throw exception_misuse(*this, t_func, string(ptree->str) + "() : function declared as static cannot be called as a member function.").raise();
-					if (PrepareAndCallUDF(ptree, &Sig)) // this probably won't return false
-					{// if a function call follows N_ARGS, skip it for next_parsible_node
-						np.psigBase = &Sig;
-						if (ptree->alt && (ptree->alt->type == N_ARGS || IsConditional(ptree->alt)))
-							ptree = ptree->alt; // to skip N_ARGS
-					}
+					PrepareAndCallUDF(ptree, &Sig);
+					// if a function call follows N_ARGS, skip it for next_parsible_node
+					np.psigBase = &Sig;
+					if (ptree->alt && (ptree->alt->type == N_ARGS || IsConditional(ptree->alt)))
+						ptree = ptree->alt; // to skip N_ARGS
 					return get_next_parsible_node(ptree);
 				}
 				else
@@ -777,7 +776,7 @@ CVar* skope::GetVariable(const char* varname, CVar* pvar)
 	return GetGOVariable(*this, varname, pvar);
 }
 
-bool skope::PrepareAndCallUDF(const AstNode* pCalling, CVar* pBase, CVar* pStaticVars)
+void skope::PrepareAndCallUDF(const AstNode* pCalling, CVar* pBase, CVar* pStaticVars)
 {
 	if (!pCalling->str)
 		throw exception_etc(*this, pCalling, "p->str null pointer in PrepareAndCallUDF(p,...)").raise();
@@ -831,7 +830,6 @@ bool skope::PrepareAndCallUDF(const AstNode* pCalling, CVar* pBase, CVar* pStati
 				pOutParam = pOutParam->alt;
 			for (AstNode* pf = pOutParam; pf; pf = pf->next)
 				son->u.argout.push_back(pf->str);
-			son->u.nargout = (int)son->u.argout.size();
 		}
 		else
 		{
@@ -841,18 +839,19 @@ bool skope::PrepareAndCallUDF(const AstNode* pCalling, CVar* pBase, CVar* pStati
 	}
 	AstNode* pf, * pa;	 // formal & actual parameter; pa is for this, pf is for son
 	//Checking requested output arguments vs formal output arguments
+	size_t nargout = 0;
 	if (lhs)
 	{
-		AstNode* p = lhs->type == N_VECTOR ? ((AstNode*)lhs->str)->alt : lhs;
-		if (lhs->type == N_VECTOR) for (son->u.nargout = 0; p && p->line == lhs->line; p = p->next, son->u.nargout++) {}
-		if (son->u.nargout > (int)son->u.argout.size()) {
-			oss << "More output arguments than in the definition (" << son->u.argout.size() << "), ";
-			oss << son->u.t_func->str;
+		if (lhs->type == N_VECTOR) {
+			for (AstNode* tp = ((AstNode*)lhs->str)->alt; tp; tp = tp->next, nargout++) {}
+		}
+		else
+			nargout = (int)son->u.argout.size(); // not applicable; as of oct 2022, all udf calls with output arg is N_VECTOR on LHS
+		if (nargout > (int)son->u.argout.size()) {
+			oss << son->u.t_func->str << ": max output arguments in the udf def: " << son->u.argout.size() << ", requested: " << nargout << endl;
 			throw exception_etc(*this, pCalling, oss.str()).raise();
 		}
 	}
-	else
-		son->u.nargout = (int)son->u.argout.size(); // probably not correct
 	// input parameter binding
 	pa = pCalling->alt;
 	//If the line invoking the udf res = udf(arg1, arg2...), pa points to arg1 and so on
@@ -886,13 +885,13 @@ bool skope::PrepareAndCallUDF(const AstNode* pCalling, CVar* pBase, CVar* pStati
 	if (u.debug.status == stepping_in) son->u.debug.status = stepping;
 	xscope.push_back(son.get());
 	//son->SetVar("_________",pStaticVars); // how can I add static variables here???
-	size_t nArgout = son->CallUDF(pCalling, pBase);
+	son->CallUDF(pCalling, pBase, nargout);
 	// output parameter binding
 	vector<CVar*> holder;
 	size_t cnt = 0;
 	// output argument transfer from son to this
 	float nargin = son->Vars["nargin"].value();
-	float nargout = son->Vars["nargout"].value();
+	float son_nargout = nargout;// son->Vars["nargout"].value();
 	//Undefined output variables are defined as empty
 	for (auto v : son->u.argout)
 		if (son->Vars.find(v) == son->Vars.end() && (son->GOvars.find(v) == son->GOvars.end() || son->GOvars[v].front()->IsEmpty()))
@@ -900,7 +899,7 @@ bool skope::PrepareAndCallUDF(const AstNode* pCalling, CVar* pBase, CVar* pStati
 	//lhs is either NULL (if not specified), T_ID or N_VECTOR
 	if (lhs)
 	{
-		outputbinding(pCalling, nArgout);
+		outputbinding(pCalling, nargout);
 	}
 	else // no output parameter specified. --> first formal output arg goes to ans
 	{
@@ -935,11 +934,12 @@ bool skope::PrepareAndCallUDF(const AstNode* pCalling, CVar* pBase, CVar* pStati
 	if (pgo) pgo->functionEvalRes = true;
 	Sig.functionEvalRes = true;
 	xscope.pop_back(); // move here????? to make purgatory work...
-	return true;
 }
 
-size_t skope::CallUDF(const AstNode* pnode4UDFcalled, CVar* pBase)
+void skope::CallUDF(const AstNode* pnode4UDFcalled, CVar* pBase, size_t nargout_requested)
 {
+	// Returns the number of output arguments requested in the call
+	// 
 	// t_func: the T_FUNCTION node pointer for the current UDF call, created after ReadUDF ("formal" context--i.e., how the udf file was read with variables used in the file)
 	// pOutParam: AstNode for formal output variable (or LHS), just used inside of this function.
 	// Output parameter dispatching (sending the output back to the calling worksapce) is done with pOutParam and lhs at the bottom.
@@ -947,9 +947,9 @@ size_t skope::CallUDF(const AstNode* pnode4UDFcalled, CVar* pBase)
 	// u.debug.status is set when debug key is pressed (F5, F10, F11), prior to this call.
 	// For an initial entry UDF, u.debug.status should be null
 	CVar nargin((float)u.nargin);
-	CVar nargout((float)u.nargout);
+	CVar nargout((float)nargout_requested);
 	SetVar("nargin", &nargin);
-	SetVar("nargout", &nargout); // probably not correct
+	SetVar("nargout", &nargout);
 	// If the udf has multiple statements, p->type is N_BLOCK), then go deeper
 	// If it has a single statement, take it from there.
 	AstNode* pFirst = u.t_func->child->next;
@@ -1031,7 +1031,6 @@ size_t skope::CallUDF(const AstNode* pnode4UDFcalled, CVar* pBase)
 //				fpmsg.UpdateDebuggerGUI(dad, entering, -1);
 		}
 	}
-	return u.nargout;
 }
 
 multimap<CVar, AstNode*> skope::register_switch_cvars(const AstNode* pnode, vector<int>& undefined)

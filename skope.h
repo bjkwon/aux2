@@ -155,7 +155,7 @@ public:
 	vector<string> argout; // formal output argument list; to be filled out in PrepareAndCallUDF()
 	int nextBreakPoint;
 	int currentLine;
-	int nargin, nargout;
+	int nargin;
 	map<string, CVar*> static_vars;
 	CDebugStatus debug;
 	string application;
@@ -197,8 +197,8 @@ public:
 	AstNode* RegisterUDF(const AstNode* p, const char* fullfilename, const string& filecontent);
 	CVar* GetGlobalVariable(const AstNode* pnode, const char* varname);
 	CVar* GetVariable(const char* varname, CVar* pvar = NULL);
-	bool PrepareAndCallUDF(const AstNode* pCalling, CVar* pBase, CVar* pStaticVars = NULL);
-	size_t CallUDF(const AstNode* pnode4UDFcalled, CVar* pBase);
+	void PrepareAndCallUDF(const AstNode* pCalling, CVar* pBase, CVar* pStaticVars = NULL);
+	void CallUDF(const AstNode* pnode4UDFcalled, CVar* pBase, size_t nargout_requested);
 	FILE* fopen_from_path(const string& fname, const string& ext, string& fullfilename);
 	bool builtin_func_call(CNodeProbe& diggy, AstNode* p);
 	void HandleAuxFunctions(const AstNode* pnode, AstNode* pRoot = NULL);
