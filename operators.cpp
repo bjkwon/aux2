@@ -364,7 +364,7 @@ bool CVar::operator==(const CVar & rhs)
 
 bool CSignals::operator==(const CSignals & rhs)
 {
-	if (CTimeSeries::operator==((CTimeSeries)rhs))
+	if (CTimeSeries::operator==(rhs))
 	{
 		if (next)	return CTimeSeries::operator==(*(rhs.next));
 		return true;
@@ -391,19 +391,27 @@ bool CSignal::operator==(const CSignal & rhs)
 	if (fs != rhs.fs) return false;
 	if (snap != rhs.snap) return false;
 	if (tmark != rhs.tmark) return false;
-	return body::operator==((body)rhs);
-
+	//Do not cast rhs like the following
+	// return body::operator==((body)rhs);
+	// It may crash during temporary generation of body object (body)rhs 
+	// no cast, just rhs will still lead to body::operator==(const body & rhs)
+	// correctly 10/23/2022
+	return body::operator==(rhs);
 }
 bool body::operator==(const body & rhs)
 {
 	if (nSamples != rhs.nSamples) return false;
+	if (nSamples == 0) return true;
 	if (nGroups != rhs.nGroups) return false;
 	if (bufBlockSize != rhs.bufBlockSize) return false;
-	if (bufBlockSize == 1)
-		for (unsigned int k = 0; k < nSamples; k++)
+	if (bufBlockSize == 1) {
+		for (unsigned int k = 0; k < nSamples - 1; k++)
 		{
 			if (logbuf[k] != rhs.logbuf[k]) return false;
 		}
+		if (bufType!='S' && logbuf[nSamples - 1] != rhs.logbuf[nSamples - 1])
+			return false;
+	}
 	else if (bufBlockSize == sizeof(float))
 		for (unsigned int k = 0; k < nSamples; k++)
 		{

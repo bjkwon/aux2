@@ -848,7 +848,7 @@ void skope::PrepareAndCallUDF(const AstNode* pCalling, CVar* pBase, CVar* pStati
 		else
 			nargout = (int)son->u.argout.size(); // not applicable; as of oct 2022, all udf calls with output arg is N_VECTOR on LHS
 		if (nargout > (int)son->u.argout.size()) {
-			oss << son->u.t_func->str << ": max output arguments in the udf def: " << son->u.argout.size() << ", requested: " << nargout << endl;
+			oss << son->u.t_func->str << ": max output arguments in the udf def: " << son->u.argout.size() << ", requested: " << nargout;
 			throw exception_etc(*this, pCalling, oss.str()).raise();
 		}
 	}
@@ -1790,8 +1790,10 @@ CVar* skope::ConditionalOperation(const AstNode* pnode, AstNode* p)
 		Compute(p);
 		pgo = NULL;
 		blockCellStruct2(*this, pnode, Sig);
-		if (Sig.IsString())
-			Sig.SetValue((float)((CSignal)Sig == (CSignal)rsig));
+		if (Sig.IsString()) {
+			Sig.SetValue((float)(Sig == rsig));
+			Sig.MakeLogical();
+		}
 		else
 			Sig.LogOp(rsig, pnode->type);
 		break;

@@ -4,7 +4,7 @@
 skope_exception& skope_exception::raise()
 {
 	addLineCol();
-	outstr = msgonly + sourceloc;
+	outstr = msgonly + " " + sourceloc;
 	return *this;
 }
 
