@@ -621,6 +621,7 @@ AstNode* skope::read_nodes(CNodeProbe& np, bool bRHS)
 {
 	AstNode* pn = np.root;
 	AstNode* p, * pPrev = NULL;
+	AstNode* lastp = NULL;
 	CVar pvar;
 	bool RHSpresent = bRHS;
 	while (pn)
@@ -631,9 +632,18 @@ AstNode* skope::read_nodes(CNodeProbe& np, bool bRHS)
 		p = read_node(np, pn, pPrev, RHSpresent);
 		if (!p) return pn;
 		if (p->type == N_ARGS)
+		{
 			pPrev = pn;
+			pheadthisline = NULL;
+		}
 		else
+		{
 			pPrev = NULL;
+			if (pn->type==T_ID && pn->alt && pn->alt->type==N_STRUCT) 
+				pheadthisline = pn;
+			else
+				pheadthisline = NULL;
+		}
 		pn = p;
 	}
 	return NULL; // shouldn't come thru here; only for the formality

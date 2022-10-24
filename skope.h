@@ -231,6 +231,8 @@ public:
 	vector<string> ClearVar(const char* var, CVar* psigBase=NULL);
 	void replica_prep(CVar* psig);
 
+	AstNode* pheadthisline;
+
 	string script;
 	string emsg;
 	CVar Sig; // placeholder for the output of Compute(); used in various ways
