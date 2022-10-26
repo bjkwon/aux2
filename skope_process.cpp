@@ -212,7 +212,7 @@ void skope::eval_lhs(const AstNode* plhs, const AstNode* prhs, CVar &lhs_index, 
 			//  plhs (input) points to x
 			//  pstruct (output) points to the node of .prop(k+1)
 			//go down to the prop item. x.prop1.prop2.prop3....prop7 
-			// If any of these items are not present, return with TYPEBIT_NULL
+			// If prop1 is undefined, return with TYPEBIT_NULL
 			struct_item = get_available_struct_item(plhs, &pstruct);
 			// struct_item NULL means nothing has been defined from prop1 through propn
 			// struct_item not NULL but if it doesn't have strut means prop(k+1) is defined without indexing 
@@ -304,7 +304,7 @@ void skope::assign_struct(CVar* lobj, const AstNode* plhs, const AstNode* pstruc
 		lobj->strut[pstruct->str] = pvar;
 }
 const CVar* skope::get_available_struct_item(const AstNode* plhs, const AstNode** pstruct)
-{
+{ // x.p1 defined, but the statement is x.q = RHS --> OK, but x.q(2) = RHS --> NOT OK, throw here
 	const CVar* pvarLHS = NULL;
 	*pstruct = plhs;
 	auto it = Vars.find(plhs->str);
@@ -314,6 +314,8 @@ const CVar* skope::get_available_struct_item(const AstNode* plhs, const AstNode*
 			*pstruct = plhs->alt;
 			itvar = ((CVar*)pvarLHS)->strut.find(plhs->alt->str);
 			if (itvar == pvarLHS->strut.end()) {
+				if (plhs->alt->type==N_STRUCT && plhs->alt->alt && plhs->alt->alt->type == N_ARGS)
+					throw exception_etc(*this, plhs, string("Trying to index an undefined member variable .") + plhs->alt->str  + " on LHS").raise();
 				break;
 			}
 			if (plhs->alt->alt)
