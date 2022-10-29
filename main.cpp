@@ -12,7 +12,6 @@
 #include <readline/readline.h>
 #include <readline/history.h>
 #endif
-//#include "unit_test.cpp"
 
 #define AUXENV_FILE "auxenv.json"
 #define DEFAULT_FS 22050
@@ -37,7 +36,7 @@ void echo(int depth, skope& ctx, const AstNode* pn, CVar* pvar)
 		if (skope::IsLooping(pn)) return; // T_IF, T_FOR, T_WHILE
 		// if the command required waiting, lock a mutex here
 		// ctx.xtree->alt indicates subsequent modifier of TID (e.e., x(10:20) x.sqrt, etc)
-		if (pn->type == T_ID) {
+		if (pn->type == T_ID || pn->type == N_VECTOR) {
 			if (pn->alt && pn->alt->type == N_STRUCT)
 				echo_object().print(pn->alt->str, pvar, 1);
 			else if (pn->alt && pn->alt->type == N_ARGS)
@@ -52,7 +51,6 @@ void echo(int depth, skope& ctx, const AstNode* pn, CVar* pvar)
 		}
 	}
 }
-
 
 //[ 5  3 2 -1 9 83 7 62 9 7 6 8 9 7 3 2 -1]
 static void show_result(skope& sc)
@@ -73,8 +71,11 @@ static void show_result(skope& sc)
 	}
 	else if (sc.node->type == N_VECTOR)// && sc.node->alt && sc.node->alt->type!=N_STRUCT) // sc.node->alt is necessary to ensure that there's a vector on the LHS
 	{
-		for (AstNode* pp = ((AstNode*)sc.node->str)->alt; !sc.node->suppress && pp; pp = pp->next, dt++)
-			echo(dt, sc, pp, NULL);
+		if (sc.node->alt && sc.node->alt->type==N_STRUCT)
+			echo(dt, sc, sc.node, &sc.Sig);
+		else
+			for (AstNode* pp = ((AstNode*)sc.node->str)->alt; !sc.node->suppress && pp; pp = pp->next, dt++)
+				echo(dt, sc, pp, NULL);
 	}
 	else // see if lhs makes more sense than xtree
 	{

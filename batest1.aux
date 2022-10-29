@@ -96,7 +96,8 @@ try
 	msg = "x.clear, x=1:10, x.undef(4)=100", msg.eval
 	
 	msg = "x=""bjk"", x.val=200 //struct var with existing value", msg.eval
-	res = x=="bjk" && x.val==200
+	res0 = x=="bjk" // issame(x,"bjk") won't work. res0 should be [true true true]
+	res = res0.and && x.val==200
 	r = test_check_cond(r, res, msg)
 // 12:27 AM 10/27/2022
 // To-do
