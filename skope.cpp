@@ -1607,6 +1607,7 @@ CVar* skope::NodeVector(const AstNode* pn)
 	else
 	{
 		out.UpdateBuffer((unsigned)dbuf.size());
+		out.bufType = 'R';
 		int k = 0;
 		for (auto v : dbuf) out.buf[k++] = v;
 	}
@@ -1788,7 +1789,8 @@ CVar* skope::ConditionalOperation(const AstNode* pnode, AstNode* p)
 	// 2/5/2019
 	CVar rsig;
 	uint16_t t1, t2;
-	// TODO--the operation should be allowed for a struct or cell object based on the head obj
+	// Logical operations are allowed for a struct or cell object based on the head obj
+	// TODO--other operations (arithmetic, @, >> etc) should be the same... allow struct or cell based on the head obj
 	switch (pnode->type)
 	{
 	case '<':
@@ -1812,7 +1814,6 @@ CVar* skope::ConditionalOperation(const AstNode* pnode, AstNode* p)
 			throw exception_etc(*this, pnode, "Boolean obj is compared with non-Boolean object.").raise();
 		//		blockCellStruct2(*this, pnode, rsig);
 		pgo = NULL;
-//		blockCellStruct2(*this, pnode, Sig);
 		Sig.LogOp(rsig, pnode->type);
 		if (ISSTRINGG(t1)) { // for string operation, Sig still has fs of 2. Update it with fs=1. SetFs() won't work because it sets bufBlockSize back to the real size
 			CVar out;
@@ -1823,49 +1824,28 @@ CVar* skope::ConditionalOperation(const AstNode* pnode, AstNode* p)
 		}
 		break;
 	case T_LOGIC_NOT:
+		// bufType of a or b should be 'R' 'B' or 'L'
 		Sig = Compute(p);
+		if (Sig.bufType!='R' && Sig.bufType != 'L' && Sig.bufType != 'B')
+			throw exception_etc(*this, pnode, "Logical reverse can be only applied to a real, byte or logical object.").raise();
 		if (Sig.nSamples == 0)
 			throw exception_etc(*this, pnode, "Logical operation not applicable to a null obj.").raise();
-		blockCellStruct2(*this, pnode, Sig);
 		Sig.MakeLogical();
 		Sig.LogOp(rsig, pnode->type); // rsig is a dummy for func signature.
 		break;
 	case T_LOGIC_AND:
-		rsig = ConditionalOperation(p, p->child);
-		if (rsig.nSamples == 0)
-			throw exception_etc(*this, pnode, "Logical operation not applicable to a null obj.").raise();
-		if (rsig.nSamples == 1 && !rsig.logbuf[0])
-		{
-			Sig.bufBlockSize = 1;
-			Sig.logbuf[0] = false;
-			break;
-		}
-		ConditionalOperation(p->next, p->next->child);
-		Sig.LogOp(rsig, pnode->type);
-		break;
 	case T_LOGIC_OR:
-		rsig = ConditionalOperation(p, p->child);
-		if (rsig.nSamples == 0)
+		// a && b, a || b --> if either a or b is a scalar, the output length is the length of the other one
+		// if none of them is a scalar, the output length is the shorter of a or b
+		// bufType of a or b should be 'R' 'B' or 'L'
+		rsig = Compute(p->next);
+		Compute(p);
+		if ((Sig.bufType != 'R' && Sig.bufType != 'L' && Sig.bufType != 'B') ||
+			(rsig.bufType != 'R' && rsig.bufType != 'L' && rsig.bufType != 'B'))
+			throw exception_etc(*this, pnode, "Logical reverse can be only applied to a real, byte or logical object.").raise();
+		if (Sig.nSamples == 0 || rsig.nSamples == 0)
 			throw exception_etc(*this, pnode, "Logical operation not applicable to a null obj.").raise();
-		if (rsig.nSamples == 1 && rsig.logbuf[0])
-		{
-			Sig.bufBlockSize = 1;
-			Sig.logbuf[0] = true;
-			break;
-		}
-		ConditionalOperation(p->next, p->next->child);
 		Sig.LogOp(rsig, pnode->type);
-		break;
-	case T_NUMBER:
-		Compute(pnode);
-		Sig.MakeLogical();
-		if (Sig.value() == 0.)		Sig.logbuf[0] = false;
-		else Sig.logbuf[0] = true;
-		break;
-	case N_VECTOR:
-	case N_MATRIX:
-		//Coming here: if [1 1].and statement; end
-		return Compute(pnode);
 		break;
 	default:
 		//Coming here: if and([1 1]) statement; end
@@ -1876,6 +1856,9 @@ CVar* skope::ConditionalOperation(const AstNode* pnode, AstNode* p)
 	//	return Sig;
 		//Need this instead of return Sig to cover
 		// if (a==[1 4 5]).and statement; end
+	//At this point, need to clear struct or cell from Sig
+	Sig.strut.clear();
+	Sig.cell.clear();
 	return TID(pnode->alt, NULL, &Sig);
 }
 
