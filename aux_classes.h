@@ -295,6 +295,7 @@ public:
 		return (( (tp & 0xFF00) == TYPEBIT_TEMPO_ONE || (tp & 0xFF00) == TYPEBIT_TEMPO_CHAINS) && (tp & 0x00FF) > 1);
 	}
 	bool IsString() const { return bufType == 'S'; }
+	bool IsBoolean() const { return bufType == 'L'; }
 
 	// Constructors
 	CSignal();

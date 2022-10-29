@@ -45,7 +45,7 @@ static float quantizetmark(float delta, int fs)
 
 /*bufBlockSize is 1 (for logical, string), sizeof(double) (regular), or sizeof(double)*2 (complex).     4/4/2017 bjkwon */
 body::body()
-	: bufType(' '), nSamples(0), bufBlockSize(sizeof(float)), buf(NULL), nGroups(1), ghost(false)
+	: bufType(0), nSamples(0), bufBlockSize(sizeof(float)), buf(NULL), nGroups(1), ghost(false)
 {
 }
 
@@ -137,7 +137,10 @@ float body::_min(unsigned int id, unsigned int len, void* pind) const
 
 body& body::MakeLogical()
 {
-	if (bufBlockSize == 1) return *this;
+	if (bufBlockSize == 1) {
+		bufType = 'L';
+		return *this;
+	}
 	body out;
 	out.bufBlockSize = 1; // logical array
 	out.UpdateBuffer(nSamples); // This over-reserve the memory, but there's no harm. 4/4/2017 bjk
@@ -147,6 +150,7 @@ body& body::MakeLogical()
 		else			out.logbuf[k] = true;
 	}
 	out.nGroups = nGroups;
+	out.bufType = 'L';
 	return (*this = out);
 }
 

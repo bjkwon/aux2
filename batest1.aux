@@ -95,6 +95,14 @@ try
 	msg = "x.clear, x.val(4)=100", msg.eval
 	msg = "x.clear, x=1:10, x.undef(4)=100", msg.eval
 	
+	msg = "x=""bjk"", x.val=200 //struct var with existing value", msg.eval
+	res = x=="bjk" && x.val==200
+	r = test_check_cond(r, res, msg)
+// 12:27 AM 10/27/2022
+// To-do
+// 1. revise head, ismember, and erase functions to accept not only struct, but also struct-PLUS (struct with head)
+// 2. revise head to add a feature to display the head content if no 2nd arg is given
+// 3. if x is struct with a string head, any function that takes a string should accept x
 	printf("\n")
 	
 catchback me

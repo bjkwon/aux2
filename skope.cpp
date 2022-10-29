@@ -1787,6 +1787,8 @@ CVar* skope::ConditionalOperation(const AstNode* pnode, AstNode* p)
 	// then at some point it may incorrectly try to process the GO when it is not about GO.
 	// 2/5/2019
 	CVar rsig;
+	uint16_t t1, t2;
+	// TODO--the operation should be allowed for a struct or cell object based on the head obj
 	switch (pnode->type)
 	{
 	case '<':
@@ -1796,25 +1798,42 @@ CVar* skope::ConditionalOperation(const AstNode* pnode, AstNode* p)
 	case T_LOGIC_EQ:
 	case T_LOGIC_NE:
 		rsig = Compute(p->next);
-		blockCellStruct2(*this, pnode, rsig);
 		Compute(p);
+		// if at least one of the operands is zero-length, throw
+		if (Sig.nSamples == 0 || rsig.nSamples == 0)
+			throw exception_etc(*this, pnode, "Logical operation not applicable to a null obj.").raise();
+		t1 = rsig.type();
+		t2 = Sig.type();
+		// If one is string-plus, the other one must be also string-plus
+		if (ISSTRINGG(t1) ^ ISSTRINGG(t2))
+			throw exception_etc(*this, pnode, "String obj is compared with non-string object.").raise();
+		// If one is bool-plus, the other one must be also bool-plus
+		if (ISBOOLG(t1) ^ ISBOOLG(t2))
+			throw exception_etc(*this, pnode, "Boolean obj is compared with non-Boolean object.").raise();
+		//		blockCellStruct2(*this, pnode, rsig);
 		pgo = NULL;
-		blockCellStruct2(*this, pnode, Sig);
-		if (Sig.IsString()) {
-			Sig.SetValue((float)(Sig == rsig));
-			Sig.MakeLogical();
+//		blockCellStruct2(*this, pnode, Sig);
+		Sig.LogOp(rsig, pnode->type);
+		if (ISSTRINGG(t1)) { // for string operation, Sig still has fs of 2. Update it with fs=1. SetFs() won't work because it sets bufBlockSize back to the real size
+			CVar out;
+			out.MakeLogical();
+			out.UpdateBuffer(Sig.nSamples - 1);
+			memmove(out.logbuf, Sig.logbuf, out.nSamples);
+			Sig = out;
 		}
-		else
-			Sig.LogOp(rsig, pnode->type);
 		break;
 	case T_LOGIC_NOT:
 		Sig = Compute(p);
+		if (Sig.nSamples == 0)
+			throw exception_etc(*this, pnode, "Logical operation not applicable to a null obj.").raise();
 		blockCellStruct2(*this, pnode, Sig);
 		Sig.MakeLogical();
 		Sig.LogOp(rsig, pnode->type); // rsig is a dummy for func signature.
 		break;
 	case T_LOGIC_AND:
 		rsig = ConditionalOperation(p, p->child);
+		if (rsig.nSamples == 0)
+			throw exception_etc(*this, pnode, "Logical operation not applicable to a null obj.").raise();
 		if (rsig.nSamples == 1 && !rsig.logbuf[0])
 		{
 			Sig.bufBlockSize = 1;
@@ -1826,6 +1845,8 @@ CVar* skope::ConditionalOperation(const AstNode* pnode, AstNode* p)
 		break;
 	case T_LOGIC_OR:
 		rsig = ConditionalOperation(p, p->child);
+		if (rsig.nSamples == 0)
+			throw exception_etc(*this, pnode, "Logical operation not applicable to a null obj.").raise();
 		if (rsig.nSamples == 1 && rsig.logbuf[0])
 		{
 			Sig.bufBlockSize = 1;
