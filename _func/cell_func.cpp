@@ -22,25 +22,35 @@ Cfunction set_builtin_function_cellstruct(fGate fp)
 	ft.narg2 = ft.narg1 + default_arg.size();
 	return ft;
 }
-//
-//void _cell(skope* past, const AstNode* pnode, const vector<CVar>& args)
-//{
-//	const AstNode* p = get_first_arg(pnode, (*(past->pEnv->builtin.find(pnode->str))).second.alwaysstatic);
-//	if (!past->Sig.IsScalar())
-//		throw CAstException(FUNC_SYNTAX, *past, p).proc("argument must be a scalar.");
-//	int n = (int)round(past->Sig.value());
-//	if (n <= 0)
-//		throw CAstException(FUNC_SYNTAX, *past, p).proc("argument must be a positive number.");
-//
-//	past->Sig.Reset();
-//	CVar tp;
-//	for (int k = 0; k < n; k++)
-//		past->Sig.appendcell(tp);
-//}
+
+Cfunction set_builtin_function_structbase(fGate fp)
+{
+	Cfunction ft;
+	set<uint16_t> allowedTypes;
+	ft.func = fp;
+	// Edit from this line ==============
+	ft.alwaysstatic = false;
+	vector<string> desc_arg_req = { "struct_object"};
+	vector<string> desc_arg_opt = {  };
+	vector<CVar> default_arg = {  };
+	set<uint16_t> allowedTypes1 = { TYPEBIT_STRUT, TYPEBIT_STRUT + 1, TYPEBIT_STRUT + 2, TYPEBIT_STRUT + 3,
+		TYPEBIT_STRUT + TYPEBIT_STRING, TYPEBIT_STRUT + TYPEBIT_STRING + 1, TYPEBIT_STRUT + TYPEBIT_STRING + 2,
+		TYPEBIT_STRUT + TYPEBIT_TEMPO_ONE + 2,  TYPEBIT_STRUT + TYPEBIT_TEMPO_CHAINS + 2, TYPEBIT_STRUT + TYPEBIT_MULTICHANS + TYPEBIT_TEMPO_ONE + 2, TYPEBIT_STRUT + TYPEBIT_MULTICHANS + TYPEBIT_TEMPO_CHAINS + 2,
+		TYPEBIT_STRUT + TYPEBIT_TEMPO_ONE + 3,  TYPEBIT_STRUT + TYPEBIT_TEMPO_CHAINS + 3, TYPEBIT_TEMPO_CHAINS_SNAP + 3, TYPEBIT_STRUT + TYPEBIT_MULTICHANS + TYPEBIT_TEMPO_ONE + 3, TYPEBIT_STRUT + TYPEBIT_MULTICHANS + TYPEBIT_TEMPO_CHAINS + 3, TYPEBIT_STRUT + TYPEBIT_MULTICHANS + TYPEBIT_TEMPO_CHAINS_SNAP + 3
+	};
+	ft.allowed_arg_types.push_back(allowedTypes1);
+	// til this line ==============
+	ft.desc_arg_req = desc_arg_req;
+	ft.desc_arg_opt = desc_arg_opt;
+	ft.defaultarg = default_arg;
+	ft.narg1 = desc_arg_req.size();
+	ft.narg2 = ft.narg1 + default_arg.size();
+	return ft;
+}
 
 void _cellstruct(skope* past, const AstNode* pnode, const vector<CVar>& args)
 {
-	if (!strcmp(pnode->str, "head")) {
+	if (!strcmp(pnode->str, "face")) {
 		past->Sig.set_class_head(args.front());
 	}
 	else if (!strcmp(pnode->str, "erase") || !strcmp(pnode->str, "ismember")) {
@@ -59,5 +69,22 @@ void _cellstruct(skope* past, const AstNode* pnode, const vector<CVar>& args)
 		past->Sig.MakeLogical();
 	}
 	else /* ismember */ {
+	}
+}
+
+void _structbase(skope* past, const AstNode* pnode, const vector<CVar>& args)
+{
+	if (!strcmp(pnode->str, "face")) {
+		past->Sig.strut.clear();
+		past->Sig.cell.clear();
+	}
+	else if (!strcmp(pnode->str, "members")) {
+		CVar out;
+		for (auto v : past->Sig.strut) {
+			auto sss = v.first;
+			CVar temp(sss);
+			out.cell.push_back(temp);
+		}
+		past->Sig = out;
 	}
 }

@@ -241,7 +241,7 @@ CVar* CAstSigEnv::ARITH_MOD(skope* psk, const AstNode* pnode)
 	((AstNode*)pnode)->alt = p->next;
 	p->next = NULL;
 	psk->Sig = psk->replica;
-	psk->HandleAuxFunctions(pnode); // Assuming that current body content (psk->Sig) is already prepared...is it true? 8/23/2018
+	psk->HandleAuxFunction(pnode); // Assuming that current body content (psk->Sig) is already prepared...is it true? 8/23/2018
 	return &psk->Sig;
 }
 

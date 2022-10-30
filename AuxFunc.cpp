@@ -272,9 +272,11 @@ void CAstSigEnv::InitBuiltInFunctions()
 	SET_BUILTIN_FUNC("tic", noargs);
 	SET_BUILTIN_FUNC("toc", noargs);
 
-	SET_BUILTIN_FUNC("head", cellstruct);
+	SET_BUILTIN_FUNC("face", cellstruct);
+	SET_BUILTIN_FUNC("face", structbase);
 	SET_BUILTIN_FUNC("ismember", cellstruct);
 	SET_BUILTIN_FUNC("erase", cellstruct);
+	SET_BUILTIN_FUNC("members", structbase);
 
 	SET_BUILTIN_FUNC("squeeze", vector);
 
@@ -612,7 +614,7 @@ static bool check_more(const AstNode* pnode, bool struct_call, skope& smallskope
 	return true;
 }
 
-vector<CVar> skope::make_check_args(const AstNode* pnode, const Cfunction& func1)
+vector<CVar> skope::make_check_args(const AstNode* pnode, Cfunction& func)
 { // Goal: make args vector for the function gate
   // the first arg is always Sig. The second arg is the first output vector.
   // check the arg types; if a type of a given arg is not one of allowed ones, throw.
@@ -628,7 +630,7 @@ vector<CVar> skope::make_check_args(const AstNode* pnode, const Cfunction& func1
 		if ((*ftlist).second.allowed_arg_types.empty() && !pnode->alt && !pnode->child) 
 			return out;
 	ftlist = pEnv->builtin.find(fname);
-	auto func = (*ftlist).second;
+	func = (*ftlist).second;
 	if (func.alwaysstatic && struct_call)
 	{
 		ostr << "function " << fname << " does not allow . (dot) notation call.";
@@ -642,7 +644,8 @@ vector<CVar> skope::make_check_args(const AstNode* pnode, const Cfunction& func1
 	int count_ftlist = 0;
 	int count = 2;
 	for (; ftlist != pEnv->builtin.end() && (*ftlist).first == fname; count_ftlist++, ftlist++) {
-		if (check_more(pnode, struct_call, smallskope, (*ftlist).second, out, Sig, argind, count, errmsg)) {
+		func = (*ftlist).second;
+		if (check_more(pnode, struct_call, smallskope, func, out, Sig, argind, count, errmsg)) {
 			for (; count < func.narg2; count++)
 				out.push_back(CVar(func.defaultarg[count - func.narg1]));
 			return out;
@@ -686,11 +689,11 @@ const AstNode* arg0node(const AstNode* pnode, const AstNode* pRoot0)
 	}
 }
 
-void skope::HandleAuxFunctions(const AstNode *pnode, AstNode *pRoot)
+void skope::HandleAuxFunction(const AstNode *pnode, AstNode *pRoot)
 {
 	string fnsigs;
 	string fname = pnode->str;
-	auto ftlist = pEnv->builtin.find(fname);
+	multimap<string, Cfunction>::iterator ftlist = pEnv->builtin.find(fname);
 	bool structCall = pnode->type == N_STRUCT;
 	const AstNode* arg0 = arg0node(pnode, node);
 	if (!structCall)
@@ -702,7 +705,8 @@ void skope::HandleAuxFunctions(const AstNode *pnode, AstNode *pRoot)
 	}
 	if ((*ftlist).second.func)
 	{
-		vector<CVar> args = make_check_args(pnode, (*ftlist).second);
+		Cfunction builtinFunCarrier = (*ftlist).second;
+		vector<CVar> args = make_check_args(pnode, builtinFunCarrier);
 		/* IMPORTANT--
 		* When the gate function is called, Sig is always the first argument (this is to avoid going through a copy constructor when used inside a gate function)
 		* Just make sure to avoid calling Compute() inside the gate function before Sig is used for actual builtin function operation
@@ -712,9 +716,9 @@ void skope::HandleAuxFunctions(const AstNode *pnode, AstNode *pRoot)
 		// if arg0 is the only arg and is null, bypass everything and the output is null
 		if (args.size()!=0 || 
 			Sig.type()!=TYPEBIT_NULL ||
-			((*ftlist).second.narg1==0 && args.empty()) ||
-			(*(*ftlist).second.allowed_arg_types.front().begin())==0xFFFF)
-			(*ftlist).second.func(this, pnode, args);
+			(builtinFunCarrier.narg1==0 && args.empty()) ||
+			(*builtinFunCarrier.allowed_arg_types.front().begin())==0xFFFF)
+			builtinFunCarrier.func(this, pnode, args);
 	}
 	else
 	{

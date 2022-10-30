@@ -201,7 +201,7 @@ public:
 	void CallUDF(const AstNode* pnode4UDFcalled, CVar* pBase, size_t nargout_requested);
 	FILE* fopen_from_path(const string& fname, const string& ext, string& fullfilename);
 	bool builtin_func_call(CNodeProbe& diggy, AstNode* p);
-	void HandleAuxFunctions(const AstNode* pnode, AstNode* pRoot = NULL);
+	void HandleAuxFunction(const AstNode* pnode, AstNode* pRoot = NULL);
 	CVar* pseudoVar(const AstNode* pnode, AstNode* p, CSignals* pout);
 	CVar* TSeq(const AstNode* pnode, AstNode* p);
 	bool HandlePseudoVar(const AstNode* pnode);
@@ -265,7 +265,7 @@ public:
 private:
 	bool done;
 	bool nodeAllocated;
-	vector<CVar> make_check_args(const AstNode* pnode, const Cfunction& func);
+	vector<CVar> make_check_args(const AstNode* pnode, Cfunction& func);
 	void make_check_args_math(const AstNode* pnode);
 	void eval_lhs(const AstNode* plhs, const AstNode* prhs, CVar& lhs_index, CVar& RHS, uint16_t& typelhs, bool& contig, bool isreplica, const CVar* cell_item = NULL);
 	void right_to_left(const AstNode* plhs, const CVar& lhs_index, CVar& robj, uint16_t typelhs, bool contig, const AstNode* prhs = NULL, CVar* lobj = NULL);

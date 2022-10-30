@@ -125,8 +125,6 @@ void _msgbox(skope* past, const AstNode* pnode, const vector<CVar>& args);
 void _include(skope* past, const AstNode* pnode, const vector<CVar>& args);
 DECL_GATE(_eval)
 DECL_GATE(_include)
-//void _eval(skope* past, const AstNode* pnode, const vector<CVar>& args);
-void _cell(skope* past, const AstNode* pnode, const vector<CVar>& args);
 DECL_GATE(_group)
 DECL_GATE(_ungroup)
 DECL_GATE(_clear)
@@ -143,6 +141,7 @@ DECL_GATE(_tone)
 DECL_GATE(_diff)
 DECL_GATE(_cumsum)
 DECL_GATE(_cellstruct)
+DECL_GATE(_structbase)
 void _fm(skope* past, const AstNode* pnode, const vector<CVar>& args);
 void _tsq_getvalues(skope* past, const AstNode* pnode, const vector<CVar>& args);
 void _tsq_setvalues(skope* past, const AstNode* pnode, const vector<CVar>& args);
