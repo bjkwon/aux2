@@ -17,6 +17,7 @@
 #define DEFAULT_FS 22050
 
 void auxenv(CAstSigEnv* pEnv, const string& cmd); // auxenv.cpp
+void auxenv_cd(CAstSigEnv* pEnv, string& targetdir); // auxenv.cpp
 void read_auxenv(int& fs, vector<string>& auxenvpath, const string& envfilename); // auxenv.cpp
 void save_auxenv(CAstSigEnv* pEnv, const string& envfilename); // auxenv.cpp
 
@@ -156,8 +157,13 @@ int main()
 					if (input.substr(1).front() == '#') {
 						auxenv(pglobalEnv, input.substr(2).c_str());
 					}
-					else
-						system(input.substr(1).c_str());
+					else {
+						if (input.substr(1, 3) == "cd ") {
+							auxenv_cd(pglobalEnv, input);
+						}
+						else 
+							int status = system(input.substr(1).c_str());
+					}
 				}
 				else
 					interpreter(sc, input);

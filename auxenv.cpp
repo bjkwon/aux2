@@ -2,7 +2,8 @@
 #include <fstream>
 #include "aux_classes.h"
 #include "skope.h"
-//#include "audstr.h"
+#include <array>
+#include <direct.h>
 
 using namespace std;
 
@@ -74,6 +75,27 @@ void auxenv_save(CAstSigEnv* pEnv, const vector<string>& cmd)
 
 }
 
+
+
+void auxenv_cd(CAstSigEnv * pEnv, string &destdir)
+{
+	array<char, 128> buffer;
+	string result;
+	destdir = destdir.substr(1);
+	destdir += " & if %errorlevel%==0 (cd) else (echo ERROR inside auxenv_cd !!!)";
+	unique_ptr<FILE, decltype(&_pclose)> pipe(_popen(destdir.c_str(), "r"), _pclose);
+	if (!pipe) {
+		throw std::runtime_error("popen() failed!");
+	}
+	pEnv->AppPath.clear();
+	while (fgets(buffer.data(), buffer.size(), pipe.get()) != nullptr) {
+		pEnv->AppPath += buffer.data();
+	}
+	if (pEnv->AppPath.back() == '\n') 
+		pEnv->AppPath.pop_back();
+	_chdir(pEnv->AppPath.c_str());
+}
+
 void auxenv(CAstSigEnv* pEnv, const string& cmd)
 {
 	size_t nItems, k(0);
@@ -96,6 +118,10 @@ void auxenv(CAstSigEnv* pEnv, const string& cmd)
 		else if (cmdl[0] == "save") {
 			cmdl.erase(cmdl.begin());
 			auxenv_save(pEnv, cmdl);
+		}
+		else if (cmdl[0] == "cd") {
+			cmdl.erase(cmdl.begin());
+		//	auxenv_cd(pEnv, cmdl);
 		}
 		else {
 			cout << "Unrecognized Aux Env command: " << cmdl[0] << endl;

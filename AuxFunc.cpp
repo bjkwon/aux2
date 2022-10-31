@@ -232,8 +232,8 @@ void CAstSigEnv::InitBuiltInFunctions()
 	SET_BUILTIN_FUNC("atleast", mostleast);
 	SET_BUILTIN_FUNC("hamming", hamming);
 	SET_BUILTIN_FUNC("blackman", blackman);
-	SET_BUILTIN_FUNC("filthann", blackman);
-	SET_BUILTIN_FUNC("", filt);
+	SET_BUILTIN_FUNC("hann", blackman);
+	SET_BUILTIN_FUNC("filt", filt);
 	SET_BUILTIN_FUNC("filtfilt", filt);
 	SET_BUILTIN_FUNC("conv", conv);
 	SET_BUILTIN_FUNC("audio", audio);
