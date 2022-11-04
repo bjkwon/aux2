@@ -302,6 +302,7 @@ public:
 	CSignal(int sampleRate); // construct with a specified sample rate.
 	CSignal(int sampleRate, unsigned int len); // construct with a specified sample rate and buffer size
 	CSignal(float value); // construct a scala with the specified value
+	CSignal(const body & src); // copy constructor
 	CSignal(const CSignal & src); // copy constructor
 	CSignal(float *y, int  len);
 	CSignal(vector<float> vv);

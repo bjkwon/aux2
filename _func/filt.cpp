@@ -10,7 +10,7 @@ Cfunction set_builtin_function_filt(fGate fp)
 	vector<string> desc_arg_req = { "audio_obj", "numerator_array" };
 	vector<string> desc_arg_opt = { "denominator_array", "initial_condition_array"};
 	vector<CVar> default_arg = { CVar(1.f), CVar() };
-	set<uint16_t> allowedTypes1 = { 2, ALL_AUDIO_TYPES };
+	set<uint16_t> allowedTypes1 = { 2, 3, ALL_AUDIO_TYPES };
 	ft.allowed_arg_types.push_back(allowedTypes1);
 	set<uint16_t> allowedTypes2 = { 1, 2 };
 	ft.allowed_arg_types.push_back(allowedTypes2);
@@ -35,7 +35,7 @@ Cfunction set_builtin_function_conv(fGate fp)
 	vector<string> desc_arg_req = { "signal1", "signal2" };
 	vector<string> desc_arg_opt = { };
 	vector<CVar> default_arg = { };
-	set<uint16_t> allowedTypes1 = { 1, 2, ALL_AUDIO_TYPES };
+	set<uint16_t> allowedTypes1 = { 1, 2, 3, ALL_AUDIO_TYPES };
 	ft.allowed_arg_types.push_back(allowedTypes1);
 	ft.allowed_arg_types.push_back(allowedTypes1);
 	// til this line ==============
@@ -123,6 +123,8 @@ CSignal __filt(const CSignal& base, void* parg1, void* parg2)
 	// instead update the content of the pointer used to initialize init
 	// So that final state at this group can be used as an initial state in the successive call inside of CSignal::evoke_modsig2
 	// Even if it's not necessary because nGroup=1, updating the content of this pointer won't do any harm. 01/20/2022
+	if (argin[2].nSamples == 0)
+		(*(((vector<CVar>*)parg1)->begin() + 2)).UpdateBuffer(fin.size());
 	memcpy((*(((vector<CVar>*)parg1)->begin() + 2)).buf, fin.data(), sizeof(float) * fin.size());
 	return base;
 }
@@ -135,7 +137,7 @@ void _filt(skope* past, const AstNode* pnode, const vector<CVar>& args)
 	if (fname == "filt")
 	{
 		CVar* extraOut = new CVar; // to carry a state array
-		past->Sig.evoke_modsig2(__filt, (void*)&args, (void*)extraOut);
+		past->Sig = past->Sig.evoke_modsig2(__filt, (void*)&args, (void*)extraOut);
 		if (get_output_count(past->node, pnode) > 1)
 		{
 			past->SigExt.push_back(move(make_unique<CVar*>(&past->Sig)));

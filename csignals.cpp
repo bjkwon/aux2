@@ -949,6 +949,11 @@ CSignal::CSignal(std::string str)
 	SetString(str.c_str());
 }
 
+CSignal::CSignal(const body& src)
+{
+	*this = src;
+}
+
 CSignal::CSignal(const CSignal& src)
 {
 	*this = src;
@@ -1296,6 +1301,7 @@ CTimeSeries CTimeSeries::evoke_modsig2(CSignal(*func) (const CSignal&, void*, vo
 		}
 		outtp.tmark = p->tmark;
 		out.AddChain(outtp);
+		out.nGroups = p->nGroups;
 	}	return out;
 }
 
