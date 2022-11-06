@@ -155,13 +155,9 @@ body& body::MakeLogical()
 }
 
 CSignal& CSignal::operator=(const body& rhs)
-{ // Used only in AuxFunc.cpp 12/30/2017
-	if (this != &rhs)
-	{
-		Reset();
-		if (rhs.nSamples > 0)
-			body::operator=(rhs);
-	}
+{
+	Reset();
+	body::operator=(rhs);
 	return *this;
 }
 
@@ -184,10 +180,11 @@ CSignal& CSignal::operator=(const CSignal& rhs)
 	}
 	return *this;
 }
+
 CVar& CVar::operator=(const CSignals& rhs)
 {
-	if (this != &rhs)
-		CSignals::operator=(rhs);
+	Reset();
+	CSignals::operator=(rhs);
 	return *this;
 }
 
@@ -231,6 +228,7 @@ bool CSignals::operator==(std::string rhstr)
 
 CTimeSeries& CTimeSeries::operator=(const CSignal& rhs)
 {
+	Reset();
 	if (ghost)
 		CSignal::operator=(rhs);
 	else
@@ -269,9 +267,9 @@ CTimeSeries& CTimeSeries::operator=(const CTimeSeries& rhs)
 }
 
 CSignals& CSignals::operator=(const CTimeSeries& rhs)
-{ // Don't use this!!!!
-	if (this != &rhs)
-		CTimeSeries::operator=(rhs);
+{
+	Reset();
+	CTimeSeries::operator=(rhs);
 	return *this;
 }
 

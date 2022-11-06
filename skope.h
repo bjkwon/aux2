@@ -55,16 +55,55 @@ public:
 	virtual ~UDF() {};
 };
 
+typedef bool (*pfunc_typecheck)(uint16_t tp);
+
 class Cfunction
 {
 public:
-	Cfunction() {
-		funcsignature = ""; 
-		alwaysstatic = false;
-		narg1 = 0;
-		narg2 = 0;
-	};
+	static bool IsSTRING(uint16_t tp);
+	static bool IsSTRINGG(uint16_t tp);
+	static bool IsAUDIO(uint16_t tp);
+	static bool IsAUDIOG(uint16_t tp);
+	static bool IsNULL(uint16_t tp) { return tp == TYPEBIT_NULL; };
+	static bool IsNULLG(uint16_t tp) { return !(tp & 3); };
+	static bool IsScalar(uint16_t tp) { return (tp & 0b1111) == 1; };
+	static bool IsScalarG(uint16_t tp) { return (((tp & 0b1111) & 0xF003)) == 1; };
+	static bool IsVector(uint16_t tp) { return (tp & 0b1111) == 2; };
+	static bool IsVectorG(uint16_t tp) { return (((tp & 0b1111) & 0xF003)) == 2; };
+	static bool Is2D(uint16_t tp) { return (tp & 0xFF0F) == 3; };
+	static bool Is2DG(uint16_t tp) { return (tp & 0x000F) == 3; };
+	static bool IsBYTE(uint16_t tp) { return (tp & 0xFFF0) == TYPEBIT_BYTE; };
+	static bool IsBYTEG(uint16_t tp) { return (tp & 0x00F0) == TYPEBIT_BYTE; };
+	static bool IsBOOL(uint16_t tp) { return (tp & 0xFFF0) == TYPEBIT_SIZE1; };
+	static bool IsBOOLG(uint16_t tp) { return (tp & 0x00F0) == TYPEBIT_SIZE1; };
+	static bool IsCOMPLEX(uint16_t tp) { return (tp & 0b01100000) == TYPEBIT_COMPLEX; };
+	static bool IsCOMPLEXG(uint16_t tp) { return (tp & (0xFF00 + 0b01100000)) == TYPEBIT_COMPLEX; };
+	static bool IsTSEQ(uint16_t tp) { return (tp & 0xF0FF) == TYPEBIT_TEMPO_ONE + 1 || (tp & 0xF0FF) == TYPEBIT_TEMPO_CHAINS + 1; };
+	static bool IsTSEQG(uint16_t tp) { return (tp & 0x00FF) == TYPEBIT_TEMPO_ONE + 1 || (tp & 0x00FF) == TYPEBIT_TEMPO_CHAINS + 1; };
+	static bool IsTSHOT(uint16_t tp) { return (tp & 0xF0FF) == TYPEBIT_TEMPO_ONE + 2 || (tp & 0xF0FF) == TYPEBIT_TEMPO_CHAINS + 2; };
+	static bool IsTSHOTG(uint16_t tp) { return (tp & 0x00FF) == TYPEBIT_TEMPO_ONE + 2 || (tp & 0x00FF) == TYPEBIT_TEMPO_CHAINS + 2; };
+	static bool IsSTEREO(uint16_t tp) { return (tp & (TYPEBIT_MULTICHANS + 0xF000)) != 0; };
+	static bool IsSTEREOG(uint16_t tp) { return (tp & TYPEBIT_MULTICHANS) != 0; };
+	static bool IsSTEMPORAL(uint16_t tp) { return (tp & 0xFF0C) == TYPEBIT_TEMPO_ONE || (tp & 0xFF0C) == TYPEBIT_TEMPO_CHAINS || (tp & 0xFF0C) == TYPEBIT_TEMPO_CHAINS_SNAP; };
+	static bool IsTEMPORALG(uint16_t tp) { return (tp & 0x000C) == TYPEBIT_TEMPO_ONE || (tp & 0x000C) == TYPEBIT_TEMPO_CHAINS || (tp & 0x000C) == TYPEBIT_TEMPO_CHAINS_SNAP; };
+	static bool IsCell(uint16_t tp) { return (tp & TYPEBIT_CELL) != 0; };
+	static bool IsSTRUT(uint16_t tp) { return  (( tp & TYPEBIT_STRUT) | (tp & TYPEBIT_STRUTS)) != 0; };
+	static bool IsPureCell(uint16_t tp) { return (tp & TYPEBIT_CELL) != 0 && (tp & 0x00FF) == 0; };
+	static bool IsCellWithFace(uint16_t tp) { return (tp & TYPEBIT_CELL) != 0 && (tp & 0x00FF) != 0; };
+	static bool AllTrue(uint16_t tp) { return true; };
+	static bool AllFalse(uint16_t tp) { return false; };
+
+	static vector<uint16_t> audiotype_real;
+	static vector<uint16_t> stringtype;
+	vector<uint16_t> audiotype_complex;
+	vector<uint16_t> audiotype_bool;
+	Cfunction();
 	virtual ~Cfunction() {};
+	Cfunction& operator=(const Cfunction& rhs);
+	
+	vector<set<pfunc_typecheck>> qualify;
+	vector<set<pfunc_typecheck>> reject;
+
 	string funcsignature;
 	vector<string> desc_arg_req;
 	vector<string> desc_arg_opt;

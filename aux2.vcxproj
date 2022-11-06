@@ -146,6 +146,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="auxenv.cpp" />
+    <ClCompile Include="Cfunction.cpp" />
     <ClCompile Include="compute_xflow.cpp" />
     <ClCompile Include="lame\brhist.c" />
     <ClCompile Include="lame\get_audio.c" />

@@ -25,6 +25,8 @@ Cfunction set_builtin_function_sums(fGate fp)
 	return ft;
 }
 
+typedef bool (*checkfuncpt)(uint16_t tp, uint16_t mask, vector<uint16_t> items);
+
 Cfunction set_builtin_function_lens(fGate fp)
 {
 	Cfunction ft;
@@ -42,6 +44,12 @@ Cfunction set_builtin_function_lens(fGate fp)
 		TYPEBIT_SIZE1, TYPEBIT_SIZE1 + 1, TYPEBIT_SIZE1 + 2, TYPEBIT_SIZE1 + 3,  TYPEBIT_BYTE + 1, TYPEBIT_BYTE + 2, TYPEBIT_BYTE + 3,
 	    TYPEBIT_CELL };
 	ft.allowed_arg_types.push_back(allowedTypes1);
+	// Sig
+	set<pfunc_typecheck> allowedCheckFunc = { Cfunction::IsAUDIOG, Cfunction::IsSTRINGG, Cfunction::IsScalarG, Cfunction::IsVectorG };
+	ft.qualify.push_back(allowedCheckFunc); 
+	set<pfunc_typecheck> prohibitFunc = { Cfunction::AllFalse, }; // prohibit false (none)
+	ft.reject.push_back(prohibitFunc);
+	// No args
 	// til this line ==============
 	ft.desc_arg_req = desc_arg_req;
 	ft.desc_arg_opt = desc_arg_opt;

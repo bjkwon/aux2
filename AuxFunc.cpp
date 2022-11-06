@@ -552,10 +552,89 @@ static bool check_allowed(const vector<set<uint16_t>>::const_iterator& allowedse
 	return false;
 }
 
-// TODO (10/8/2022): get the count of arguments from the beginning,
-// so that if there's an error for the argument count, it wouldn't proceed to the next count
-// for example, and() which takes both arguement counts of 1 and 2,
-// if the argument count was 1 and invalid, then it wouldn't proceed to the case of 2
+static bool check_with_type(const AstNode* pnode, bool struct_call, const CVar& obj, vector<CVar>& out, const Cfunction& func, int& argind, string& errmsg)
+{
+	ostringstream ostr;
+	auto tp = obj.type();
+	bool Sigpass = false;
+	for (auto fpset = func.qualify.begin(); fpset != func.qualify.end(); fpset++) {
+		for (auto fp : *fpset) {
+			if ((fp)(tp)) {
+				Sigpass = true;
+				break;
+			}
+		}
+	}
+	if (!Sigpass) {
+		ostr << "type " << tp;
+		errmsg = ostr.str();
+		argind = 1;
+		return false;
+	}
+	for (auto fpset = func.reject.begin(); fpset != func.reject.end(); fpset++) {
+		for (auto fp : *fpset) {
+			if ((fp)(tp)) {
+				Sigpass = false;
+				break;
+			}
+		}
+	}
+	if (!Sigpass) {
+		ostr << "type " << tp;
+		errmsg = ostr.str();
+		argind = 1;
+		return false;
+	}
+	return true;
+}
+
+static bool check_more2(const AstNode* pnode, bool struct_call, skope& smallskope, const Cfunction& func, vector<CVar>& out, const CVar& Sig, int& argind, int& count, string& errmsg)
+{
+	// Check Sig
+	if (!check_with_type(pnode, struct_call, Sig, out, func, argind, errmsg)) {
+		return false;
+	}
+	// Check other args
+	ostringstream ostr;
+	const AstNode* pn = get_second_arg(pnode, struct_call);
+	for (; pn; pn = pn->next, count++) {
+		if (func.narg2 >= 0 && count > func.narg2)
+		{
+			ostr << pnode->str << "(): too many args; maximum number of args is " << func.narg2 << ".";
+			errmsg = ostr.str();
+			argind = -1;
+			return false;
+		}
+		try {
+			smallskope.Compute(pn);
+			if (func.narg2 < 0) // unspecified max arg count, no type checking
+				out.push_back(smallskope.Sig);
+			else
+			{
+				argind = count;
+				if (!check_with_type(pnode, struct_call, smallskope.Sig, out, func, argind, errmsg)) {
+					return false;
+				}
+				else {
+					out.push_back(smallskope.Sig);
+				}
+			}
+		}
+		catch (skope_exception e) {
+			throw e;
+		}
+	}
+	count--;
+	if (count < func.narg1)
+	{
+		ostr << pnode->str << "(): the number of arg should be at least " << func.narg1 << "; Only " << count << " given.";
+		errmsg = ostr.str();
+		argind = count;
+		return false;
+	}
+	return true;
+}
+
 static bool check_more(const AstNode* pnode, bool struct_call, skope& smallskope, const Cfunction& func, vector<CVar>& out, const CVar& Sig, int& argind, int& count, string& errmsg)
 {
 	ostringstream ostr;
@@ -645,10 +724,19 @@ vector<CVar> skope::make_check_args(const AstNode* pnode, Cfunction& func)
 	int count = 2;
 	for (; ftlist != pEnv->builtin.end() && (*ftlist).first == fname; count_ftlist++, ftlist++) {
 		func = (*ftlist).second;
-		if (check_more(pnode, struct_call, smallskope, func, out, Sig, argind, count, errmsg)) {
-			for (; count < func.narg2; count++)
-				out.push_back(CVar(func.defaultarg[count - func.narg1]));
-			return out;
+		if (func.qualify.empty() && func.reject.empty()) {
+			if (check_more(pnode, struct_call, smallskope, func, out, Sig, argind, count, errmsg)) {
+				for (; count < func.narg2; count++)
+					out.push_back(CVar(func.defaultarg[count - func.narg1]));
+				return out;
+			}
+		}
+		else {
+			if (check_more2(pnode, struct_call, smallskope, func, out, Sig, argind, count, errmsg)) {
+				for (; count < func.narg2; count++)
+					out.push_back(CVar(func.defaultarg[count - func.narg1]));
+				return out;
+			}
 		}
 	}
 	// at this point, none of function signatures fit the given argument set

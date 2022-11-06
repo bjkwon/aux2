@@ -41,7 +41,7 @@ void _objchecker(skope* past, const AstNode* pnode, const vector<CVar>& args)
 		past->Sig.SetValue(ISBOOL(tp));
 	}
 	else if (!strcmp(pnode->str, "iscell")) {
-		past->Sig.SetValue(ISCELL(tp));
+		past->Sig.SetValue(Cfunction::IsCell(tp));
 	}
 	else if (!strcmp(pnode->str, "isclass")) {
 		past->Sig.SetValue(ISSTRUT(tp));

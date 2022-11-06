@@ -186,6 +186,9 @@
     <ClCompile Include="compute_xflow.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Cfunction.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="skope.h">
