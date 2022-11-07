@@ -552,46 +552,43 @@ static bool check_allowed(const vector<set<uint16_t>>::const_iterator& allowedse
 	return false;
 }
 
-static bool check_with_type(const AstNode* pnode, bool struct_call, const CVar& obj, vector<CVar>& out, const Cfunction& func, int& argind, string& errmsg)
+static bool check_pass_fail(uint16_t tipe, const set<pfunc_typecheck>& fpset, bool pass)
+{
+	for (auto fp : fpset) {
+		if ((fp)(tipe)) {
+			return !pass;
+		}
+	}
+	return pass;
+}
+
+static bool check_with_type(const AstNode* pnode, bool struct_call, const CVar& obj, vector<CVar>& out, const set<pfunc_typecheck>& fp_qual_set, const set<pfunc_typecheck>& fp_reject_set, int& argind, string& errmsg)
 {
 	ostringstream ostr;
 	auto tp = obj.type();
 	bool Sigpass = false;
-	for (auto fpset = func.qualify.begin(); fpset != func.qualify.end(); fpset++) {
-		for (auto fp : *fpset) {
-			if ((fp)(tp)) {
-				Sigpass = true;
-				break;
-			}
-		}
-	}
+	Sigpass = check_pass_fail(tp, fp_qual_set, Sigpass);
 	if (!Sigpass) {
 		ostr << "type " << tp;
 		errmsg = ostr.str();
 		argind = 1;
-		return false;
+		return Sigpass;
 	}
-	for (auto fpset = func.reject.begin(); fpset != func.reject.end(); fpset++) {
-		for (auto fp : *fpset) {
-			if ((fp)(tp)) {
-				Sigpass = false;
-				break;
-			}
-		}
-	}
+	Sigpass = check_pass_fail(tp, fp_reject_set, Sigpass);
 	if (!Sigpass) {
 		ostr << "type " << tp;
 		errmsg = ostr.str();
 		argind = 1;
-		return false;
 	}
-	return true;
+	return Sigpass;
 }
 
 static bool check_more2(const AstNode* pnode, bool struct_call, skope& smallskope, const Cfunction& func, vector<CVar>& out, const CVar& Sig, int& argind, int& count, string& errmsg)
 {
 	// Check Sig
-	if (!check_with_type(pnode, struct_call, Sig, out, func, argind, errmsg)) {
+	auto it_fp_qual_set = func.qualify.begin();
+	auto it_fp_reject_set = func.reject.begin();
+	if (!check_with_type(pnode, struct_call, Sig, out, *it_fp_qual_set, *it_fp_reject_set, argind, errmsg)) {
 		return false;
 	}
 	// Check other args
@@ -612,7 +609,9 @@ static bool check_more2(const AstNode* pnode, bool struct_call, skope& smallskop
 			else
 			{
 				argind = count;
-				if (!check_with_type(pnode, struct_call, smallskope.Sig, out, func, argind, errmsg)) {
+				it_fp_qual_set++;
+				it_fp_reject_set++;
+				if (!check_with_type(pnode, struct_call, smallskope.Sig, out, *it_fp_qual_set, *it_fp_reject_set, argind, errmsg)) {
 					return false;
 				}
 				else {
@@ -703,6 +702,8 @@ vector<CVar> skope::make_check_args(const AstNode* pnode, Cfunction& func)
 	ostringstream ostr;
 	bool struct_call = pnode->type == N_STRUCT;
 	string fname = pnode->str;
+	// if a ftlist item has multiple gate functions, the first one should be the one with Sig and no other args.
+	// and it is taken care of here with an empty out.
 	auto ftlist = pEnv->builtin.find(fname); // we may assume that ftlist is not end
 	// if any of Cfunction in ftlist allows empty and pnode->alt and pnode->child are NULL, return immediately
 	for (; ftlist != pEnv->builtin.end() && (*ftlist).first == fname; ftlist++)
@@ -721,8 +722,8 @@ vector<CVar> skope::make_check_args(const AstNode* pnode, Cfunction& func)
 	int argind;
 	string errmsg;
 	int count_ftlist = 0;
-	int count = 2;
 	for (; ftlist != pEnv->builtin.end() && (*ftlist).first == fname; count_ftlist++, ftlist++) {
+		int count = 2;
 		func = (*ftlist).second;
 		if (func.qualify.empty() && func.reject.empty()) {
 			if (check_more(pnode, struct_call, smallskope, func, out, Sig, argind, count, errmsg)) {

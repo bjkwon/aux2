@@ -99,7 +99,6 @@ public:
 	vector<uint16_t> audiotype_bool;
 	Cfunction();
 	virtual ~Cfunction() {};
-	Cfunction& operator=(const Cfunction& rhs);
 	
 	vector<set<pfunc_typecheck>> qualify;
 	vector<set<pfunc_typecheck>> reject;

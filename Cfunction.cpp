@@ -15,16 +15,6 @@ Cfunction::Cfunction() {
 	Cfunction::audiotype_real = { TYPEBIT_TEMPO_ONE + 2, TYPEBIT_TEMPO_ONE + 3, TYPEBIT_TEMPO_CHAINS + 2, TYPEBIT_TEMPO_CHAINS + 3, };
 	Cfunction::stringtype = { TYPEBIT_STRING };
 }
-Cfunction& Cfunction::operator=(const Cfunction& rhs)
-{
-	if (this != &rhs) {
-		funcsignature = rhs.funcsignature;
-		alwaysstatic = rhs.alwaysstatic;
-		narg1 = rhs.narg1;
-		narg2 = rhs.narg2;
-	}
-	return *this;
-}
 
 bool Cfunction::IsAUDIO(uint16_t tp)
 {

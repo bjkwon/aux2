@@ -10,10 +10,18 @@ Cfunction set_builtin_function_cellstruct(fGate fp)
 	vector<string> desc_arg_req = { "struct_object", "prop_name"};
 	vector<string> desc_arg_opt = {  };
 	vector<CVar> default_arg = {  };
-	set<uint16_t> allowedTypes1 = { TYPEBIT_CELL, TYPEBIT_STRUT, TYPEBIT_STRUTS, };
+	set<uint16_t> allowedTypes1 = { TYPEBIT_CELL, TYPEBIT_STRUT, TYPEBIT_STRUTS, }; // no more need because of qualify/reject
 	ft.allowed_arg_types.push_back(allowedTypes1);
-	set<uint16_t> allowedTypes2 = { TYPEBIT_STRING, TYPEBIT_STRING + 1, TYPEBIT_STRING + 2};
+	set<uint16_t> allowedTypes2 = { TYPEBIT_STRING, TYPEBIT_STRING + 1, TYPEBIT_STRING + 2}; // no more need because of qualify/reject
 	ft.allowed_arg_types.push_back(allowedTypes2);
+	set<pfunc_typecheck> allowedCheckFunc = { Cfunction::IsSTRUT, Cfunction::IsCell };
+	ft.qualify.push_back(allowedCheckFunc);
+	set<pfunc_typecheck> prohibitFunc = { Cfunction::AllFalse, }; // prohibit false (none)
+	ft.reject.push_back(prohibitFunc);
+	set<pfunc_typecheck> allowedCheckFunc1 = { Cfunction::AllTrue }; // Allow all
+	ft.qualify.push_back(allowedCheckFunc1);
+	set<pfunc_typecheck> prohibitFunc1 = { Cfunction::IsSTRUT, Cfunction::IsCell }; // except for these
+	ft.reject.push_back(prohibitFunc1);
 	// til this line ==============
 	ft.desc_arg_req = desc_arg_req;
 	ft.desc_arg_opt = desc_arg_opt;
@@ -33,12 +41,12 @@ Cfunction set_builtin_function_structbase(fGate fp)
 	vector<string> desc_arg_req = { "struct_object"};
 	vector<string> desc_arg_opt = {  };
 	vector<CVar> default_arg = {  };
-	set<uint16_t> allowedTypes1 = { TYPEBIT_STRUT, TYPEBIT_STRUT + 1, TYPEBIT_STRUT + 2, TYPEBIT_STRUT + 3,
-		TYPEBIT_STRUT + TYPEBIT_STRING, TYPEBIT_STRUT + TYPEBIT_STRING + 1, TYPEBIT_STRUT + TYPEBIT_STRING + 2,
-		TYPEBIT_STRUT + TYPEBIT_TEMPO_ONE + 2,  TYPEBIT_STRUT + TYPEBIT_TEMPO_CHAINS + 2, TYPEBIT_STRUT + TYPEBIT_MULTICHANS + TYPEBIT_TEMPO_ONE + 2, TYPEBIT_STRUT + TYPEBIT_MULTICHANS + TYPEBIT_TEMPO_CHAINS + 2,
-		TYPEBIT_STRUT + TYPEBIT_TEMPO_ONE + 3,  TYPEBIT_STRUT + TYPEBIT_TEMPO_CHAINS + 3, TYPEBIT_TEMPO_CHAINS_SNAP + 3, TYPEBIT_STRUT + TYPEBIT_MULTICHANS + TYPEBIT_TEMPO_ONE + 3, TYPEBIT_STRUT + TYPEBIT_MULTICHANS + TYPEBIT_TEMPO_CHAINS + 3, TYPEBIT_STRUT + TYPEBIT_MULTICHANS + TYPEBIT_TEMPO_CHAINS_SNAP + 3
-	};
+	set<uint16_t> allowedTypes1 = { TYPEBIT_NULL }; // not used, but shouldn't be empty
 	ft.allowed_arg_types.push_back(allowedTypes1);
+	set<pfunc_typecheck> allowedCheckFunc = { Cfunction::IsSTRUT, Cfunction::IsCell };
+	ft.qualify.push_back(allowedCheckFunc);
+	set<pfunc_typecheck> prohibitFunc = { Cfunction::AllFalse, }; // prohibit false (none)
+	ft.reject.push_back(prohibitFunc);
 	// til this line ==============
 	ft.desc_arg_req = desc_arg_req;
 	ft.desc_arg_opt = desc_arg_opt;
@@ -51,7 +59,10 @@ Cfunction set_builtin_function_structbase(fGate fp)
 void _cellstruct(skope* past, const AstNode* pnode, const vector<CVar>& args)
 {
 	if (!strcmp(pnode->str, "face")) {
-		past->Sig.set_class_head(args.front());
+		const AstNode* arg0 = arg0node(pnode, past->node);
+		CVar* psig = past->GetVariable(arg0->str);
+		psig->set_class_head(args.front());
+		past->Sig = args.front();
 	}
 	else if (!strcmp(pnode->str, "erase") || !strcmp(pnode->str, "ismember")) {
 		past->Sig.Reset();
