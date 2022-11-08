@@ -236,6 +236,10 @@ void CAstSigEnv::InitBuiltInFunctions()
 	SET_BUILTIN_FUNC("filt", filt);
 	SET_BUILTIN_FUNC("filtfilt", filt);
 	SET_BUILTIN_FUNC("conv", conv);
+	SET_BUILTIN_FUNC("lpf", iir);
+	SET_BUILTIN_FUNC("hpf", iir);
+	SET_BUILTIN_FUNC("bpf", iir);
+	SET_BUILTIN_FUNC("bps", iir);
 	SET_BUILTIN_FUNC("audio", audio);
 	SET_BUILTIN_FUNC("vector", vector);
 	SET_BUILTIN_FUNC("left", leftright);

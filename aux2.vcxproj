@@ -148,6 +148,16 @@
     <ClCompile Include="auxenv.cpp" />
     <ClCompile Include="Cfunction.cpp" />
     <ClCompile Include="compute_xflow.cpp" />
+    <ClCompile Include="iir\cmplx.c" />
+    <ClCompile Include="iir\const.c" />
+    <ClCompile Include="iir\ellf.c" />
+    <ClCompile Include="iir\ellie.c" />
+    <ClCompile Include="iir\ellik.c" />
+    <ClCompile Include="iir\ellpe.c" />
+    <ClCompile Include="iir\ellpj.c" />
+    <ClCompile Include="iir\ellpk.c" />
+    <ClCompile Include="iir\mtherr.c" />
+    <ClCompile Include="iir\polevl.c" />
     <ClCompile Include="lame\brhist.c" />
     <ClCompile Include="lame\get_audio.c" />
     <ClCompile Include="lame\lametime.c" />
@@ -205,6 +215,8 @@
   <ItemGroup>
     <ClInclude Include="aux_classes.h" />
     <ClInclude Include="builtin_functions.h" />
+    <ClInclude Include="iir\mconf.h" />
+    <ClInclude Include="iir\protos.h" />
     <ClInclude Include="include\lame_aux_api.h" />
     <ClInclude Include="skope.h" />
     <ClInclude Include="typecheck.h" />

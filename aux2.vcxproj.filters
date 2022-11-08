@@ -19,6 +19,9 @@
     <Filter Include="Source Files\lame">
       <UniqueIdentifier>{c0a7309a-50b1-44b3-ad87-e3eb40ec4da0}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\iir">
+      <UniqueIdentifier>{e623a66d-7166-41df-b316-77739d5af0c7}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -189,6 +192,36 @@
     <ClCompile Include="Cfunction.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="iir\const.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="iir\cmplx.c">
+      <Filter>Source Files\iir</Filter>
+    </ClCompile>
+    <ClCompile Include="iir\ellf.c">
+      <Filter>Source Files\iir</Filter>
+    </ClCompile>
+    <ClCompile Include="iir\ellie.c">
+      <Filter>Source Files\iir</Filter>
+    </ClCompile>
+    <ClCompile Include="iir\ellik.c">
+      <Filter>Source Files\iir</Filter>
+    </ClCompile>
+    <ClCompile Include="iir\ellpe.c">
+      <Filter>Source Files\iir</Filter>
+    </ClCompile>
+    <ClCompile Include="iir\ellpj.c">
+      <Filter>Source Files\iir</Filter>
+    </ClCompile>
+    <ClCompile Include="iir\ellpk.c">
+      <Filter>Source Files\iir</Filter>
+    </ClCompile>
+    <ClCompile Include="iir\polevl.c">
+      <Filter>Source Files\iir</Filter>
+    </ClCompile>
+    <ClCompile Include="iir\mtherr.c">
+      <Filter>Source Files\iir</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="skope.h">
@@ -211,6 +244,12 @@
     </ClInclude>
     <ClInclude Include="utils.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="iir\mconf.h">
+      <Filter>Source Files\iir</Filter>
+    </ClInclude>
+    <ClInclude Include="iir\protos.h">
+      <Filter>Source Files\iir</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
