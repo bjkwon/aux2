@@ -46,7 +46,7 @@ public:
 		oss << "Invalid arg";
 		if (id > 0)
 			oss << id;
-		oss << " " << msg;
+		oss << ": " << msg;
 		if (!fname.empty())
 			oss << " in " << fname << "()";
 		msgonly = oss.str().c_str();

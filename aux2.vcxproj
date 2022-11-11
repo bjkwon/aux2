@@ -207,6 +207,7 @@
     <ClCompile Include="_func\_file.cpp" />
     <ClCompile Include="_func\_matrix.cpp" />
     <ClCompile Include="_func\_minmax.cpp" />
+    <ClCompile Include="_func\_setnextchan.cpp" />
     <ClCompile Include="_func\_tparamonly.cpp" />
     <ClCompile Include="_func\type_same.cpp" />
     <ClCompile Include="_func\ones_z.cpp" />

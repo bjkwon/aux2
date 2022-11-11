@@ -294,6 +294,8 @@ void CAstSigEnv::InitBuiltInFunctions()
 	SET_BUILTIN_FUNC("isclass", objchecker);
 	SET_BUILTIN_FUNC("istseq", objchecker);
 
+	SET_BUILTIN_FUNC("setnextchan", setnextchan);
+
 	//SET_BUILTIN_FUNC("", );
 
 
@@ -308,27 +310,6 @@ void CAstSigEnv::InitBuiltInFunctions()
 //
 //	// end narg 2 and 2
 //
-//
-//#ifndef NO_IIR
-//	ft.narg1 = 2;	ft.narg2 = 6;
-//	const char *f2[] = { "lpf", "hpf", 0 };
-//	ft.funcsignature = "(signal, freq, [order=4], [kind=1], [dB_passband_ripple=0.5], [dB_stopband_atten=-40])\n  --- kind: 1 for Butterworth, 2 for Chebyshev, 3 for Elliptic";
-//	for (int k = 0; f2[k]; k++)
-//	{
-//		name = f2[k];
-//		ft.func =  &_iir;
-//	builtin[name] = ft;
-//	}
-//	ft.narg1 = 3;	ft.narg2 = 7;
-//	const char *f3[] = { "bpf", "bsf", 0 };
-//	ft.funcsignature = "(signal, freq, [order=4], [kind=1], [dB_passband_ripple=0.5], [dB_stopband_atten=-40])\n  --- kind: 1 for Butterworth, 2 for Chebyshev, 3 for Elliptic";
-//	for (int k = 0; f3[k]; k++)
-//	{
-//		name = f3[k];
-//		ft.func =  &_iir;
-//	builtin[name] = ft;
-//	}
-//#endif //NO_IIR
 //
 //	ft.narg1 = 1;	ft.narg2 = 2;
 //	name = "std";

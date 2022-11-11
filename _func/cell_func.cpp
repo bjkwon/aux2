@@ -61,6 +61,9 @@ void _cellstruct(skope* past, const AstNode* pnode, const vector<CVar>& args)
 	if (!strcmp(pnode->str, "face")) {
 		const AstNode* arg0 = arg0node(pnode, past->node);
 		CVar* psig = past->GetVariable(arg0->str);
+		if (!psig) {
+			throw exception_func(*past, pnode, "Must be a variable", pnode->str, 1).raise();
+		}
 		psig->set_class_head(args.front());
 		past->Sig = args.front();
 	}
@@ -68,6 +71,9 @@ void _cellstruct(skope* past, const AstNode* pnode, const vector<CVar>& args)
 		past->Sig.Reset();
 		const AstNode* arg0 = arg0node(pnode, past->node);
 		CVar* psig = past->GetVariable(arg0->str);
+		if (!psig) {
+			throw exception_func(*past, pnode, "Must be a variable", pnode->str, 1).raise();
+		}
 		auto it = psig->strut.find(args.front().str());
 		if (it != psig->strut.end()) {
 			if (!strcmp(pnode->str, "erase"))

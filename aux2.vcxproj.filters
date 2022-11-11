@@ -222,6 +222,9 @@
     <ClCompile Include="iir\mtherr.c">
       <Filter>Source Files\iir</Filter>
     </ClCompile>
+    <ClCompile Include="_func\_setnextchan.cpp">
+      <Filter>Source Files\_functions</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="skope.h">

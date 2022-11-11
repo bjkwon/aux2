@@ -84,7 +84,7 @@ public:
 	static bool IsTSHOTG(uint16_t tp) { return (tp & 0x00FF) == TYPEBIT_TEMPO_ONE + 2 || (tp & 0x00FF) == TYPEBIT_TEMPO_CHAINS + 2; };
 	static bool IsSTEREO(uint16_t tp) { return (tp & (TYPEBIT_MULTICHANS + 0xF000)) != 0; };
 	static bool IsSTEREOG(uint16_t tp) { return (tp & TYPEBIT_MULTICHANS) != 0; };
-	static bool IsSTEMPORAL(uint16_t tp) { return (tp & 0xFF0C) == TYPEBIT_TEMPO_ONE || (tp & 0xFF0C) == TYPEBIT_TEMPO_CHAINS || (tp & 0xFF0C) == TYPEBIT_TEMPO_CHAINS_SNAP; };
+	static bool IsTEMPORAL(uint16_t tp) { return (tp & 0xFF0C) == TYPEBIT_TEMPO_ONE || (tp & 0xFF0C) == TYPEBIT_TEMPO_CHAINS || (tp & 0xFF0C) == TYPEBIT_TEMPO_CHAINS_SNAP; };
 	static bool IsTEMPORALG(uint16_t tp) { return (tp & 0x000C) == TYPEBIT_TEMPO_ONE || (tp & 0x000C) == TYPEBIT_TEMPO_CHAINS || (tp & 0x000C) == TYPEBIT_TEMPO_CHAINS_SNAP; };
 	static bool IsCell(uint16_t tp) { return (tp & TYPEBIT_CELL) != 0; };
 	static bool IsSTRUT(uint16_t tp) { return  (( tp & TYPEBIT_STRUT) | (tp & TYPEBIT_STRUTS)) != 0; };

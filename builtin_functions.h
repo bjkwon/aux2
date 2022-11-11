@@ -189,6 +189,7 @@ DECL_GATE(_write)
 DECL_GATE(_file)
 DECL_GATE(_json)
 DECL_GATE(_objchecker)
+DECL_GATE(_setnextchan)
 
 DECL_GATE(_resample)
 
