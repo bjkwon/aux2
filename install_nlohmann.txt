@@ -6,5 +6,11 @@ then checked where it was installed... it is....
 
 /usr/include/nlohmann
 
-(In Jumpbox, nlohmann-json3-dev didn't work. nlohmann-json-dev worked.)
+(In Jumpbox, nlohmann-json3-dev didn't work. nlohmann-json-dev worked....
+but nlohmann-json-dev led to compile errors. 
+Had to download nlohmann-json3-dev manually and copy the include directory to /usr/include/nlohmann
+then the compile errors disappered)
 
+
+Needed gdb instead of g++ to launch debugger in VS code
+sudo apt-get install gdb

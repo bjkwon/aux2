@@ -34,7 +34,7 @@ dir("C:str") drive C exists, str doesn't exists as a directory or file from pwd
 
 */
 
-string get_current_dir(); // from main.cpp
+string get_current_dir(); // from utils.cpp
 
 #ifdef _WIN32
 #define DIRMARKER '\\'

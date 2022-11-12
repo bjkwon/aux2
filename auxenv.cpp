@@ -6,15 +6,11 @@
 
 #ifdef _WIN32
 #include <direct.h>
-#define DIRMARKER '\\'
-#define DIRMARKERSTR "\\"
 #else
 #include <glob.h>
 #include <sys/stat.h>
 #include <unistd.h>
 #include <time.h>
-#define DIRMARKER '/'
-#define DIRMARKERSTR "/"
 #endif
 
 using namespace std;
@@ -34,48 +30,37 @@ void auxenv_path(CAstSigEnv* pEnv, const vector<string>& cmd)
 	}
 	else if (cmd.front() == "-a" || cmd.front() == "--add")
 	{
-		string newpath;
-		if (cmd[1].back() == DIRMARKER) newpath = cmd[1].substr(0, cmd[1].size() - 1);
+		string newpath = cmd[1];
+		bool dir_exists = false;
+		if (cmd[1].back() == DIRMARKER) 
+			newpath = cmd[1].substr(0, cmd[1].size() - 1);
 #ifdef _WIN32
 		WIN32_FIND_DATA ls;
-		HANDLE hFind = FindFirstFile(newpath.c_str(), &ls);
-		if (hFind == INVALID_HANDLE_VALUE) {
-			cout << "Invalid path or path not found in AuxPath: " << newpath << endl;
-			return;
-		}
+		dir_exists = FindFirstFile(newpath.c_str(), &ls) != INVALID_HANDLE_VALUE;
 #else
-	//	string cwd = get_current_dir();
 		glob_t gbuf = { 0 };
 		glob(newpath.c_str(), GLOB_DOOFFS, NULL, &gbuf);
-		for (size_t k = 0; k < gbuf.gl_pathc; k++)
-		{
-			cout << gbuf.gl_pathv[k] << endl;
-		}
-	//	chdir(cwd.c_str());
+		dir_exists = gbuf.gl_pathc > 0;
 		globfree(&gbuf);
 #endif 
-		pEnv->AddPath(newpath);
+		if (dir_exists)
+			pEnv->AddPath(newpath);
+		else
+			cout << "Invalid path or path not found in AuxPath: " << newpath << endl;
 	}
 	else if (cmd.front() == "-r" || cmd.front() == "--remove")
 	{
-		string newpath;
+		string newpath = cmd[1];
 		if (cmd[1].back() != DIRMARKER) newpath = cmd[1] + DIRMARKER;
 		auto fd = find(pEnv->AuxPath.begin(), pEnv->AuxPath.end(), newpath);
 		if (fd != pEnv->AuxPath.end())
-		{
 			pEnv->AuxPath.erase(fd);
-			string paths = pEnv->path_delimited_semicolon();
-			//if (!printfINI(errstr, mainSpace.iniFile, "PATH", "%s", paths.c_str())) {
-			//	cout << "AuxPath updated, but failed while updating the INI file." << endl;
-			//	return 0;
-			//}
-		}
 		else
 			cout << "Invalid path or path not found in AuxPath: " << newpath << endl;
 	}
 	else
 	{
-		cout << "Format: #path [-a|r|s] path \nor #path [--add|--remove|--show] path" << endl;
+		cout << "Format: ##path [-a|r] path \nor ##path [--add|--remove] path \nor ##path to show paths" << endl;
 	}
 }
 
@@ -102,7 +87,11 @@ void auxenv_cd(CAstSigEnv * pEnv, string &destdir)
 	string result;
 	destdir = destdir.substr(1);
 	destdir += " & if %errorlevel%==0 (cd) else (echo ERROR inside auxenv_cd !!!)";
+#ifdef _WIN32
+	unique_ptr<FILE, decltype(&_pclose)> pipe(_popen(destdir.c_str(), "r"), _pclose);
+#else
 	unique_ptr<FILE, decltype(&pclose)> pipe(popen(destdir.c_str(), "r"), pclose);
+#endif
 	if (!pipe) {
 		throw std::runtime_error("popen() failed!");
 	}

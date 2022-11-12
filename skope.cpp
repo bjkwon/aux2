@@ -1391,7 +1391,7 @@ void CAstSigEnv::AddPath(string path)
 	if (!path.empty())
 	{
 		transform(path.begin(), path.end(), path.begin(), ::tolower);
-		if (path.back() != '\\') path += '\\';
+		if (path.back() != DIRMARKER) path += DIRMARKER;
 		auto fd = find(AuxPath.begin(), AuxPath.end(), path);
 		if (fd == AuxPath.end())
 			AuxPath.push_back(path);
