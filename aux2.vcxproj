@@ -117,7 +117,7 @@
       <PreprocessorDefinitions>HAVE_CONFIG_H;HAVE_MPGLIB;_DEBUG;_CONSOLE;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <DisableSpecificWarnings>4996; 4244; 4267</DisableSpecificWarnings>
-      <AdditionalIncludeDirectories>$(ProjectDir); $(ProjectDir)\include\</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir); $(ProjectDir)\include\;$(ProjectDir)..\include\</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -134,7 +134,7 @@
       <PreprocessorDefinitions>HAVE_CONFIG_H;HAVE_MPGLIB;NDEBUG;_CONSOLE;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <DisableSpecificWarnings>4996</DisableSpecificWarnings>
-      <AdditionalIncludeDirectories>$(ProjectDir); $(ProjectDir)\include\</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir); $(ProjectDir)\include\;$(ProjectDir)..\include\</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
