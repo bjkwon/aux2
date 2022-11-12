@@ -3,11 +3,24 @@
 #include "aux_classes.h"
 #include "skope.h"
 #include <array>
+
+#ifdef _WIN32
 #include <direct.h>
+#define DIRMARKER '\\'
+#define DIRMARKERSTR "\\"
+#else
+#include <glob.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <time.h>
+#define DIRMARKER '/'
+#define DIRMARKERSTR "/"
+#endif
 
 using namespace std;
 
 int str2vector(vector<string>& out, const string& in, const string& delim_chars); // utils.cpp
+string get_current_dir(); // utils.cpp
 
 #include "nlohmann/json.hpp"
 using json = nlohmann::json;
@@ -22,25 +35,31 @@ void auxenv_path(CAstSigEnv* pEnv, const vector<string>& cmd)
 	else if (cmd.front() == "-a" || cmd.front() == "--add")
 	{
 		string newpath;
-		if (cmd[1].back() == '\\') newpath = cmd[1].substr(0, cmd[1].size() - 1);
+		if (cmd[1].back() == DIRMARKER) newpath = cmd[1].substr(0, cmd[1].size() - 1);
+#ifdef _WIN32
 		WIN32_FIND_DATA ls;
 		HANDLE hFind = FindFirstFile(newpath.c_str(), &ls);
-		if (hFind == INVALID_HANDLE_VALUE)
+		if (hFind == INVALID_HANDLE_VALUE) {
 			cout << "Invalid path or path not found in AuxPath: " << newpath << endl;
-		else
-		{
-			pEnv->AddPath(newpath);
-			//string paths = pEnv->path_delimited_semicolon();
-			//if (!printfINI(errstr, iniFile, "PATH", "%s", paths.c_str())) {
-			//	cout << "AuxPath updated, but failed while updating the INI file." << endl;
-			//	return 0;
-			//}
+			return;
 		}
+#else
+	//	string cwd = get_current_dir();
+		glob_t gbuf = { 0 };
+		glob(newpath.c_str(), GLOB_DOOFFS, NULL, &gbuf);
+		for (size_t k = 0; k < gbuf.gl_pathc; k++)
+		{
+			cout << gbuf.gl_pathv[k] << endl;
+		}
+	//	chdir(cwd.c_str());
+		globfree(&gbuf);
+#endif 
+		pEnv->AddPath(newpath);
 	}
 	else if (cmd.front() == "-r" || cmd.front() == "--remove")
 	{
 		string newpath;
-		if (cmd[1].back() != '\\') newpath = cmd[1] + '\\';
+		if (cmd[1].back() != DIRMARKER) newpath = cmd[1] + DIRMARKER;
 		auto fd = find(pEnv->AuxPath.begin(), pEnv->AuxPath.end(), newpath);
 		if (fd != pEnv->AuxPath.end())
 		{
@@ -83,7 +102,7 @@ void auxenv_cd(CAstSigEnv * pEnv, string &destdir)
 	string result;
 	destdir = destdir.substr(1);
 	destdir += " & if %errorlevel%==0 (cd) else (echo ERROR inside auxenv_cd !!!)";
-	unique_ptr<FILE, decltype(&_pclose)> pipe(_popen(destdir.c_str(), "r"), _pclose);
+	unique_ptr<FILE, decltype(&pclose)> pipe(popen(destdir.c_str(), "r"), pclose);
 	if (!pipe) {
 		throw std::runtime_error("popen() failed!");
 	}
@@ -93,7 +112,11 @@ void auxenv_cd(CAstSigEnv * pEnv, string &destdir)
 	}
 	if (pEnv->AppPath.back() == '\n') 
 		pEnv->AppPath.pop_back();
+#ifdef _WIN32
 	_chdir(pEnv->AppPath.c_str());
+#else
+	chdir(pEnv->AppPath.c_str());
+#endif
 }
 
 void auxenv(CAstSigEnv* pEnv, const string& cmd)
@@ -128,8 +151,6 @@ void auxenv(CAstSigEnv* pEnv, const string& cmd)
 		}
 		return;
 	}
-
-
 }
 
 void read_auxenv(int& fs0, vector<string>& auxpathfromenv, const string& envfilename)

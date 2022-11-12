@@ -2,6 +2,7 @@
 //
 
 #include <iostream>
+#include <fstream>
 #include "aux_classes.h"
 #include "skope.h"
 #include "skope_exception.h"

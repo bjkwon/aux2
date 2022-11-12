@@ -1387,7 +1387,7 @@ string CAstSigEnv::path_delimited_semicolon()
 
 void CAstSigEnv::AddPath(string path)
 {
-	trim(path, "\r \n\t");
+	trim(path, string("\r \n\t"));
 	if (!path.empty())
 	{
 		transform(path.begin(), path.end(), path.begin(), ::tolower);

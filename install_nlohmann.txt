@@ -1,0 +1,10 @@
+sudo apt-get install nlohmann-json3-dev
+How did I know nlohmann-json3-dev?
+-- sudo apt-file search nlohmann
+
+then checked where it was installed... it is....
+
+/usr/include/nlohmann
+
+(In Jumpbox, nlohmann-json3-dev didn't work. nlohmann-json-dev worked.)
+
