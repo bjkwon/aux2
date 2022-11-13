@@ -1305,13 +1305,16 @@ void skope::init()
 {
 	node = NULL;
 	statusMsg = "";
-//	fAllocatedAst = false;
+	done = false;
+	nodeAllocated = false;
+	fBreak = false;
+	fExit = false;
+	
 	pLast = NULL;
 	son = NULL;
 	dad = NULL;
 	lhs = NULL;
 
-//	FsFixed = false;
 	pgo = NULL;
 	Tick0 = 1;
 	level = 1;

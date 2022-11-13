@@ -88,7 +88,8 @@ try
 	r = test_check_cond(r, res, msg)
 	msg = "[a,b]=udf_ret_one_arg", msg.eval
 	msg = "[a,b]=udf_ret_two_arg", msg.eval
-	res = a=="bj" && b==1
+	tt=2==2
+	res = issame(a,"bj") && b==tt
 	r = test_check_cond(r, res, msg)
 	//=================================
 	printf("Struct Tests...\n")

@@ -212,7 +212,7 @@ public:
 	static bool IsLooping(const AstNode* p);
 	static bool IsConditional(const AstNode* pnode);
 
-	skope(string instr = "");
+	skope(string instr = ""); // check if this is still necessary 11/12/2022
 	skope(CAstSigEnv* env);
 	skope(const skope* src);
 	virtual ~skope();

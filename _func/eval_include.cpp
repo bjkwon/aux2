@@ -49,7 +49,6 @@ void _eval(skope* past, const AstNode* pnode, const vector<CVar>& args)
 	qscope.node = qscope.makenodes(exp.c_str());
 	if (!qscope.node) // syntax error in the expression
 		throw exception_etc(*past, pnode, qscope.emsg).raise();
-
 	qscope.process_statement(qscope.node);
 	//transporting variables
 	for (map<string, CVar>::iterator it = qscope.Vars.begin(); it != qscope.Vars.end(); it++)

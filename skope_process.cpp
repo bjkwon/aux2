@@ -371,7 +371,14 @@ void skope::right_to_left(const AstNode* plhs, const CVar& lhs_index, CVar& robj
 {
 	bool isreplica = prhs != NULL;
 	ostringstream out;
-	if (typelhs == TYPEBIT_NULL) {
+	if (plhs->type == N_VECTOR) {
+		if (lhs) { // NULL lhs means outputbinding was done at PrepareAndCallUDF
+			outputbinding(plhs);
+			SigExt.clear();
+			lhs = nullptr;
+		}
+	}
+	else if (typelhs == TYPEBIT_NULL) {
 		if (lobj) {
 			*lobj = robj;
 		}
@@ -393,13 +400,6 @@ void skope::right_to_left(const AstNode* plhs, const CVar& lhs_index, CVar& robj
 				}
 			}
 			SetVar(plhs->str, &Sig);
-		}
-	}
-	else if (plhs->type == N_VECTOR) {
-		if (lhs) { // NULL lhs means outputbinding was done at PrepareAndCallUDF
-			outputbinding(plhs);
-			SigExt.clear();
-			lhs = nullptr;
 		}
 	}
 	else

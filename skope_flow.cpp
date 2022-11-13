@@ -78,7 +78,7 @@ CVar* skope::Try_here(const AstNode* pnode, AstNode* p)
 		// to be captured by xcom 1/1/2021
 		if (pEnv->inTryCatch)
 		{ // Make a new struct variable from child of e.pTarget (which is T_CATCH)
-			auto baseudf = get_base_node_for_try(e.pCtx->u.t_func_base, p->line);
+			auto baseudf = get_base_node_for_try(u.t_func_base, p->line);
 			auto pnode_try = get_try_node(baseudf);
 			const char* name = pnode_try->alt->child->str; // the variable name of catch (as "catchme" in catch "catchme")
 			string errmsg = e.outstr;
@@ -100,24 +100,20 @@ CVar* skope::Try_here(const AstNode* pnode, AstNode* p)
 			SetVar("errcol", &msg, &Vars[name]);
 			process_statement(pnode_try->alt);
 			skope* pbaskope = NULL;
-			for (auto xs : xscope) {
-				if (xs->level == e.pCtx->level)
-					pbaskope = xs;
-			}
 			if (pnode_try->alt->type == T_CATCHBACK)
 			{	//	e.pCtx->pEnv->BLOCK((skope*)pbaskope, pbaskope->pTryLast->next);
 				auto tblock = (AstNode*)malloc(sizeof(AstNode));
 				memset(tblock, 0, sizeof(AstNode));
 				tblock->type = N_BLOCK;
-				tblock->next = pbaskope->pTryLast->next->next;
+				tblock->next = pTryLast->next->next;
 				auto ttry = (AstNode*)malloc(sizeof(AstNode));
 				memset(ttry, 0, sizeof(AstNode));
 				ttry->type = T_TRY;
-				ttry->line = pbaskope->pTryLast->next->line;
-				ttry->col = pbaskope->pTryLast->next->col;
+				ttry->line = pTryLast->next->line;
+				ttry->col = pTryLast->next->col;
 				ttry->child = tblock;
 				ttry->alt = pnode_try->alt;
-				e.pCtx->pEnv->TRY((skope*)pbaskope, ttry);
+				pEnv->TRY((skope*)this, ttry);
 				ttry->child = ttry->alt = NULL;
 				free(tblock);
 				free(ttry);
