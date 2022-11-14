@@ -52,8 +52,12 @@ Cfunction set_builtin_function_leftright(fGate fp)
 	vector<string> desc_arg_req = { "audio_obj" };
 	vector<string> desc_arg_opt = { };
 	vector<CVar> default_arg = { };
-	set<uint16_t> allowedTypes1 = { ALL_AUDIO_TYPES };
-	ft.allowed_arg_types.push_back(allowedTypes1);
+	set<uint16_t> allowedTypes1 = { TYPEBIT_NULL }; // not used
+	ft.allowed_arg_types.push_back(allowedTypes1); // not used (but need this line)
+	set<pfunc_typecheck> allowedCheckFunc = { Cfunction::IsSTEREOG };
+	ft.qualify.push_back(allowedCheckFunc);
+	set<pfunc_typecheck> prohibitFunc = { Cfunction::AllFalse, }; // prohibit false (none)
+	ft.reject.push_back(prohibitFunc);
 	// til this line ==============
 	ft.desc_arg_req = desc_arg_req;
 	ft.desc_arg_opt = desc_arg_opt;

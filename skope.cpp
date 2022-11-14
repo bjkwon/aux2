@@ -694,9 +694,12 @@ CVar* skope::TID(AstNode* pnode, AstNode* pRHS, CVar* psig)
 		char ebuf[256] = {};
 		AstNode* pLast = read_nodes(np); // that's all about LHS.
 		AstNode* lhsCopy = nullptr;
-		if (pRHS)
-			lhsCopy = lhs = pLast;
-		else
+		//if (pRHS)
+		//{
+		//	lhsCopy = lhs = pLast;
+		//	printf("########\n");
+		//}
+		//else
 		{
 			if (np.psigBase && np.psigBase->IsGO())
 				return np.psigBase;
