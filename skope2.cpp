@@ -62,21 +62,23 @@ CVar * CNodeProbe::TimeExtract(const AstNode *pnode, AstNode *p)
 	if (!psigBase)
 		throw exception_etc(*pbase, pnode, "TimeExtract(): null psigBase").raise();
 	ensureAudio2(*pbase, pnode, *psigBase);
-
 	float endpoint;
 	CTimeSeries *pts = psigBase;
 	for (; pts; pts = pts->chain)
 		endpoint = pts->CSignal::endt();
-	if (psigBase->next)
-	{
-		pts = psigBase->next;
-		endpoint = max(endpoint, pts->CSignal::endt());
-	}
 	pbase->ends.push_back(endpoint);
 	vector<float> tpoints = pbase->gettimepoints(pnode, p);
 	CVar out(*psigBase);
-	out.Crop(tpoints[0], tpoints[1]);
+	out.CTimeSeries::Crop(tpoints[0], tpoints[1]);
 	pbase->ends.pop_back();
+	if (psigBase->next) {
+		for (pts = psigBase->next; pts; pts = pts->chain)
+			endpoint = pts->CSignal::endt();
+		pbase->ends.push_back(endpoint);
+		tpoints = pbase->gettimepoints(pnode, p);
+		out.next->CTimeSeries::Crop(tpoints[0], tpoints[1]);
+		pbase->ends.pop_back();
+	}
 	return &(pbase->Sig = out);
 }
 
