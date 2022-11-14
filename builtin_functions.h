@@ -161,6 +161,7 @@ void _conv(skope* past, const AstNode* pnode, const vector<CVar>& args);
 void _imaginary_unit(skope* past, const AstNode* pnode, const vector<CVar>& args);
 void _pi(skope* past, const AstNode* pnode, const vector<CVar>& args);
 void _natural_log_base(skope* past, const AstNode* pnode, const vector<CVar>& args);
+void _boolconst(skope* past, const AstNode* pnode, const vector<CVar>& args);
 
 DECL_GATE(_pow)
 DECL_GATE(_mod)

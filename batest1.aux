@@ -88,8 +88,7 @@ try
 	r = test_check_cond(r, res, msg)
 	msg = "[a,b]=udf_ret_one_arg", msg.eval
 	msg = "[a,b]=udf_ret_two_arg", msg.eval
-	tt=2==2
-	res = issame(a,"bj") && b==tt
+	res = issame(a,"bj") && b==$true
 	r = test_check_cond(r, res, msg)
 	//=================================
 	printf("Struct Tests...\n")
@@ -100,11 +99,7 @@ try
 	res0 = x=="bjk" // issame(x,"bjk") won't work. res0 should be [true true true]
 	res = res0.and && x.val==200
 	r = test_check_cond(r, res, msg)
-// 12:27 AM 10/27/2022
-// To-do
-// 1. revise head, ismember, and erase functions to accept not only struct, but also struct-PLUS (struct with head)
-// 2. revise head to add a feature to display the head content if no 2nd arg is given
-// 3. if x is struct with a string head, any function that takes a string should accept x
+
 	printf("\n")
 	
 catchback me

@@ -34,3 +34,12 @@ void _natural_log_base(skope* past, const AstNode* pnode, const vector<CVar>& ar
 {
 	past->Sig.SetValue(exp(1));
 }
+
+void _boolconst(skope* past, const AstNode* pnode, const vector<CVar>& args)
+{
+	if (!strcmp(pnode->str, "false"))
+		past->Sig.SetValue(0);
+	else
+		past->Sig.SetValue(1.);
+	past->Sig.MakeLogical();
+}

@@ -302,6 +302,8 @@ void CAstSigEnv::InitBuiltInFunctions()
 	SET_PSEUDO_VARS("i", imaginary_unit);
 	SET_PSEUDO_VARS("e", natural_log_base);
 	SET_PSEUDO_VARS("pi", pi);
+	SET_PSEUDO_VARS("false", boolconst);
+	SET_PSEUDO_VARS("true", boolconst);
 
 //	name = "isaudioat";
 //	ft.funcsignature = "(audio_signal, time_pt)";
