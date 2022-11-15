@@ -120,6 +120,7 @@ public:
 	static map<string, Cfunction> pseudo_vars;
 	map<string, UDF> udf;
 	int Fs;
+	int display_precision;
 	int curLine; // used for control F10
 	int inTryCatch;
 	vector<string> AuxPath;

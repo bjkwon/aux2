@@ -16,15 +16,16 @@
 
 #define AUXENV_FILE "auxenv.json"
 #define DEFAULT_FS 22050
+#define PRECISION 6 // the default precision tested in Windows11, Visual Studio 2019
 
 void auxenv(CAstSigEnv* pEnv, const string& cmd); // auxenv.cpp
 void auxenv_cd(CAstSigEnv* pEnv, string& targetdir); // auxenv.cpp
-void read_auxenv(int& fs, vector<string>& auxenvpath, const string& envfilename); // auxenv.cpp
+void read_auxenv(int& fs0, int& precision, vector<string>& auxpathfromenv, const string& envfilename);
 void save_auxenv(CAstSigEnv* pEnv, const string& envfilename); // auxenv.cpp
 
 extern vector<skope*> xscope;
 
-void echo(int depth, skope& ctx, const AstNode* pn, CVar* pvar)
+void echo(int precision, int depth, skope& ctx, const AstNode* pn, CVar* pvar)
 {
 	if (!pn->suppress)
 	{
@@ -38,24 +39,26 @@ void echo(int depth, skope& ctx, const AstNode* pn, CVar* pvar)
 		if (skope::IsLooping(pn)) return; // T_IF, T_FOR, T_WHILE
 		// if the command required waiting, lock a mutex here
 		// ctx.xtree->alt indicates subsequent modifier of TID (e.e., x(10:20) x.sqrt, etc)
+		echo_object EO;
+		EO.precision = precision;
 		if (pn->type == T_ID || pn->type == N_VECTOR) {
 			if (pn->alt && pn->alt->type == N_STRUCT)
-				echo_object().print(pn->alt->str, pvar, 1);
+				EO.print(pn->alt->str, pvar, 1);
 			else if (pn->alt && pn->alt->type == N_ARGS)
-				echo_object().print(string(pn->str) + "(__)", pvar, 1);
+				EO.print(string(pn->str) + "(__)", pvar, 1);
 			else
-				echo_object().print(pn->str, pvar, 1);
+				EO.print(pn->str, pvar, 1);
 		}
 		else
 		{ // 1+a, 2^5, a' !a a>=1 ...
 			ctx.SetVar("ans", pvar);
-			echo_object().print("ans", *pvar, 1);
+			EO.print("ans", *pvar, 1);
 		}
 	}
 }
 
 //[ 5  3 2 -1 9 83 7 62 9 7 6 8 9 7 3 2 -1]
-static void show_result(skope& sc)
+static void show_result(skope& sc, int precision)
 {
 	int dt = 1;
 	if (sc.node->type == N_BLOCK)
@@ -65,26 +68,26 @@ static void show_result(skope& sc)
 			if (pp->type == N_VECTOR)
 			{
 				for (AstNode* p2 = ((AstNode*)pp->str)->alt; !pp->suppress && p2; p2 = p2->next, dt++)
-					echo(dt, sc, p2, NULL);
+					echo(precision, dt, sc, p2, NULL);
 			}
 			else
-				echo(dt, sc, pp, sc.Sig.IsGO() ? sc.pgo : &sc.Sig);
+				echo(precision, dt, sc, pp, sc.Sig.IsGO() ? sc.pgo : &sc.Sig);
 		}
 	}
 	else if (sc.node->type == N_VECTOR)// && sc.node->alt && sc.node->alt->type!=N_STRUCT) // sc.node->alt is necessary to ensure that there's a vector on the LHS
 	{
 		if (sc.node->alt && sc.node->alt->type==N_STRUCT)
-			echo(dt, sc, sc.node, &sc.Sig);
+			echo(precision, dt, sc, sc.node, &sc.Sig);
 		else
 			for (AstNode* pp = ((AstNode*)sc.node->str)->alt; !sc.node->suppress && pp; pp = pp->next, dt++)
-				echo(dt, sc, pp, NULL);
+				echo(precision, dt, sc, pp, NULL);
 	}
 	else // see if lhs makes more sense than xtree
 	{
 		CVar* psig;
 		if (sc.Sig.IsGO() && sc.Sig.GetFs() != 3) psig = sc.pgo;
 		else psig = &sc.Sig;
-		echo(dt, sc, sc.node, psig);
+		echo(precision, dt, sc, sc.node, psig);
 	}
 	if (sc.statusMsg.empty())
 		cout << endl;
@@ -92,23 +95,25 @@ static void show_result(skope& sc)
 		cout << sc.statusMsg << endl;
 }
 
-CVar interpreter(skope& sc, const string& instr)
+CVar interpreter(skope& sc, int display_precision, const string& instr)
 {
 	auto nodes = sc.makenodes(instr);
 	if (!nodes)
 		throw sc.emsg.c_str();
 	sc.node = nodes;
 	sc.Compute();
-	show_result(sc);
+	show_result(sc, display_precision);
 	return sc.Sig;
 }
 
 int main()
 {
+	int display_precision(PRECISION);
 	int fs0(DEFAULT_FS);
 	vector<string> auxpathfromenv;
-	read_auxenv(fs0, auxpathfromenv, AUXENV_FILE);
+	read_auxenv(fs0, display_precision, auxpathfromenv, AUXENV_FILE);
 	CAstSigEnv* pglobalEnv = new CAstSigEnv(fs0);
+	pglobalEnv->display_precision = display_precision;
 	pglobalEnv->AuxPath = auxpathfromenv;
 	pglobalEnv->AppPath = get_current_dir();
 	pglobalEnv->InitBuiltInFunctions();
@@ -167,7 +172,7 @@ int main()
 					}
 				}
 				else
-					interpreter(sc, input);
+					interpreter(sc, pglobalEnv->display_precision, input);
 				programExit = false;
 			}
 			else

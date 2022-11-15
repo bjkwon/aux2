@@ -66,7 +66,6 @@ static void processEscapes(string& str)
 
 int gen_formatted_output(string &output, const string &prefixstr, string formatstr, CVar obj)
 {
-	int res;
 	output += prefixstr;
 	vector<char> forconverted(100);
 	auto tp = obj.type();

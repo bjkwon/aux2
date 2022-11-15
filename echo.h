@@ -9,9 +9,11 @@ public:
 	echo_object() {
 		offset = 0;
 		type = 0;
+		precision = 6;
 	};
 	virtual ~echo_object() {};
 	int offset;
+	int precision;
 	string name;
 	string postscript;
 	uint16_t type;
@@ -81,12 +83,12 @@ public:
 class echo_object_vector : public echo_object
 {
 public:
-	echo_object_vector(const string& _name, int _offset) {
-		name = _name; offset = _offset;
+	echo_object_vector(const string& _name, int _offset, int _prec) {
+		name = _name; offset = _offset; precision = _prec;
 	};
 	virtual ~echo_object_vector() {};
 	void print(const CTimeSeries& obj);
-	string row(const CTimeSeries& obj, unsigned int id0, int offset);
+	string row(const CTimeSeries& obj, unsigned int id0, int offset, int prec);
 	string make(const CTimeSeries& obj);
 };
 
@@ -112,8 +114,8 @@ public:
 class echo_object_naudio : public echo_object_time
 {
 public:
-	echo_object_naudio(const string& _name, int _offset) {
-		name = _name; offset = _offset;
+	echo_object_naudio(const string& _name, int _offset, int _prec) {
+		name = _name; offset = _offset; precision = _prec;
 	};
 	virtual ~echo_object_naudio() {};
 	string make(const CTimeSeries& sig, bool unit, int offset);
@@ -125,6 +127,6 @@ class stream_for_echo
 public:
 	stream_for_echo() {};
 	virtual ~stream_for_echo() {};
-	string make(const CSignal& var, unsigned int id0, int offset);
+	string make(const CSignal& var, unsigned int id0, int offset, int prec);
 	static string _complex(complex<double> cval);
 };

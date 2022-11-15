@@ -1,5 +1,6 @@
 #include <iostream>
 #include <fstream>
+#include <sstream>
 #include "aux_classes.h"
 #include "skope.h"
 #include <array>
@@ -64,6 +65,23 @@ void auxenv_path(CAstSigEnv* pEnv, const vector<string>& cmd)
 	}
 }
 
+void auxenv_precision(CAstSigEnv* pEnv, const vector<string>& cmd)
+{
+	if (cmd.empty()) {
+		cout << "Number precision:" << pEnv->display_precision << endl;
+	}
+	else {
+		int prec;
+		stringstream(cmd.front()) >> prec;
+		if (prec > 16 || prec < 1) {
+			cout << "Format: ##precision (number_precision)" << endl;
+		}
+		else {
+			pEnv->display_precision = prec;
+		}
+	}
+}
+
 void auxenv_setfs(CAstSigEnv* pEnv, const vector<string>& cmd)
 {
 
@@ -119,6 +137,10 @@ void auxenv(CAstSigEnv* pEnv, const string& cmd)
 			cmdl.erase(cmdl.begin());
 			auxenv_path(pEnv, cmdl);
 		}
+		else if (cmdl[0] == "precision") {
+			cmdl.erase(cmdl.begin());
+			auxenv_precision(pEnv, cmdl);
+		}
 		else if (cmdl[0] == "setfs") {
 			cmdl.erase(cmdl.begin());
 			auxenv_setfs(pEnv, cmdl);
@@ -142,7 +164,7 @@ void auxenv(CAstSigEnv* pEnv, const string& cmd)
 	}
 }
 
-void read_auxenv(int& fs0, vector<string>& auxpathfromenv, const string& envfilename)
+void read_auxenv(int& fs0, int& precision, vector<string>& auxpathfromenv, const string& envfilename)
 {
 	ifstream envfstream;
 	json jenv;
@@ -156,6 +178,9 @@ void read_auxenv(int& fs0, vector<string>& auxpathfromenv, const string& envfile
 		auto fd = jenv.find("fs");
 		if (fd != jenv.end())
 			fs0 = jenv["fs"].get<int>();
+		fd = jenv.find("precision");
+		if (fd != jenv.end())
+			precision = jenv["precision"].get<int>();
 		fd = jenv.find("AuxPath");
 		if (fd != jenv.end()) {
 			if ((*fd).type_name() == "array") {
@@ -179,8 +204,9 @@ void read_auxenv(int& fs0, vector<string>& auxpathfromenv, const string& envfile
 void save_auxenv(CAstSigEnv* pEnv, const string& envfilename)
 {
 	ofstream envfstream;
-	json jenv;
+	json jenv; 
 	jenv["fs"] = pEnv->Fs;
+	jenv["precision"] = pEnv->display_precision;
 	for (auto s : pEnv->AuxPath)
 		jenv["AuxPath"].push_back(s);
 	try {

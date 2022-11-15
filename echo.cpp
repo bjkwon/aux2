@@ -15,7 +15,7 @@ string echo_object_vector::make(const CTimeSeries& obj)
 	echo_object::header();
 	if (obj.nGroups == 1) {
 		if (obj.IsLogical()) out << "(bool) ";
-		out << row(obj, 0, 0);
+		out << row(obj, 0, 0, precision);
 	}
 	else
 	{
@@ -23,7 +23,7 @@ string echo_object_vector::make(const CTimeSeries& obj)
 		out << endl;
 		unsigned int j;
 		for (j = 0; j < min(10, obj.nGroups); j++)
-			out << row(obj, obj.Len() * j, offset + 1);
+			out << row(obj, obj.Len() * j, offset + 1, precision);
 		if (j == 10)
 		{
 			for (int m = 0; m < offset; m++) out << " ";
@@ -38,9 +38,9 @@ void echo_object_vector::print(const CTimeSeries& obj)
 	cout << make(obj);
 }
 
-string echo_object_vector::row(const CTimeSeries& obj, unsigned int id0, int offset)
+string echo_object_vector::row(const CTimeSeries& obj, unsigned int id0, int offset, int prec)
 {
-	string out = stream_for_echo().make(obj, id0, offset);
+	string out = stream_for_echo().make(obj, id0, offset, prec);
 	out += postscript;
 	out += "\n";
 	return out;
@@ -139,19 +139,19 @@ string echo_object_naudio::make(const CTimeSeries& sig, bool unit, int offset)
 		out << "(" << xp->tmark;
 		if (unit) out << "ms";
 		out << ") ";
-		out << echo_object_vector("", offset).make(*xp);
+		out << echo_object_vector("", offset, precision).make(*xp);
 	}
 	out.unsetf(ios::floatfield);
 	out.precision(org_precision);
 	return out.str();
 }
 
-string stream_for_echo::make(const CSignal& var, unsigned int id0, int offset)
+string stream_for_echo::make(const CSignal& var, unsigned int id0, int offset, int prec)
 {
 	ostringstream out;
 	streamsize org_precision = out.precision();
-	//	out.setf(ios::fixed);
-	//	out.precision(1);
+	//out.setf(ios::fixed);
+	out.precision(prec);
 	unsigned int k = 0;
 	if (var.IsComplex())
 		for (; k < min(10, var.Len()); k++, out << " ")
@@ -173,8 +173,8 @@ string stream_for_echo::make(const CSignal& var, unsigned int id0, int offset)
 	}
 	if (var.Len() > 10) // this means nSamples is greater than 10
 		out << " ... (length = " << var.Len() << ")";
-	//	out.unsetf(ios::floatfield);
-	//	out.precision(org_precision);
+	//out.unsetf(ios::floatfield);
+	out.precision(org_precision);
 	return out.str();
 }
 
@@ -234,12 +234,12 @@ void echo_object::print(const string& name, const CVar& obj, int offset)
 	else if (ISAUDIO(tp))
 		echo_object_audio(name, offset).print(obj);
 	else if (ISTEMPORAL(tp) || ISSTEREO(tp))
-		echo_object_naudio(name, offset).print(obj);
+		echo_object_naudio(name, offset, precision).print(obj);
 	else if (!tp) // Don't do (type & TYPEBIT_NULL) unless you want to be funny!
 		echo_object_null(name, offset).print(obj);
 	else if (ISSTRING(tp) || ISBYTE(tp))
 		echo_object_string(name, offset).print(obj);
 	else if (ISSCALAR(tp) || ISVECTOR(tp) || IS2D (tp))
-		echo_object_vector(name, offset).print(obj);
+		echo_object_vector(name, offset, precision).print(obj);
 	// Not yet about TYPEBIT_STRUT and the rest
 }
