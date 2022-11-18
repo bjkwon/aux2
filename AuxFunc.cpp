@@ -296,7 +296,11 @@ void CAstSigEnv::InitBuiltInFunctions()
 
 	SET_BUILTIN_FUNC("setnextchan", setnextchan);
 
-	//SET_BUILTIN_FUNC("", );
+	SET_BUILTIN_FUNC("tsq_isrel", tseqget);
+	SET_BUILTIN_FUNC("tsq_getvalues", tseqget);
+	SET_BUILTIN_FUNC("tsq_gettimes", tseqget);
+	SET_BUILTIN_FUNC("tsq_setvalues", tseqset);
+	SET_BUILTIN_FUNC("tsq_settimes", tseqset);
 
 
 	SET_PSEUDO_VARS("i", imaginary_unit);
@@ -389,38 +393,6 @@ void CAstSigEnv::InitBuiltInFunctions()
 //	name = "record";
 //	ft.func = &_record;
 //#endif
-//	builtin[name] = ft;
-
-//
-//	ft.alwaysstatic = false;
-//	ft.narg1 = 1;	ft.narg2 = 1;
-//	name = "tsq_isrel";
-//	ft.funcsignature = "(tseq)";
-//	ft.func = &_tsq_isrel;
-//	builtin[name] = ft;
-//
-//	ft.narg1 = 1;	ft.narg2 = 2;
-//	name = "tsq_gettimes";
-//	ft.funcsignature = "(tseq [, audio_signal])";
-//	ft.func = &_tsq_gettimes;//
-//	builtin[name] = ft;
-//
-//	ft.narg1 = 2;	ft.narg2 = 2;
-//	name = "tsq_settimes";
-//	ft.funcsignature = "(tseq, times_vector_or_tseq)";
-//	ft.func = &_tsq_settimes;
-//	builtin[name] = ft;
-//
-//	ft.narg1 = 1;	ft.narg2 = 1;
-//	name = "tsq_getvalues";
-//	ft.funcsignature = "(tseq)";
-//	ft.func = &_tsq_getvalues;
-//	builtin[name] = ft;
-//
-//	ft.narg1 = 2;	ft.narg2 = 2;
-//	name = "tsq_setvalues";
-//	ft.funcsignature = "(tseq, values_matrix)";
-//	ft.func = &_tsq_setvalues;
 //	builtin[name] = ft;
 //
 //	ft.alwaysstatic = true;
