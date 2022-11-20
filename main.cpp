@@ -25,7 +25,7 @@ void save_auxenv(CAstSigEnv* pEnv, const string& envfilename); // auxenv.cpp
 
 extern vector<skope*> xscope;
 
-void echo(int precision, int depth, skope& ctx, const AstNode* pn, CVar* pvar)
+void echo(int precision, int depth, skope& ctx, const AstNode* pn, CVar* pvar, const string& display, int display_count)
 {
 	if (!pn->suppress)
 	{
@@ -39,11 +39,11 @@ void echo(int precision, int depth, skope& ctx, const AstNode* pn, CVar* pvar)
 		if (skope::IsLooping(pn)) return; // T_IF, T_FOR, T_WHILE
 		// if the command required waiting, lock a mutex here
 		// ctx.xtree->alt indicates subsequent modifier of TID (e.e., x(10:20) x.sqrt, etc)
-		echo_object EO;
+		echo_object EO(display, display_count);
 		EO.precision = precision;
 		if (pn->type == T_ID || pn->type == N_VECTOR) {
 			if (pn->alt && pn->alt->type == N_STRUCT)
-				EO.print(pn->alt->str, pvar, 1);
+				EO.print(pn->str, pvar, 0);
 			else if (pn->alt && pn->alt->type == N_ARGS)
 				EO.print(string(pn->str) + "(__)", pvar, 1);
 			else
@@ -58,7 +58,7 @@ void echo(int precision, int depth, skope& ctx, const AstNode* pn, CVar* pvar)
 }
 
 //[ 5  3 2 -1 9 83 7 62 9 7 6 8 9 7 3 2 -1]
-static void show_result(skope& sc, int precision)
+static void show_result(skope& sc, int precision, const string& display, int display_count)
 {
 	int dt = 1;
 	if (sc.node->type == N_BLOCK)
@@ -68,26 +68,26 @@ static void show_result(skope& sc, int precision)
 			if (pp->type == N_VECTOR)
 			{
 				for (AstNode* p2 = ((AstNode*)pp->str)->alt; !pp->suppress && p2; p2 = p2->next, dt++)
-					echo(precision, dt, sc, p2, NULL);
+					echo(precision, dt, sc, p2, NULL, display, display_count);
 			}
 			else
-				echo(precision, dt, sc, pp, sc.Sig.IsGO() ? sc.pgo : &sc.Sig);
+				echo(precision, dt, sc, pp, sc.Sig.IsGO() ? sc.pgo : &sc.Sig, display, display_count);
 		}
 	}
 	else if (sc.node->type == N_VECTOR)// && sc.node->alt && sc.node->alt->type!=N_STRUCT) // sc.node->alt is necessary to ensure that there's a vector on the LHS
 	{
 		if (sc.node->alt && sc.node->alt->type==N_STRUCT)
-			echo(precision, dt, sc, sc.node, &sc.Sig);
+			echo(precision, dt, sc, sc.node, &sc.Sig, display, display_count);
 		else
 			for (AstNode* pp = ((AstNode*)sc.node->str)->alt; !sc.node->suppress && pp; pp = pp->next, dt++)
-				echo(precision, dt, sc, pp, NULL);
+				echo(precision, dt, sc, pp, NULL, display, display_count);
 	}
 	else // see if lhs makes more sense than xtree
 	{
 		CVar* psig;
 		if (sc.Sig.IsGO() && sc.Sig.GetFs() != 3) psig = sc.pgo;
 		else psig = &sc.Sig;
-		echo(precision, dt, sc, sc.node, psig);
+		echo(precision, dt, sc, sc.node, psig, display, display_count);
 	}
 	if (sc.statusMsg.empty())
 		cout << endl;
@@ -102,7 +102,10 @@ CVar interpreter(skope& sc, int display_precision, const string& instr)
 		throw sc.emsg.c_str();
 	sc.node = nodes;
 	sc.Compute();
-	show_result(sc, display_precision);
+	if (nodes->tail && nodes->tail->str)
+		show_result(sc, display_precision, nodes->tail->str, (int)nodes->tail->dval);
+	else
+		show_result(sc, display_precision, "", -1);
 	return sc.Sig;
 }
 

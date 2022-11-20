@@ -210,6 +210,13 @@ line:	T_NEWLINE
 		$$ = $1;
 		$$->suppress=1;
 	}
+	|  tid '|' T_ID T_NUMBER
+	{
+		$$ = $1;
+		$$->tail = newAstNode(T_ID, @$); 
+		$$->tail->str = $3;
+		$$->tail->dval = $4;
+	}
 ;
 
 line_func: line
@@ -997,7 +1004,6 @@ exp: initcell
 	| exp T_OP_CONCAT exp
 	{ $$ = makeBinaryOpNode(T_OP_CONCAT, $1, $3, @$);}
 ;
-
 
 //tseq:
 // vector '[' ']'

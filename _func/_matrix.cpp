@@ -10,7 +10,7 @@ Cfunction set_builtin_function_group(fGate fp)
 	vector<string> desc_arg_req = { "array", "nGroups",  };
 	vector<string> desc_arg_opt = { "overlap=0" };
 	vector<CVar> default_arg = { CVar(0.f) };
-	set<uint16_t> allowedTypes1 = { 1, 2, AUDIO_TYPES_1D };
+	set<uint16_t> allowedTypes1 = { 1, 2, TYPEBIT_SIZE1 + 2, AUDIO_TYPES_1D };
 	set<uint16_t> allowedTypes2 = { 1, };
 	ft.allowed_arg_types.push_back(allowedTypes1);
 	ft.allowed_arg_types.push_back(allowedTypes2);

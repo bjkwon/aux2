@@ -10,6 +10,15 @@ public:
 		offset = 0;
 		type = 0;
 		precision = 6;
+		tbht = "";
+		tbht_count = -1;
+	};
+	echo_object(const string& display, int display_count) {
+		offset = 0;
+		type = 0;
+		precision = 6;
+		tbht = display;
+		tbht_count = display_count;
 	};
 	virtual ~echo_object() {};
 	int offset;
@@ -17,16 +26,23 @@ public:
 	string name;
 	string postscript;
 	uint16_t type;
+	string tbht;
+	int tbht_count;
 	void print(const string& name, const CVar& obj, int offset);
-	void header()
+	string print_vector(const CTimeSeries& obj, int offset);
+	void print_temporal(const string& title, const CVar& obj, int offset);
+	string row(const CTimeSeries& obj, unsigned int id0, int offset, int prec);
+	string tmarks(const CTimeSeries& obj, bool unit);
+	string make(const CTimeSeries& sig, bool unit, int offset);
+	void header(const string& head)
 	{
-		if (!name.empty())
+		if (!name.empty() && !head.empty())
 		{
 			for (int k = 0; k < offset; k++) cout << " ";
-			cout << name << " = ";
+			if (!head.empty()) cout << head << " = ";
+			else cout << name << " = ";
 		}
 	};
-
 };
 
 class echo_cell : public echo_object
@@ -36,7 +52,7 @@ public:
 		name = _name; offset = _offset;
 	};
 	virtual ~echo_cell() {};
-	void print(const CVar& obj);
+	void print(const CVar& obj, const string& head);
 };
 
 class echo_struct : public echo_object
@@ -46,87 +62,5 @@ public:
 		name = _name; offset = _offset;
 	};
 	virtual ~echo_struct() {};
-	void print(const CVar& obj);
-};
-
-class echo_object_null : public echo_object
-{
-public:
-	echo_object_null(const string& _name, int _offset) {
-		name = _name; offset = _offset;
-	};
-	virtual ~echo_object_null() {};
-	void print(const CVar& obj)
-	{
-		echo_object::header();
-		cout << "[]" << postscript << endl;
-	};
-};
-
-class echo_object_string : public echo_object
-{
-public:
-	echo_object_string(const string& _name, int _offset) {
-		name = _name; offset = _offset;
-	};
-	virtual ~echo_object_string() {};
-	void print(const CVar& obj)
-	{
-		echo_object::header();
-		if (obj.bufType=='S')
-			cout << "\"" << obj.str() << "\"" << postscript << endl;
-		else if (obj.bufType == 'B')
-			cout << "(" << obj.nSamples << " bytes)" << postscript << endl;
-	};
-};
-
-class echo_object_vector : public echo_object
-{
-public:
-	echo_object_vector(const string& _name, int _offset, int _prec) {
-		name = _name; offset = _offset; precision = _prec;
-	};
-	virtual ~echo_object_vector() {};
-	void print(const CTimeSeries& obj);
-	string row(const CTimeSeries& obj, unsigned int id0, int offset, int prec);
-	string make(const CTimeSeries& obj);
-};
-
-class echo_object_time : public echo_object
-{
-public:
-	echo_object_time() {};
-	virtual ~echo_object_time() {};
-	void print(const CVar& obj);
-	static string tmarks(const CTimeSeries& obj, bool unit);
-};
-
-class echo_object_audio : public echo_object_time
-{
-public:
-	echo_object_audio(const string& _name, int _offset) {
-		name = _name; offset = _offset;
-	};
-	virtual ~echo_object_audio() {};
-	void print(const CSignals& obj);
-};
-
-class echo_object_naudio : public echo_object_time
-{
-public:
-	echo_object_naudio(const string& _name, int _offset, int _prec) {
-		name = _name; offset = _offset; precision = _prec;
-	};
-	virtual ~echo_object_naudio() {};
-	string make(const CTimeSeries& sig, bool unit, int offset);
-	void print(const CSignals& obj);
-};
-
-class stream_for_echo
-{
-public:
-	stream_for_echo() {};
-	virtual ~stream_for_echo() {};
-	string make(const CSignal& var, unsigned int id0, int offset, int prec);
-	static string _complex(complex<double> cval);
+	void print(const CVar& obj, const string& head);
 };
