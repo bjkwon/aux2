@@ -30,7 +30,7 @@ AstNode* skope::goto_line(const AstNode* pnode, int line)
 			pp = skope::goto_line((const AstNode*)p->alt, line);
 			if (pp) return pp;
 		}
-		else if (p->type == T_IF)
+		else if (p->type == T_IF || p->type == T_TRY)
 		{
 			pp = skope::goto_line((const AstNode*)p->child->next, line);
 			if (pp) return pp;
