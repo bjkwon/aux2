@@ -57,8 +57,21 @@ void _veq(skope* past, const AstNode* pnode, const vector<CVar>& args)
 	uint16_t type2 = args[0].type();
 	try {
 		// throw 0 for false
-		if (type1 != type2) throw 0;
-		else if (arg1.nSamples != arg2.nSamples) throw 0;
+		if (type1 != type2) {
+			uint16_t diff = type1 > type2 ? type1 - type2 : type2 - type1;
+			if (diff != TYPEBIT_COMPLEX) throw 0;
+			if (type1 & TYPEBIT_COMPLEX) {
+				for (unsigned k = 0; k < arg1.nSamples; k++)
+					if (imag(arg1.cbuf[k]) != 0.) throw 0;
+				arg1.SetReal();
+			}
+			else if (type2 & TYPEBIT_COMPLEX) {
+				for (unsigned k = 0; k < arg2.nSamples; k++)
+					if (imag(arg2.cbuf[k]) != 0.) throw 0;
+				arg2.SetReal();
+			}
+		}
+		if (arg1.nSamples != arg2.nSamples) throw 0;
 		else if (type1 & 0x2000) // GO
 		{
 			if (arg1.value() != arg2.value()) throw 0;
