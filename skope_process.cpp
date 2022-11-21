@@ -132,12 +132,7 @@ void skope::eval_lhs(const AstNode* plhs, const AstNode* prhs, CVar &lhs_index, 
 				throw exception_etc(*this, plhs, out.str()).raise();
 			}
 		}
-		RHS = Compute(prhs); // Not to be removed 10/11/2022
-		if (lhs) {
-			outputbinding_for_eval_lhs(plhs);
-		}
-		else { // outputbinding was done at PrepareAndCallUDF
-		}
+		outputbinding_for_eval_lhs(plhs);
 	}
 	else // assume TID
 	{
@@ -152,7 +147,6 @@ void skope::eval_lhs(const AstNode* plhs, const AstNode* prhs, CVar &lhs_index, 
 				out << "LHS must be an l-value. " << plhs->str << " is a built-in function.";
 				throw exception_etc(*this, plhs, out.str()).raise();
 			}
-//			RHS = Compute(prhs); // DO SOMETHING--- RHS is computed twice..... 9/14/2022
 			// if var is not defined, type is null
 			auto itvar = Vars.find(plhs->str);
 			if (itvar == Vars.end())
@@ -490,8 +484,8 @@ CVar* skope::process_statement(const AstNode* pnode)
 	const AstNode* prhs;
 	bool isreplica = get_nodes_left_right_sides(pnode, &plhs, &prhs);
 	CVar RHS;
-	if (!isreplica && (!plhs || plhs->type != N_VECTOR))
-		RHS = Compute(prhs); // if (plhs->type == N_VECTOR) in eval_lhs()
+	if (!isreplica)
+		RHS = Compute(prhs);
 	if (plhs)
 	{
 		uint16_t typelhs;

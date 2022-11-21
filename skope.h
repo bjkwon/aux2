@@ -273,7 +273,7 @@ public:
 	string script;
 	string emsg;
 	CVar Sig; // placeholder for the output of Compute(); used in various ways
-	vector<unique_ptr<CVar*>> SigExt; // placeholder for multiple output arguments
+	vector<unique_ptr<CVar>> SigExt; // placeholder for multiple output arguments
 	AstNode* node;
 	CVar* pgo; // pointer, not a copy, of the last computed object; used for graffy functions
 	int level;

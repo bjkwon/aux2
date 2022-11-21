@@ -28,8 +28,12 @@ skope::skope(string instr)
 
 skope::~skope()
 {
-	//clean up node
-
+	// 11/21/2022
+	// Todo--necessary to clean up the node to avoid memory leak, but
+	// running yydeleteAstNode(node, 0) as is will delete u.t_func->child->next
+	// which is the udf function node without reseting to null
+	// and you won't be able to call the udf again...
+//	yydeleteAstNode(node, 0);
 }
 
 CAstSigEnv::CAstSigEnv(const int fs)
@@ -146,13 +150,13 @@ void skope::outputbinding(const AstNode* plhs)
 	}
 	else
 	{
-		vector<unique_ptr<CVar*>>::iterator it = SigExt.begin();
+		vector<unique_ptr<CVar>>::iterator it = SigExt.begin();
 		for (AstNode* p = ((AstNode*)plhs->str)->alt; p; p = p->next)
 		{
 			auto pp = *it->release();
-			bind_psig(p, pp);
-			if (it != SigExt.begin())
-				delete pp; // most likely pp was created in _func() in _functions
+			bind_psig(p, &pp);
+//			if (it != SigExt.begin())
+//				delete &pp; // most likely pp was created in _func() in _functions
 			it++;
 			if (it == SigExt.end() && p->next)
 			{
@@ -878,39 +882,15 @@ void skope::PrepareAndCallUDF(const AstNode* pCalling, CVar* pBase, CVar* pStati
 	xscope.push_back(son.get());
 	//son->SetVar("_________",pStaticVars); // how can I add static variables here???
 	son->CallUDF(pCalling, pBase, nargout);
-	// output parameter binding
-	vector<CVar*> holder;
-	size_t cnt = 0;
-	// output argument transfer from son to this
-	float nargin = son->Vars["nargin"].value();
-	float son_nargout = nargout;// son->Vars["nargout"].value();
-	//Undefined output variables are defined as empty
-	for (auto v : son->u.argout)
-		if (son->Vars.find(v) == son->Vars.end() && (son->GOvars.find(v) == son->GOvars.end() || son->GOvars[v].front()->IsEmpty()))
-			son->SetVar(v.c_str(), new CVar);
-	//lhs is either NULL (if not specified), T_ID or N_VECTOR
-	if (lhs)
-	{
-		outputbinding(pCalling, nargout);
+
+	if (son->u.argout.empty())
+		Sig.Reset();
+	else if (son->u.argout.size() >= 1) {
+		Sig = son->Vars[son->u.argout.front()];
 	}
-	else // no output parameter specified. --> first formal output arg goes to ans
-	{
-		if (son->u.argout.empty())
-			Sig.Reset();
-		else
-		{
-			if (son->Vars.find(son->u.argout.front()) != son->Vars.end())
-				Sig = son->Vars[son->u.argout.front()];
-			else
-			{
-//				if (son->GOvars[son->u.argout.front()].size() > 1)
-//					Sig = *(pgo = MakeGOContainer(son->GOvars[son->u.argout.front()]));
-//				else if (son->GOvars[son->u.argout.front()].size() == 1)
-//					Sig = *(pgo = son->GOvars[son->u.argout.front()].front());
-//				else
-					Sig = CVar();
-			}
-		}
+	for (auto it = son->u.argout.begin(); it != son->u.argout.end(); it++) {
+		unique_ptr<CVar> pt = make_unique<CVar>(son->Vars[*it]);
+		SigExt.push_back(move(pt));
 	}
 	if ((son->u.debug.status == stepping || son->u.debug.status == continuing) && u.debug.status == null)
 	{ // no b.p set in the main udf, but in these conditions, as the local udf is finishing, the stepping should continue in the main udf, or debug.status should be set progress, so that the debugger would be properly exiting as it finishes up in CallUDF()
@@ -926,6 +906,7 @@ void skope::PrepareAndCallUDF(const AstNode* pCalling, CVar* pBase, CVar* pStati
 	if (pgo) pgo->functionEvalRes = true;
 	Sig.functionEvalRes = true;
 	xscope.pop_back(); // move here????? to make purgatory work...
+	son.reset();
 }
 
 void skope::CallUDF(const AstNode* pnode4UDFcalled, CVar* pBase, size_t nargout_requested)
@@ -1272,7 +1253,6 @@ skope::skope(const skope* src)
 	}
 	else
 		pEnv = new CAstSigEnv(22050);
-	node = src->node;
 	ends = src->ends;
 	level = src->level;
 	pLast = src->pLast;

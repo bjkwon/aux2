@@ -180,8 +180,8 @@ void _filt(skope* past, const AstNode* pnode, const vector<CVar>& args)
 		past->Sig = past->Sig.evoke_modsig2(__filt, (void*)&args, (void*)extraOut);
 		if (get_output_count(past->node, pnode) > 1)
 		{
-			past->SigExt.push_back(move(make_unique<CVar*>(&past->Sig)));
-			unique_ptr<CVar*> pt = make_unique<CVar*>(extraOut);
+			past->SigExt.push_back(move(make_unique<CVar>(past->Sig)));
+			unique_ptr<CVar> pt = make_unique<CVar>(*extraOut);
 			past->SigExt.push_back(move(pt));
 		}
 		else
@@ -208,8 +208,8 @@ void _filt(skope* past, const AstNode* pnode, const vector<CVar>& args)
 			memcpy(past->Sig.buf, temp.buf + nfact, sizeof(float) * past->Sig.nSamples);
 			if (get_output_count(past->node, pnode) > 1)
 			{
-				past->SigExt.push_back(move(make_unique<CVar*>(&past->Sig)));
-				unique_ptr<CVar*> pt = make_unique<CVar*>(extraOut);
+				past->SigExt.push_back(move(make_unique<CVar>(past->Sig)));
+				unique_ptr<CVar> pt = make_unique<CVar>(*extraOut);
 				past->SigExt.push_back(move(pt));
 			}
 			else
@@ -295,8 +295,8 @@ void _iir(skope* past, const AstNode* pnode, const vector<CVar>& args)
 		past->Sig = past->Sig.evoke_modsig2(__filt, (void*)&argsnew, (void*)extraOut);
 		if (get_output_count(past->node, pnode) > 1)
 		{
-			past->SigExt.push_back(move(make_unique<CVar*>(&past->Sig)));
-			unique_ptr<CVar*> pt = make_unique<CVar*>(extraOut);
+			past->SigExt.push_back(move(make_unique<CVar>(past->Sig)));
+			unique_ptr<CVar> pt = make_unique<CVar>(*extraOut);
 			past->SigExt.push_back(move(pt));
 		}
 		else
