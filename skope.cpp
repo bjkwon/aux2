@@ -117,15 +117,21 @@ CAstSigEnv::~CAstSigEnv()
 void skope::outputbinding_for_eval_lhs(const AstNode* plhs)
 {
 	assert(plhs->type == N_VECTOR);
+	AstNode* p = ((AstNode*)plhs->str)->alt;
 	if (SigExt.empty())
-	{
-		AstNode* p = ((AstNode*)plhs->str)->alt;
+	{ // For built-in functions with multiple return values (e.g., max or min)
+		// at this point, SigExt should be prepared
+		// empty means this is a function returning a single or no argument
 		if (p->next)
 			throw exception_etc(*this, p, "Too many output arguments.").raise();
 	}
 	else
 	{
-		// add something if you want to impose any other conditions example not allowing [a(id) b] = func(x,y)
+		// add something if you want to impose any other conditions example not allowing [5,x] = func(x) or [a(id),b] = func(x,y)
+		for (; p; p = p->next) {
+			if (p->type==T_NUMBER)
+				throw exception_etc(*this, p, "No Number on LHS.").raise();
+		}
 	}
 }
 
@@ -186,7 +192,7 @@ void skope::outputbinding(const AstNode *pnode, size_t nArgout)
 				Sig = *pgo; //Ghost output to console
 			SetVar(pp->str, pgo);
 		}
-		if (--nArgout == 0) break;
+		if (count == nArgout) break;
 		pp = pp->next;
 		if (!pp) break;
 	}
@@ -476,7 +482,7 @@ AstNode* skope::read_node(CNodeProbe& np, AstNode* ptree, AstNode* ppar, bool& R
 	if (builtin_func_call(np, ptree))
 	{
 		// In a top-level assignment e.g., a = 1; RHSpresent is not yet set, ptree->child should be checked instead
-		if (RHSpresent || ptree->child)	throw_LHS_lvalue(ptree, false);
+		if (/*RHSpresent || */ptree->child)	throw_LHS_lvalue(ptree, false);
 		np.psigBase = &Sig;
 		// if a function call follows N_ARGS, skip it for next_parsible_node
 		if (ptree->alt)
@@ -487,21 +493,13 @@ AstNode* skope::read_node(CNodeProbe& np, AstNode* ptree, AstNode* ppar, bool& R
 	}
 	else if (ptree->type == N_ARGS)
 	{
-		// ptree points to LHS, no need for further processing. Skip
-		// (except that RHS involves T_REPLICA (.. or a compoud op)
-		if (!RHSpresent || searchtree(np.root->child, T_REPLICA) || ptree->alt)
-			np.tree_NARGS(ptree, ppar);
-		else
-			return NULL;
+		np.tree_NARGS(ptree, ppar);
 	}
 	else if (ptree->type == N_TIME_EXTRACT)
 		np.TimeExtract(ptree, ptree->child);
 	else if (ptree->type == T_REPLICA || ptree->type == T_ENDPOINT)
 	{
-		if (ptree->alt && ptree->alt->type == N_CELL)
-			np.cell_indexing(np.psigBase, ptree);
-		else
-			Sig = *np.psigBase;
+		Sig = *np.psigBase;
 	}
 	else if (ptree->type == N_HOOK)
 	{
@@ -516,19 +514,6 @@ AstNode* skope::read_node(CNodeProbe& np, AstNode* ptree, AstNode* ppar, bool& R
 	}
 	else
 	{
-		// If RHS exists (i.e., child is non-null), no need to get the LHS variable completely,
-		// i.e., a.prop_layer_1.prop_layer_2 = (something else)
-		// you don't need to getvariable at the level of prop_layer_2
-		// (you still need to go down to the level prop_layer_1, though)
-		//when ptree is conditional, there's no RHS, i.e., ptree->child doesn't mean RHS; just skip
-		if (!IsConditional(ptree))
-			RHSpresent |= ptree->child != nullptr;
-		// With RHS, if ptree->alt is null, no need to GetVariable; just return (no update of Sig or pgo)
-		if (RHSpresent && !searchtree(np.root->child, T_REPLICA))
-		{
-			if (ptree->type == N_VECTOR && ptree->alt) throw_LHS_lvalue(ptree, false);
-			if (ptree->alt == nullptr) return nullptr; // a.prop.more = (something) --> when ptree points to more, read_node() returns null (done with LHS) and proceed to RHS
-		}
 		if (IsConditional(ptree))
 		{
 			if (np.psigBase->type() & TYPEBIT_CELL)
@@ -549,7 +534,7 @@ AstNode* skope::read_node(CNodeProbe& np, AstNode* ptree, AstNode* ppar, bool& R
 				AstNode* t_func;
 				if ((t_func = ReadUDF(emsg, ptree->str)))
 				{
-					if (ptree->child || RHSpresent)	throw_LHS_lvalue(ptree, true);
+					if (ptree->child /* || RHSpresent*/)	throw_LHS_lvalue(ptree, true);
 					// if static function, np.psigBase must be NULL
 					if (t_func->suppress == 3 && np.psigBase)
 						throw exception_misuse(*this, t_func, string(ptree->str) + "() : function declared as static cannot be called as a member function.").raise();
@@ -562,16 +547,6 @@ AstNode* skope::read_node(CNodeProbe& np, AstNode* ptree, AstNode* ppar, bool& R
 				}
 				else
 				{
-					if (RHSpresent)
-					{ // a new variable or struct member being defined
-					  // need to update varname here
-						for (auto q = ptree->alt; q; q = q->alt)
-						{
-							np.varname += '.';
-							np.varname += q->str;
-						}
-						return nullptr;
-					}
 					if (emsg.empty())
 					{
 						string varname;
@@ -676,6 +651,10 @@ void skope::bind_psig(AstNode* pn, CVar* psig)
 		}
 		else if (pn->alt->type == N_TIME_EXTRACT)
 		{
+		}
+		else if (pn->alt->type == N_CELL)
+		{
+
 		}
 		else
 		{
@@ -1457,48 +1436,6 @@ unsigned long skope::toc(const AstNode* p)
 	Tick1 += (int)ms;
 	Tick1 -= Tick0;
 	return Tick1;
-}
-
-
-//Maybe move to AstSigEnv?? 11/19/2021
-bool skope::HandlePseudoVar(const AstNode* pnode)
-{
-	string fname = pnode->str;
-	string dummy;
-	vector<CVar> dummy2;
-	auto it = pEnv->pseudo_vars.find(fname);
-	if (it != pEnv->pseudo_vars.end())
-		(*it).second.func(this, pnode, dummy2);
-	else
-		return false;
-	return true;
-}
-CVar* skope::pseudoVar(const AstNode* pnode, AstNode* p, CSignals* pout)
-{
-	//	int res;
-	string dummy;
-	if (!pout) pout = &Sig;
-	if (pnode->type == N_HOOK)
-		HandlePseudoVar(pnode);
-	else
-	{
-		if (p->type == N_ARGS) p = p->child;
-		if (p->type == N_HOOK) p = p->child;
-		if (!strcmp(p->str, "sel"))
-		{
-			if (p->alt)
-			{
-				float tp[2];
-				memcpy(tp, pout->buf, sizeof(float) * 2);
-				pout->Reset();
-				if (!strcmp(p->alt->str, "t1"))
-					pout->SetValue(tp[0]);
-				else if (!strcmp(p->alt->str, "t2"))
-					pout->SetValue(tp[1]);
-			}
-		}
-	}
-	return &Sig; // nominal return value
 }
 
 CVar* skope::NodeVector(const AstNode* pn)

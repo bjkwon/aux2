@@ -241,9 +241,7 @@ public:
 	FILE* fopen_from_path(const string& fname, const string& ext, string& fullfilename);
 	bool builtin_func_call(CNodeProbe& diggy, AstNode* p);
 	void HandleAuxFunction(const AstNode* pnode, AstNode* pRoot = NULL);
-	CVar* pseudoVar(const AstNode* pnode, AstNode* p, CSignals* pout);
 	CVar* TSeq(const AstNode* pnode, AstNode* p);
-	bool HandlePseudoVar(const AstNode* pnode);
 	void HandleMathFunc(string& fname, const body& arg);
 	vector<float> gettimepoints(const AstNode* pnode, AstNode* p);
 	CVar* NodeVector(const AstNode* pn);

@@ -41,8 +41,6 @@ CVar* CNodeProbe::cell_indexing(CVar* pBase, AstNode* pn)
 			throw exception_range(*pbase, pn->alt, oss.str().c_str(), pn->str);
 		}
 		pbase->Sig = *(psigBase = &pBase->cell.at(cellind - 1));
-		//if (pn->child && root->child && pbase->searchtree(root->child, T_REPLICA))
-		//	pbase->replica_prep(&pbase->Sig);
 	}
 	else
 	{ // in this case x{2} means second chain
