@@ -1,3 +1,14 @@
+11:28 PM 11/23/2022
+y=noise(500)
+x=tone(10,100)+tone(10,100)>>200 ( 100ms-audio 100ms-null 100ms-audio)
+y(100~400) = x  -- to replace the middle part of y with x including the null portion
+
+Does it work?
+I saw it not working (only the first chain of x replacing y(100~200) earlier today, but now it's working fine....
+
+CHECK AGAIN!!!!
+
+=====================================
 9:49 PM 2/17/2022
 catch-up updates from auxlab with the following commit hashes
 d81b1a10a3a696c202029da28cf21bb41581efc3

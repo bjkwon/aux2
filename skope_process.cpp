@@ -229,8 +229,10 @@ void skope::eval_lhs(const AstNode* plhs, const AstNode* prhs, CVar &lhs_index, 
 		// check type.. mask with 0xFFF4 -- to mask the last two bits zero (clean the length bits) to check the type only (no length)
 		auto typerhs = RHS.type();
 		if (!pstruct || pstruct->alt)
-			if (typerhs > 0 && plhs->alt->type != N_STRUCT && (typelhs & (uint16_t)0xFFF4) != (typerhs & (uint16_t)0xFFF4) )
-				throw exception_etc(*this, plhs, "LHS and RHS have different object type.").raise();
+			if (typerhs > 0 && plhs->alt->type != N_STRUCT && (typelhs & (uint16_t)0xFFF4) != (typerhs & (uint16_t)0xFFF4)) {
+				if (!ISAUDIO(typelhs) || !ISAUDIO(typerhs)) // if one is single chain audio and the other is chained audio, it should't throw
+					throw exception_etc(*this, plhs, "LHS and RHS have different object type.").raise();
+			}
 		if (plhs->alt->type == N_TIME_EXTRACT)
 		{
 			// if lhs var is not audio, throw
@@ -319,15 +321,18 @@ const CVar* skope::get_available_struct_item(const AstNode* plhs, const AstNode*
 	return pvarLHS;
 }
 
-void skope::assign_adjust(const AstNode* pn, CVar* lobj, const CVar& lhs_index, CVar& robj, bool contig)
+/* Adjust lvar, a CVar object on the LHS, with robj, a CVar object on the RHS, according to lhs_index
+/* contig: true if a contiguous buffer block is represented by lhs_index
+/* pn: pointer to AstNode, only used for exception handling
+*/
+void skope::assign_adjust(CVar& lvar, const CVar& lhs_index, const CVar& robj, bool contig, const AstNode* pn)
 {
-	ostringstream out;
 	if (robj.nSamples == 0)
 	{ // truncate the LHS var buffer
 		if (contig)
 		{
-			memmove(lobj->buf + (uint64_t)lhs_index.buf[0] - 1, lobj->buf + (uint64_t)lhs_index.buf[lhs_index.nSamples - 1], lhs_index.nSamples * sizeof(float));
-			lobj->nSamples -= lhs_index.nSamples;
+			memmove(lvar.buf + (uint64_t)lhs_index.buf[0] - 1, lvar.buf + (uint64_t)lhs_index.buf[lhs_index.nSamples - 1], lhs_index.nSamples * sizeof(float));
+			lvar.nSamples -= lhs_index.nSamples;
 		}
 		else
 		{
@@ -337,28 +342,64 @@ void skope::assign_adjust(const AstNode* pn, CVar* lobj, const CVar& lhs_index, 
 	else if (robj.nSamples == 1)
 	{ // fill the buffer with the RHS value 
 		for (uint64_t k = 0; k < lhs_index.nSamples; k++)
-			lobj->buf[(uint64_t)lhs_index.buf[k] - 1] = robj.buf[0];
+			lvar.buf[(uint64_t)lhs_index.buf[k] - 1] = robj.buf[0];
 	}
 	else if (lhs_index.nSamples == 1)
 	{
-		auto nCopied = lobj->nSamples + 1 - (uint16_t)lhs_index.buf[0];
-		lobj->UpdateBuffer(lobj->nSamples + robj.nSamples);
-		float* pv = lobj->buf;
+		auto nCopied = lvar.nSamples + 1 - (uint16_t)lhs_index.buf[0];
+		lvar.UpdateBuffer(lvar.nSamples + robj.nSamples);
+		float* pv = lvar.buf;
 		auto j = (uint64_t)lhs_index.buf[0] - 1;
 		memmove(&pv[j + robj.nSamples], &pv[j], nCopied * sizeof(float));
-		auto val = robj.buf[0];
 		auto pval = robj.buf;
 		memcpy(&pv[j], pval, robj.nSamples * sizeof(float));
 	}
 	else if (lhs_index.nSamples == robj.nSamples) {
 		if (contig)
-			memmove(lobj->logbuf + lobj->bufBlockSize * ((uint64_t)lhs_index.buf[0] - 1), robj.buf, lobj->bufBlockSize * robj.nSamples);
+			memmove(lvar.logbuf + lvar.bufBlockSize * ((uint64_t)lhs_index.buf[0] - 1), robj.buf, lvar.bufBlockSize * robj.nSamples);
 		else
 			for (uint64_t k = 0; k < robj.nSamples; k++)
-				lobj->buf[(uint64_t)lhs_index.buf[k] - 1] = robj.buf[k];
+				lvar.buf[(uint64_t)lhs_index.buf[k] - 1] = robj.buf[k];
 	}
 	else
 		throw exception_etc(*this, pn, "Unexpected case").raise();
+}
+
+/* Assume that lvar is either a scalar, vector, audiosig, or tseq and has already been evaluated
+* lvar is being modified with robj according to lhs_index, which is either vector indices (1D or 2D) or time indices
+* (also assume that type checking of robj and lvar has been done)
+* Note that if RHS has a replica, robj is not an input (it should be NULL) and Compute(prhs) is done here
+*/
+void skope::right_to_left(CVar& lvar, const CVar& lhs_index, const CVar& robj, bool contig, const AstNode* plhs, const AstNode* prhs)
+{
+	bool isreplica = prhs != NULL;
+	if (plhs->alt->type == N_TIME_EXTRACT)
+	{
+		if (isreplica) { //RL-T
+			replica = lvar;
+			replica.Crop(lhs_index.buf[0], lhs_index.buf[1]);
+			insertreplace(plhs, Compute(prhs), lhs_index, &lvar, isreplica);
+			replica.Reset();
+		}
+		else
+			insertreplace(plhs, robj, lhs_index, &lvar, isreplica);
+	}
+	else
+	{
+		const AstNode* pn = plhs->alt;
+		if (isreplica) { //RL-X
+			replica.UpdateBuffer(lhs_index.nSamples);
+			if (contig)
+				memmove(replica.logbuf, lvar.logbuf + (size_t)(lvar.bufBlockSize * (lhs_index.buf[0] - 1)), lvar.bufBlockSize * lhs_index.nSamples);
+			else
+				for (uint64_t k = 0; k < lhs_index.nSamples; k++)
+					replica.buf[k] = lvar.buf[(uint64_t)lhs_index.buf[k] - 1];
+			assign_adjust(lvar, lhs_index, Compute(prhs), contig, pn);
+			replica.Reset();
+		}
+		else
+			assign_adjust(lvar, lhs_index, robj, contig, pn);
+	}
 }
 
 void skope::right_to_left(const AstNode* plhs, const CVar& lhs_index, CVar& robj, uint16_t typelhs, bool contig, const AstNode* prhs, CVar* lobj)
@@ -403,10 +444,6 @@ void skope::right_to_left(const AstNode* plhs, const CVar& lhs_index, CVar& robj
 		if (typelhs & TYPEBIT_CELL) {
 			const CVar* cellitem = get_cell_item(plhs, *lobj);
 			CVar index;
-			if (!plhs->alt) {
-				right_to_left(plhs->alt, index, robj, typelhs, contig, prhs, (CVar*)cellitem);
-				return;
-			}
 			if (plhs->alt->alt) {
 				eval_lhs(plhs->alt, NULL, index, (CVar&)robj, typelhs, contig, isreplica, cellitem); // robj is not updated, just provided only as a reference
 				right_to_left(plhs->alt, index, robj, typelhs, contig, prhs, (CVar*)cellitem);
@@ -420,43 +457,19 @@ void skope::right_to_left(const AstNode* plhs, const CVar& lhs_index, CVar& robj
 			right_to_left(plhs->alt, index, robj, typelhs, contig, prhs, (CVar*)cellitem);
 			return;
 		}
-
-		if (lobj && plhs->alt->type == N_TIME_EXTRACT)
-		{
-			uint64_t bufshift = 0;
-			if (isreplica) { //RL-T
-				replica = *lobj;
-				replica.Crop(lhs_index.buf[0], lhs_index.buf[1]);
-				robj = Compute(prhs);
-				replica.Reset();
+		if (plhs->alt->type == N_STRUCT) { // RL-S
+			// go til the tip of prop item and call assign_adjust
+			const AstNode* pstruct;
+			const CVar* struct_item = get_available_struct_item(plhs, &pstruct);
+			if (pstruct->alt->type != N_ARGS) {
+				assign_struct((CVar*)struct_item, plhs, pstruct, robj);
+				return;
 			}
-			insertreplace(plhs, robj, lhs_index, lobj, isreplica);
+			plhs = pstruct;
+			if (struct_item) lobj = (CVar*)struct_item;
 		}
-		else
-		{
-			const AstNode* pn = plhs->alt;
-			if (plhs->alt->type == N_STRUCT) { // RL-S
-				// go til the tip of prop item and call assign_adjust
-				const AstNode* pstruct;
-				const CVar* struct_item = get_available_struct_item(plhs, &pstruct);
-				pn = pstruct;
-				if (struct_item) lobj = (CVar*)struct_item;
-				if (pstruct->alt->type != N_ARGS) {
-					assign_struct((CVar*)struct_item, plhs, pstruct, robj);
-					return;
-				}
-			}
-			if (isreplica) { //RL-X
-				replica.UpdateBuffer(lhs_index.nSamples);
-				if (contig)
-					memmove(replica.logbuf, lobj->logbuf + (size_t)(lobj->bufBlockSize * (lhs_index.buf[0] - 1)), lobj->bufBlockSize * lhs_index.nSamples);
-				else
-					for (uint64_t k = 0; k < lhs_index.nSamples; k++)
-						replica.buf[k] = lobj->buf[(uint64_t)lhs_index.buf[k] - 1];
-				robj = Compute(prhs);
-			} 
-			assign_adjust(pn, lobj, lhs_index, robj, contig);
-		}
+		//at this point lobj is either a scalar, vector, audiosig, or tseq 
+		right_to_left(*lobj, lhs_index, robj, contig, plhs, prhs);
 	}
 }
 

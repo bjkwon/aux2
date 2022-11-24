@@ -51,7 +51,7 @@ try
 	r = test_check(r, x.dur, 500, msg)	
 	//=================================
 	printf("x = { 1, ""bjk\"",tone(400,1000) }\n")
-	x = { 1, "bjk",tone(400,1000) }
+	x = { 33, "bjk",tone(400,1000) }
 	msg="x{1}=1:2:20", msg.eval
 	r = test_check(r, x{1}(2), 3, msg)
 	msg	="x{3}(10~510)=[]", msg.eval

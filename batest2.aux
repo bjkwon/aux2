@@ -40,8 +40,8 @@ try
 	msg = "av(av<0)*=-1", msg.eval
 	r = test_check(r, av.min, 0, msg)	
 	msg = "a=(1:10).sqrt, id=1:a.length", printf("%s\n",msg), msg.eval	
-	msg = "a(id%2==0)+=100, vv = a(4)", msg.eval
-	r = test_check(r, vv, 102, msg)
+	msg = "a(id%2==0)+=100", msg.eval
+	r = test_check(r, a(4), 102, msg)
 	msg ="x=tone(1000,2); y=x(x>0);", printf("%s\n",msg), msg.eval
 	b=y.min >= 0
 	r = test_check_cond(r, b, msg)
