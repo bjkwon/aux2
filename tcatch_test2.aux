@@ -1,0 +1,13 @@
+function [a,b,c]=tcatch_test2
+try
+	a=1
+	a(400~500)=noise(50)
+	
+	printf("Remainer0\n")
+	b=silence(10)
+	c=[3 4 5]
+	printf("Remainer\n")
+catchback me
+	beyond="bjK"
+	printf("Hey you got an error caught here---%s\n", me.body)
+end

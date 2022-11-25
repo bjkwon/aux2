@@ -1,0 +1,9 @@
+In the AstNode structure, "next" is used in the following instances:
+N_BLOCK
+
+The following uses N_BLOCK:
+T_FOR T_WHILE T_IF T_SWITCH T_TRY
+
+All of the above, "next" demarcates an expression or statement. The search for replica should end at the end of expression or statement.
+
+However, in other instances where "next" is used, including many arithmetic operations using makeFunctionCall, compound operators and ++, the search should continue through "next."

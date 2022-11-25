@@ -1,0 +1,27 @@
+function caught = test2
+caught = 0
+try
+	a=[1:3 8:2:25]
+	a(3:5)=90:92
+	b1 = a(1:5).issame([1:2 90 91 92])
+	b2 = a(5:7).issame([92 12 14])
+	if (b1&&b2)
+		printf("PASS\tTID(inds)=vector\n")
+	else
+		printf("FAIL\tTID(inds)=vector\n")
+	end
+	x = noise(1000)
+	x(40~50)=[1 2 3]
+	x(40~50)=silence(20)
+	newdur = x.dur
+	if newdur == 1010
+		printf("PASS\tTIDAUD(t1~t2)=audiosig\n")
+	else
+		printf("FAIL\tTIDAUD(t1~t2)=audiosig\n")
+	end
+	
+	
+catch me
+	printf("%s %d:%d %s\n", me.body, me.errline, me.errcol, me.source)
+	caught+=1
+end

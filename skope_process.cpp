@@ -409,7 +409,6 @@ void skope::right_to_left(const AstNode* plhs, const CVar& lhs_index, CVar& robj
 	if (plhs->type == N_VECTOR) {
 		if (lhs) { // NULL lhs means outputbinding was done at PrepareAndCallUDF
 			outputbinding(plhs);
-			SigExt.clear();
 			lhs = nullptr;
 		}
 	}
@@ -507,6 +506,7 @@ CVar* skope::process_statement(const AstNode* pnode)
 		sanitize_cell_node(plhs);
 		eval_lhs(plhs, prhs, index, RHS, typelhs, contig, isreplica);
 		right_to_left(plhs, index, RHS, typelhs, contig, isreplica ? prhs:NULL);
+		SigExt.clear();
 	}
 	return &Sig;
 }

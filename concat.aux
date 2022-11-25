@@ -1,0 +1,11 @@
+function y=concat(file1,file2,file3)
+fd=fopen(file1,"rb")
+v1=fd.fread("void");
+fd.fclose
+fd=fopen(file2,"rb")
+v2=fd.fread("void");
+fd.fclose
+fd=fopen(file3,"wb")
+fd.fwrite(v1++v2,"void")
+fd.fclose
+

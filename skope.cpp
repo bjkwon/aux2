@@ -882,15 +882,14 @@ void skope::PrepareAndCallUDF(const AstNode* pCalling, CVar* pBase, CVar* pStati
 	xscope.push_back(son.get());
 	//son->SetVar("_________",pStaticVars); // how can I add static variables here???
 	son->CallUDF(pCalling, pBase, nargout);
-
 	if (son->u.argout.empty())
 		Sig.Reset();
 	else if (son->u.argout.size() >= 1) {
 		Sig = son->Vars[son->u.argout.front()];
-	}
-	for (auto it = son->u.argout.begin(); it != son->u.argout.end(); it++) {
-		unique_ptr<CVar> pt = make_unique<CVar>(son->Vars[*it]);
-		SigExt.push_back(move(pt));
+		for (auto it = son->u.argout.begin(); it != son->u.argout.end(); it++) {
+			unique_ptr<CVar> pt = make_unique<CVar>(son->Vars[*it]);
+			SigExt.push_back(move(pt));
+		}
 	}
 	if ((son->u.debug.status == stepping || son->u.debug.status == continuing) && u.debug.status == null)
 	{ // no b.p set in the main udf, but in these conditions, as the local udf is finishing, the stepping should continue in the main udf, or debug.status should be set progress, so that the debugger would be properly exiting as it finishes up in CallUDF()

@@ -1,0 +1,21 @@
+{
+	"_id" : "62abad5efd2e510012238e0e",
+	"jobId" : "6021999ef45838305566c134",
+	"ritualId" : "6021999ef45838305566c134;custom/farmers/farmersMain/FarmersMain",
+	"hydraMeta" : {
+		"stage" : null,
+		"status" : "S",
+		"finished" : false,
+		"failureReason" : null,
+		"dateCreated" : "2022-06-16T22:23:26.802+00:00",
+		"lastUpdated" : "2022-06-16T22:24:27.601+00:00",
+		"originalUploadDate" : "2022-06-16T22:02:39.000+00:00",
+		"audioOriginFileName" : "Farmers_Voice_FNOL_800010_06162022_144623.zip",
+		"impId" : "62ab9ccfaf7dca000959057f"
+	},
+	"processed" : false,
+	"fileId" : "e04eed63-4d37-43d7-a2ea-066a62824325",
+	"origName" : "Audio-AudioModule_800010_AudioChannel_9436343_15-Jun-2022_19.42.50.583.wav",
+	"fileSize" : 14977994,
+	"mercuryMeta" : null
+}

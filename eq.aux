@@ -1,0 +1,16 @@
+function y=eq(a,b)
+if a.dtype != b.dtype
+	y = 0
+elseif a.length!=b.length
+	y = 0
+elseif a.isvector || a.isaudio
+	for k=1:a.length
+		if a(k)!=b(k)
+			y=0;
+			return
+		end
+	end
+	y=1
+else
+	y=0
+end

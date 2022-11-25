@@ -1,0 +1,1 @@
+g++ -o *.cpp *.c .\_func\_file.cpp .\_func\_minmax.cpp .\_func\_tparamonly.cpp .\_func\tone_fm.cpp .\_func\windowing.cpp
