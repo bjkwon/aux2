@@ -2,6 +2,7 @@ function r = batest1
 r.pass = 0
 r.fail = 0
 r.errpass = 0
+fs = getfs
 try
 	a=[4 3 8 9 3 -1]
 	msg = "a(3:5)=-1:-3"
@@ -92,6 +93,13 @@ try
 	r = test_check_cond(r, res, msg)
 	//=================================
 	printf("Struct Tests...\n")
+	msg = "x.clear, x.prop1.prop2.prop3=[3 5 2]", msg.eval
+	msg = "x.prop1.prop2.prop3=[3 5 2], x.prop1.prop2.prop3.sum"
+	r = test_check(r, x.prop1.prop2.prop3.sum, 10, msg)
+	msg = "x.prop1.prop2.prop3+=10, x.prop1.prop2.prop3 // [13 15 12] confirmed", msg.eval
+	r = test_check(r, x.prop1.prop2.prop3, [13 15 12], msg)
+	msg = "x.prop1.prop2.prop3(2)=-50, x.prop1.prop2.prop3 // [13 -50 12] confirmed", msg.eval
+	r = test_check(r, x.prop1.prop2.prop3, [13 -50 12], msg)
 	msg = "x.clear, x.val(4)=100", msg.eval
 	msg = "x.clear, x=1:10, x.undef(4)=100", msg.eval
 	
@@ -99,6 +107,15 @@ try
 	res0 = x=="bjk" // issame(x,"bjk") won't work. res0 should be [true true true]
 	res = res0.and && x.val==200
 	r = test_check_cond(r, res, msg)
+	
+	//=================================
+	printf("Compound OP Tests...\n")
+	x=noise(1000)@-80;
+	msg = "x(10~11)@=-10", msg.eval
+	[a,tp]=x.max
+	vv = tp*1000/fs
+	b=vv > 10 && vv < 11.5 && a >.2
+	r = test_check_cond(r, b, msg)
 
 	printf("\n")
 	
