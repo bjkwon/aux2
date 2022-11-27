@@ -90,6 +90,7 @@ void _rand(skope* past, const AstNode* pnode, const vector<CVar>& args)
 		past->Sig.UpdateBuffer(ival);
 		for (int k = 0; k < ival; k++)
 			past->Sig.buf[k] = (float)rand() / RAND_MAX;
+		past->Sig.bufType = 'R';
 	}
 	else // cell 
 	{
@@ -113,6 +114,7 @@ void _irand(skope* past, const AstNode* pnode, const vector<CVar>& args)
 	}
 	past->Sig.UpdateBuffer(1);
 	past->Sig.SetValue((float)ceil((float)rand() / (float)RAND_MAX * val));
+	past->Sig.bufType = 'R';
 }
 
 void _randperm(skope* past, const AstNode* pnode, const vector<CVar>& args)
@@ -140,5 +142,6 @@ void _randperm(skope* past, const AstNode* pnode, const vector<CVar>& args)
 		past->Sig.buf[m] = past->Sig.buf[n];
 		past->Sig.buf[n] = hold;
 	}
+	past->Sig.bufType = 'R';
 }
 

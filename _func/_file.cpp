@@ -668,6 +668,7 @@ void _wave(skope *past, const AstNode *pnode, const vector<CVar>& args)
 	
 	sf_count_t count;
 	past->Sig.Reset(sfinfo.samplerate);
+	past->Sig.bufType = 'R';
 	sf_count_t id1 = (sf_count_t)(beginMs / 1000.f * sfinfo.samplerate + .5);
 	sf_seek(wavefileID, id1, SEEK_SET);
 	int _frames2read;

@@ -52,6 +52,7 @@ void _tparamonly(skope* past, const AstNode* pnode, const vector<CVar>& args)
 	if (dur.value() < 0.)
 		throw exception_func(*past, pnode, "duration must be non-negative .", pnode->str, 2).raise();
 	past->Sig.Reset(fs);
+	past->Sig.bufType = 'R'; // Reset() clears bufType with 0x20 (space), always remember to fill in something after Reset()
 	unsigned int nSamplesNeeded = (unsigned int)round(dur.value() / 1000. * fs);
 	past->Sig.UpdateBuffer(nSamplesNeeded); //allocate memory if necessary
 	if (!strcmp(pnode->str, "noise"))

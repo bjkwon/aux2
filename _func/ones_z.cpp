@@ -72,7 +72,6 @@ Cfunction set_builtin_function_cumsum(fGate fp)
 	return ft;
 }
 
-
 void _onezero(skope* past, const AstNode* pnode, const vector<CVar>& args)
 {
 	string fname = pnode->str;
@@ -84,6 +83,7 @@ void _onezero(skope* past, const AstNode* pnode, const vector<CVar>& args)
 		for (int k = 0; k < len; k++)
 			past->Sig.buf[k] = 1;
 	}
+	past->Sig.bufType = 'R';
 	// no need for "zeros" because the buffer was already initialized with zeros
 }
 
