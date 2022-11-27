@@ -30,6 +30,25 @@ try
 	r = test_check(r, a, [5 5 9 11 4 0], msg)	
 	msg = "a([2 end])+=1", msg.eval
 	r = test_check(r, a, [5 6 9 11 4 1], msg)
+	msg = "x=[noise(100)@-20; noise(50)@-10++tone(1000,50)@-30]", msg.eval
+	printf("%s\n", msg)
+	msg = "x(end/2~end)@=-40 // x(end/2~end).rms.left checked", msg.eval
+	b = (x(end/2~end).rms.left + 40).abs < 1
+	r = test_check_cond(r, b, msg)
+	msg = "x(end/2~end)@=-40 // x(end/2~end).rms.right checked", msg.eval
+	b = (x(end/2~end).rms.right + 40).abs < 1
+	r = test_check_cond(r, b, msg)
+	msg = "x(50~100)@=-40 // both left and right checked", msg.eval
+	b = (x(50~100).rms.left + 40).abs < 1 && (x(50~100).rms.right + 40).abs < 1 
+	r = test_check_cond(r, b, msg)
+	msg = "x(end/2~end)=tone(1000,50)@-11 // both left and right checked", msg.eval
+	b = (x(end/2~end).rms.left + 11).abs < 1 && (x(end/2~end).rms.right + 11).abs < 1 
+	r = test_check_cond(r, b, msg)
+	msg = "x(50~100)=tone(1000,50)@-11 // both left and right checked", msg.eval
+	b = (x(50~100).rms.left + 11).abs < 1 && (x(50~100).rms.right + 11).abs < 1 
+	r = test_check_cond(r, b, msg)
+	
+	printf("Special variables tests............\n")
 	msg = "j=$i", msg.eval
 	r = test_check(r, j*j, -1, msg)	
 

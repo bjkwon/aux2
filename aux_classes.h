@@ -528,9 +528,9 @@ public:
 	CSignals & operator<=(const CSignals & rhs); // ghost assignment operator2
 	CSignals & operator<=(CSignals * prhs); // ghost assignment operator2
 	CSignals & operator>>=(float delta);
-	CSignals & Crop(float begin_ms, float end_ms);
+	CSignals & Crop(const CSignals& timepoints);
 
-	CSignals & ReplaceBetweenTPs(const CSignals &newsig, float t1, float t2);
+	CSignals & ReplaceBetweenTPs(const CSignals &newsig, const CSignals& timepoints);
 	CSignals & LogOp(CSignals &rhs, int type);
 
 	void setsnap(int set=1) {	CTimeSeries::setsnap(set); if (next) next->CTimeSeries::setsnap(set);	};

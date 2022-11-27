@@ -240,11 +240,9 @@ void skope::eval_lhs(const AstNode* plhs, const AstNode* prhs, CVar &lhs_index, 
 				out << "LHS must be audio.";
 				throw exception_etc(*this, plhs, out.str()).raise();
 			}
-			lhs_index.UpdateBuffer(2); // use it for time indices
-			Compute(plhs->alt->child);
-			lhs_index.buf[0] = Sig.buf[0];
-			Compute(plhs->alt->child->next);
-			lhs_index.buf[1] = Sig.buf[0];
+			lhs_index = gettimepoints((CTimeSeries*)pvarLHS, plhs->alt);
+			if (pvarLHS->next)
+				lhs_index.SetNextChan(gettimepoints(pvarLHS->next, plhs->alt));
 			return;
 		}
 		// if pstruct is not NULL, .prop is being checked 
@@ -299,9 +297,9 @@ void skope::assign_struct(CVar* lobj, const AstNode* plhs, const AstNode* pstruc
 	else
 		lobj->strut[pstruct->str] = pvar;
 }
-const CVar* skope::get_available_struct_item(const AstNode* plhs, const AstNode** pstruct)
+CVar* skope::get_available_struct_item(const AstNode* plhs, const AstNode** pstruct)
 { // x.p1 defined, but the statement is x.q = RHS --> OK, but x.q(2) = RHS --> NOT OK, throw here
-	const CVar* pvarLHS = NULL;
+	CVar* pvarLHS = NULL;
 	*pstruct = plhs;
 	auto it = Vars.find(plhs->str);
 	if (it != Vars.end()) {
@@ -325,7 +323,7 @@ const CVar* skope::get_available_struct_item(const AstNode* plhs, const AstNode*
 /* contig: true if a contiguous buffer block is represented by lhs_index
 /* pn: pointer to AstNode, only used for exception handling
 */
-void skope::assign_adjust(CVar& lvar, const CVar& lhs_index, const CVar& robj, bool contig, const AstNode* pn)
+void skope::adjust_buf(CVar& lvar, const CVar& lhs_index, const CVar& robj, bool contig, const AstNode* pn)
 {
 	if (robj.nSamples == 0)
 	{ // truncate the LHS var buffer
@@ -370,14 +368,14 @@ void skope::assign_adjust(CVar& lvar, const CVar& lhs_index, const CVar& robj, b
 * (also assume that type checking of robj and lvar has been done)
 * Note that if RHS has a replica, robj is not an input (it should be NULL) and Compute(prhs) is done here
 */
-void skope::right_to_left(CVar& lvar, const CVar& lhs_index, const CVar& robj, bool contig, const AstNode* plhs, const AstNode* prhs)
+void skope::mod_sig(CVar& lvar, const CVar& lhs_index, const CVar& robj, bool contig, const AstNode* plhs, const AstNode* prhs)
 {
 	bool isreplica = prhs != NULL;
 	if (plhs->alt->type == N_TIME_EXTRACT)
 	{
 		if (isreplica) { //RL-T
 			replica = lvar;
-			replica.Crop(lhs_index.buf[0], lhs_index.buf[1]);
+			replica.Crop(lhs_index);
 			insertreplace(plhs, Compute(prhs), lhs_index, &lvar, isreplica);
 			replica.Reset();
 		}
@@ -394,11 +392,11 @@ void skope::right_to_left(CVar& lvar, const CVar& lhs_index, const CVar& robj, b
 			else
 				for (uint64_t k = 0; k < lhs_index.nSamples; k++)
 					replica.buf[k] = lvar.buf[(uint64_t)lhs_index.buf[k] - 1];
-			assign_adjust(lvar, lhs_index, Compute(prhs), contig, pn);
+			adjust_buf(lvar, lhs_index, Compute(prhs), contig, pn);
 			replica.Reset();
 		}
 		else
-			assign_adjust(lvar, lhs_index, robj, contig, pn);
+			adjust_buf(lvar, lhs_index, robj, contig, pn);
 	}
 }
 
@@ -413,12 +411,9 @@ void skope::right_to_left(const AstNode* plhs, const CVar& lhs_index, CVar& robj
 		}
 	}
 	else if (typelhs == TYPEBIT_NULL) {
-		if (lobj) {
-			*lobj = robj;
-		}
-		else if (plhs->alt && plhs->alt->type == N_STRUCT) {
+		if (plhs->alt && plhs->alt->type == N_STRUCT) {
 			const AstNode* pstruct;
-			const CVar* struct_item = get_available_struct_item(plhs, &pstruct);
+			CVar* struct_item = get_available_struct_item(plhs, &pstruct);
 			if (isreplica) { //RL-NS
 				replica = GetVariable(pstruct->str, (CVar*)struct_item);
 				robj = Compute(prhs);
@@ -438,45 +433,36 @@ void skope::right_to_left(const AstNode* plhs, const CVar& lhs_index, CVar& robj
 	}
 	else
 	{
-		if (!lobj)
-			lobj = &Vars.find(plhs->str)->second;
+		lobj = &Vars.find(plhs->str)->second;
 		if (typelhs & TYPEBIT_CELL) {
 			const CVar* cellitem = get_cell_item(plhs, *lobj);
 			CVar index;
 			if (plhs->alt->alt) {
+				//  x{1}(2:3)=[222 333]
 				eval_lhs(plhs->alt, NULL, index, (CVar&)robj, typelhs, contig, isreplica, cellitem); // robj is not updated, just provided only as a reference
-				right_to_left(plhs->alt, index, robj, typelhs, contig, prhs, (CVar*)cellitem);
-				return;
+				mod_sig(*(CVar*)cellitem, index, robj, contig, plhs->alt, prhs);
 			}
-			if (isreplica) { //RL-C
-				replica = *cellitem;
-				robj = Compute(prhs);
+			else {
+				//  x{1}=1:2:20;
+				if (isreplica) { //RL-C
+					replica = *cellitem;
+					robj = Compute(prhs);
+				}
+				*(CVar*)cellitem = robj;
 			}
-			typelhs = TYPEBIT_NULL;
-			right_to_left(plhs->alt, index, robj, typelhs, contig, prhs, (CVar*)cellitem);
-			return;
 		}
-		if (plhs->alt->type == N_STRUCT) { // RL-S
+		else {
+			if (plhs->alt->type == N_STRUCT) { // RL-S
 			// go til the tip of prop item and call assign_adjust
-			const AstNode* pstruct;
-			const CVar* struct_item = get_available_struct_item(plhs, &pstruct);
-			if (pstruct->alt->type != N_ARGS) {
-				assign_struct((CVar*)struct_item, plhs, pstruct, robj);
-				return;
+				CVar* struct_item = get_available_struct_item(plhs, &plhs);
+				lobj = struct_item;
 			}
-			plhs = pstruct;
-			if (struct_item) lobj = (CVar*)struct_item;
+			//at this point lobj is either a scalar, vector, audiosig, or tseq 
+			mod_sig(*lobj, lhs_index, robj, contig, plhs, prhs);
 		}
-		//at this point lobj is either a scalar, vector, audiosig, or tseq 
-		right_to_left(*lobj, lhs_index, robj, contig, plhs, prhs);
 	}
 }
 
-CVar* skope::process_block(const AstNode* pnode)
-{
-	CVar* res = NULL;
-	return res;
-}
 void skope::sanitize_cell_node(const AstNode* p)
 { // evaluate cell indexing in child into dval
 	if (p->alt && p->alt->type == N_CELL)
@@ -511,6 +497,28 @@ CVar* skope::process_statement(const AstNode* pnode)
 	return &Sig;
 }
 
+static void replace(CVar& lobj, const CVar& indsig, const CVar& robj, const skope& ths, const AstNode* plhs)
+{
+	// find out where robj begins and ends (index and tmark for the chain of interest)
+	auto begin = lobj.FindChainAndID(indsig.buf[0], true);
+	auto end = lobj.FindChainAndID(indsig.buf[1], false);
+	if (begin.first == NULL)
+		throw exception_etc(ths, plhs, "Time indexing out of range").raise();
+	int len;
+	CTimeSeries* q = (CTimeSeries*)&robj;
+	int offset = begin.second;
+	for (auto p = begin.first; p; p = p->chain, q = q->chain) {
+		if (begin.first == end.first)
+			len = end.second - begin.second + 1;
+		else
+			len = q->nSamples;
+		memcpy(p->logbuf + offset * p->bufBlockSize, q->buf, len * q->bufBlockSize);
+		offset = 0;
+	}
+	if (lobj.next)
+		replace(*(CVar*)(lobj.next), *indsig.next, *robj.next, ths, plhs);
+}
+
 void skope::insertreplace(const AstNode* plhs, const CVar& robj, const CVar& indsig, CVar *lobj, bool isreplica)
 {
 	const AstNode* p = plhs;
@@ -519,25 +527,9 @@ void skope::insertreplace(const AstNode* plhs, const CVar& robj, const CVar& ind
 	{
 		if (isreplica) // direct update of buf
 		{
-			// find out where robj begins and ends (index and tmark for the chain of interest)
-			auto begin = lobj->FindChainAndID(indsig.buf[0], true);
-			auto end = lobj->FindChainAndID(indsig.buf[1], false);
-			if (begin.first==NULL) 
-				throw exception_etc(*this, p, "Time indexing out of range").raise();
-			int len;
-			CTimeSeries* q = (CTimeSeries*)&robj;
-			int offset = begin.second;
-			for (auto p = begin.first; p; p = p->chain, q = q->chain) {
-				if (begin.first == end.first)
-					len = end.second - begin.second + 1;
-				else
-					len = q->nSamples;
-				memcpy(p->logbuf + offset * p->bufBlockSize, q->buf, len * q->bufBlockSize);
-				offset = 0;
-			}
-			// TO DO: stereo case 10/13/2022
+			replace(*lobj, indsig, robj, *this, plhs);
 		}
 		else
-			lobj->ReplaceBetweenTPs(robj, indsig.buf[0], indsig.buf[1]);
+			lobj->ReplaceBetweenTPs(robj, indsig);
 	}
 }

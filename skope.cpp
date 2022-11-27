@@ -500,7 +500,14 @@ AstNode* skope::read_node(CNodeProbe& np, AstNode* ptree, AstNode* ppar, bool& R
 		np.tree_NARGS(ptree, ppar);
 	}
 	else if (ptree->type == N_TIME_EXTRACT)
-		np.TimeExtract(ptree, ptree->child);
+	{
+		CVar temp = *np.psigBase;
+		CSignals timepoints = gettimepoints(&temp, ptree);
+		if (temp.next)
+			timepoints.SetNextChan(gettimepoints(temp.next, ptree));
+		temp.Crop(timepoints);
+		Sig = temp;
+	}
 	else if (ptree->type == T_REPLICA || ptree->type == T_ENDPOINT)
 	{
 		Sig = *np.psigBase;
@@ -520,6 +527,7 @@ AstNode* skope::read_node(CNodeProbe& np, AstNode* ptree, AstNode* ppar, bool& R
 	{
 		if (IsConditional(ptree))
 		{
+			printf("^^^^^^^^^^^^^^^^^^^^^^^^^^\n");
 			if (np.psigBase->type() & TYPEBIT_CELL)
 				throw exception_misuse(*this, ppar, string("A cell array ") + string(ppar->str) + " cannot be accessed with().").raise();
 			CVar isig, isig2;
@@ -571,14 +579,6 @@ AstNode* skope::read_node(CNodeProbe& np, AstNode* ptree, AstNode* ppar, bool& R
 			// Only cell is processed even if a strut has been defined 1/31/2021
 			if (pres->IsGO()) // the variable ptree->str is a GO
 				Sig = *(np.psigBase = pgo = pres);
-		}
-		if (searchtree(np.root->child, T_REPLICA))
-		{
-			replica_prep(pres);
-			// Updating replica with pres, the variable reading at current node, is necessary whenever replica is present
-			// But, if current node is final and type is one of these, don't update np.psigBase
-			if (!ptree->alt && (ptree->type == N_STRUCT || ptree->type == N_ARGS || ptree->type == N_TIME_EXTRACT))
-				return get_next_parsible_node(ptree);
 		}
 		if (IsConditional(ptree)) return get_next_parsible_node(ptree);
 		if (ptree->alt && ptree->alt->type == N_CELL)
@@ -646,26 +646,9 @@ void skope::bind_psig(AstNode* pn, CVar* psig)
 	}
 	else
 	{
-		if (pn->alt->type == N_ARGS)
-		{
-			CNodeProbe ndprob(this, pn, NULL);
-			// ndprob.psigBase should be prepared to do indexing
-			AstNode* lhs_now = read_nodes(ndprob, true);
-			ndprob.TID_indexing(pn, pn->alt, NULL);
-		}
-		else if (pn->alt->type == N_TIME_EXTRACT)
-		{
-		}
-		else if (pn->alt->type == N_CELL)
-		{
-
-		}
-		else
-		{
-			assert(pn->alt->type == N_STRUCT);
-			CVar* pbasesig = GetVariable(pn->str);
-			SetVar(pn->alt->str, psig, pbasesig);
-		}
+		assert(pn->alt->type == N_STRUCT);
+		CVar* pbasesig = GetVariable(pn->str);
+		SetVar(pn->alt->str, psig, pbasesig);
 	}
 }
 
@@ -677,18 +660,9 @@ CVar* skope::TID(AstNode* pnode, AstNode* pRHS, CVar* psig)
 		char ebuf[256] = {};
 		AstNode* pLast = read_nodes(np); // that's all about LHS.
 		AstNode* lhsCopy = nullptr;
-		//if (pRHS)
-		//{
-		//	lhsCopy = lhs = pLast;
-		//	printf("########\n");
-		//}
-		//else
-		{
-			if (np.psigBase && np.psigBase->IsGO())
-				return np.psigBase;
-			else	return &Sig;
-		}
-		throw exception_etc(*this, pnode, "Unhandled path in skope::TID()").raise();
+		if (np.psigBase && np.psigBase->IsGO())
+			return np.psigBase;
+		else	return &Sig;
 	}
 	return &Sig;
 }
@@ -1538,17 +1512,24 @@ CVar* skope::NodeVector(const AstNode* pn)
 	return &(Sig = out);
 }
 
-vector<float> skope::gettimepoints(const AstNode* pnode, AstNode* p)
+CSignals skope::gettimepoints(CTimeSeries* pobj, const AstNode* pnode)
 { // assume: pnode type is N_TIME_EXTRACT
-	vector<float> out;
-	CVar tsig1 = Compute(p);
-	if (!tsig1.IsScalar())
+	float endpoint;
+	CTimeSeries* pts = pobj;
+	for (; pts; pts = pts->chain)
+		endpoint = pts->CSignal::endt();
+	ends.push_back(endpoint);
+	auto psig = Compute(pnode->child);
+	if (!psig->IsScalar())
 		throw exception_misuse(*this, pnode, "Time marker should be scalar", 1);
-	CVar tsig2 = Compute(p->next);
-	if (!tsig2.IsScalar())
+	CSignals out;
+	out.UpdateBuffer(2);
+	out.buf[0] = psig->value();
+	psig = Compute(pnode->child->next);
+	if (!psig->IsScalar())
 		throw exception_misuse(*this, pnode, "Time marker should be scalar", 2);
-	out.push_back(tsig1.value());
-	out.push_back(tsig2.value());
+	out.buf[1] = psig->value();
+	ends.pop_back();
 	return out;
 }
 

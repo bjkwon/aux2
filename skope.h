@@ -243,7 +243,7 @@ public:
 	void HandleAuxFunction(const AstNode* pnode, AstNode* pRoot = NULL);
 	CVar* TSeq(const AstNode* pnode, AstNode* p);
 	void HandleMathFunc(string& fname, const body& arg);
-	vector<float> gettimepoints(const AstNode* pnode, AstNode* p);
+	CSignals gettimepoints(CTimeSeries* psig, const AstNode* pnode);
 	CVar* NodeVector(const AstNode* pn);
 	CVar* NodeMatrix(const AstNode* pnode);
 	CVar* Dot(AstNode* p);
@@ -266,7 +266,6 @@ public:
 	string makefullfile(const string& fname, string extension = "");
 	string ComputeString(const AstNode* p);
 	vector<string> ClearVar(const char* var, CVar* psigBase=NULL);
-	void replica_prep(CVar* psig);
 
 	AstNode* pheadthisline;
 
@@ -291,7 +290,6 @@ public:
 	string statusMsg; // to display any message during processing inside of AstSig.cpp in the application
 	unsigned long Tick0, Tick1;
 	vector<float> ends;
-	CVar* process_block(const AstNode* pnode);
 	CVar* process_statement(const AstNode* pnode);
 
 	bool fBreak;
@@ -305,14 +303,14 @@ private:
 	vector<CVar> make_check_args(const AstNode* pnode, Cfunction& func);
 	void make_check_args_math(const AstNode* pnode);
 	void eval_lhs(const AstNode* plhs, const AstNode* prhs, CVar& lhs_index, CVar& RHS, uint16_t& typelhs, bool& contig, bool isreplica, const CVar* cell_item = NULL);
-	void right_to_left(CVar& lvar, const CVar& lhs_index, const CVar& robj, bool contig, const AstNode* plhs, const AstNode* prhs);
+	void mod_sig(CVar& lvar, const CVar& lhs_index, const CVar& robj, bool contig, const AstNode* plhs, const AstNode* prhs);
 	void right_to_left(const AstNode* plhs, const CVar& lhs_index, CVar& robj, uint16_t typelhs, bool contig, const AstNode* prhs = NULL, CVar* lobj = NULL);
 	void eval_index(const AstNode* pInd, const CVar& varLHS, CVar& index);
 	void insertreplace(const AstNode* pnode, const CVar& sec, const CVar& indsig, CVar* lobj, bool isreplica);
 	const CVar* get_cell_item(const AstNode* plhs, const CVar& cellobj);
-	void assign_adjust(CVar& lobj, const CVar& lhs_index, const CVar& robj, bool contig, const AstNode* pn);
+	void adjust_buf(CVar& lobj, const CVar& lhs_index, const CVar& robj, bool contig, const AstNode* pn);
 	void assign_struct(CVar* lobj, const AstNode* plhs, const AstNode* pstruct, const CVar& robj);
-	const CVar* get_available_struct_item(const AstNode* plhs, const AstNode** pstruct);
+	CVar* get_available_struct_item(const AstNode* plhs, const AstNode** pstruct);
 	void sanitize_cell_node(const AstNode* p);
 };
 
@@ -334,9 +332,7 @@ public:
 	CVar* TID_RHS2LHS(const AstNode* pnode, AstNode* p, AstNode* pRHS);
 	CVar& ExtractByIndex(const AstNode* pnode, AstNode* p);
 	CVar& eval_indexing(const AstNode* pInd, CVar& indSig);
-	CVar* TID_indexing(const AstNode* pnode, AstNode* p, AstNode* pRHS);
 	CVar* extract(const AstNode* pnode, CTimeSeries& isig);
-	CVar* TimeExtract(const AstNode* pnode, AstNode* p);
 	void insertreplace(const AstNode* pnode, CVar& sec, CVar& indsig);
 	CTimeSeries& replace(const AstNode* pnode, CTimeSeries* pobj, CSignal& sec, int id1, int id2);
 	CTimeSeries& replace(const AstNode* pnode, CTimeSeries* pobj, body& sec, body& index);

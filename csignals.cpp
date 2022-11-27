@@ -2657,79 +2657,24 @@ CSignals& CSignals::operator>>=(float delta)
 	return *this;
 }
 
-CSignals& CSignals::Crop(float begin_ms, float end_ms)
+CSignals& CSignals::Crop(const CSignals& timepoints)
 {
-	CTimeSeries::Crop(begin_ms, end_ms);
-	if (next)		next->Crop(begin_ms, end_ms);
+	CTimeSeries::Crop(timepoints.buf[0], timepoints.buf[1]);
+	if (next)		next->CTimeSeries::Crop(timepoints.next->buf[0], timepoints.next->buf[1]);
 	return *this;
 }
 
-CSignals& CSignals::ReplaceBetweenTPs(const CSignals &newsig, float t1, float t2)
+CSignals& CSignals::ReplaceBetweenTPs(const CSignals &newsig, const CSignals& timepoints)
 {
-	CTimeSeries::ReplaceBetweenTPs(newsig, t1, t2);
-	if (next)	next->ReplaceBetweenTPs(newsig, t1, t2);
+	CTimeSeries::ReplaceBetweenTPs(newsig, timepoints.buf[0], timepoints.buf[1]);
+	if (next) {
+		if (newsig.next)
+			next->CTimeSeries::ReplaceBetweenTPs(*newsig.next, timepoints.next->buf[0], timepoints.next->buf[1]);
+		else
+			next->CTimeSeries::ReplaceBetweenTPs(newsig, timepoints.next->buf[0], timepoints.next->buf[1]);
+	}
 	return *this;
 }
-//
-//CSignal& CSignal::Modulate(double *env, unsigned int lenEnv, unsigned int beginID)
-//{
-//	// Modulate this object with env 
-//	// If lenEnv is greater than nSamples, then the samples in env after nSamples are ignored.
-//	// beginID indicates the index of buf to start Modulate
-//	for (unsigned int k = beginID; k < min(nSamples, lenEnv + beginID); k++)
-//		buf[k] *= env[k - beginID];
-//	return *this;
-//}
-
-//vector<double> CTimeSeries::tmarks()
-//{
-//	vector<double> out;
-//	for (CTimeSeries *p = this; p; p = p->chain)
-//		out.push_back(p->tmark);
-//	return out;
-//}
-//
-//CTimeSeries& CTimeSeries::Modulate(CTimeSeries env)
-//{ // VERIFYI THIS..........................5/23/2018
-////	map<double, double> et = env.endt().showtseries();
-//	double t1, t2;
-//	for (CTimeSeries *p = this; p; p = p->chain)
-//	{
-//		CSignal *pp = (CSignal*)p;
-//		t1 = pp->tmark;
-//		t2 = pp->endt();
-//		for (CTimeSeries *q = &env; q; q = q->chain)
-//		{
-//			CSignal *qq = (CSignal*)q;
-//			if (qq->tmark > t2) continue;
-//			if (qq->endt() < t1) continue;
-//			if (qq->tmark <= t1)
-//			{
-//				unsigned int countsOverlap = (unsigned int)((qq->endt() - t1) * fs / 1000.); // this should be an integer...verify it
-//				pp->Modulate(qq->buf, countsOverlap); // even if qq ends beyond the endt of pp, that's OK. It won't go further.
-//			}
-//			else
-//			{
-//				unsigned int countsSkip = (unsigned int)((qq->tmark - t1) * fs / 1000.);
-//				pp->Modulate(qq->buf, qq->nSamples, countsSkip + 1);
-//			}
-//		}
-//	}
-//	return *this;
-//}
-//
-//CSignals& CSignals::Modulate(CSignals env)
-//{
-//	CTimeSeries::Modulate((CTimeSeries)env);
-//	if (next)
-//	{
-//		if (env.next)
-//			next->Modulate((CTimeSeries)*env.next);
-//		else
-//			next->Modulate((CTimeSeries)env);
-//	}
-//	return *this;
-//}
 
 CSignals &CSignals::transpose1()
 {

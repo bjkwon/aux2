@@ -53,8 +53,10 @@ try
 	//=================================
 	printf("x = { 33, ""bjk\"",tone(400,1000) }\n")
 	x = { 33, "bjk",tone(400,1000) }
-	msg="x{1}=1:2:20", msg.eval
+	msg="x{1}=1:2:10", msg.eval
 	r = test_check(r, x{1}(2), 3, msg)
+	msg="x{1}(2:3)=[222 333]", msg.eval
+	r = test_check(r, x{1}, [1 222 333 7 9], msg)
 	msg	="x{3}(10~510)=[]", msg.eval
 	r = test_check(r, x{3}.dur, 500, msg)	
 	msg	="x{3}(100~500)=silence(200)", msg.eval

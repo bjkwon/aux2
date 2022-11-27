@@ -27,60 +27,6 @@
 #include "psycon.tab.h"
 #include "skope_exception.h"
 
-void skope::replica_prep(CVar* psig)
-{// For GO's, prepping replica is not simple, because a copy of the psig doesn't represent the GO.
- // Therefore, CSIG_HDLARRAY data type is used to carry it forward,
- // because an CSIG_HDLARRAY object can be copied without worries.
- // Note: in this case CSIG_HDLARRAY with size of one can be created. Keep that in mind.
-	//if (psig->IsGO())
-	//{
-	//	//if pgo is already a CSIG_HDLARRAY with multiple elements
-	//	if (pgo->GetType() == CSIG_HDLARRAY)
-	//		replica = *pgo;
-	//	else
-	//	{
-	//		vector<CVar*> tp(1, pgo);
-	//		replica = *MakeGOContainer(tp);
-	//	}
-	//}
-	//else
-		replica = *psig;
-}
-
-//void CNodeProbe::insertreplace(const AstNode *pnode, CVar &sec, CVar &indsig)
-//{
-//}
-
-CVar * CNodeProbe::TID_indexing(const AstNode* pnode, AstNode *pLHS, AstNode *pRHS)
-{
-
-	return psigBase;
-}
-
-CVar * CNodeProbe::TimeExtract(const AstNode *pnode, AstNode *p)
-{
-	if (!psigBase)
-		throw exception_etc(*pbase, pnode, "TimeExtract(): null psigBase").raise();
-	ensureAudio2(*pbase, pnode, *psigBase);
-	float endpoint;
-	CTimeSeries *pts = psigBase;
-	for (; pts; pts = pts->chain)
-		endpoint = pts->CSignal::endt();
-	pbase->ends.push_back(endpoint);
-	vector<float> tpoints = pbase->gettimepoints(pnode, p);
-	CVar out(*psigBase);
-	out.CTimeSeries::Crop(tpoints[0], tpoints[1]);
-	pbase->ends.pop_back();
-	if (psigBase->next) {
-		for (pts = psigBase->next; pts; pts = pts->chain)
-			endpoint = pts->CSignal::endt();
-		pbase->ends.push_back(endpoint);
-		tpoints = pbase->gettimepoints(pnode, p);
-		out.next->CTimeSeries::Crop(tpoints[0], tpoints[1]);
-		pbase->ends.pop_back();
-	}
-	return &(pbase->Sig = out);
-}
 
 bool skope::builtin_func_call(CNodeProbe &diggy, AstNode *p)
 {
