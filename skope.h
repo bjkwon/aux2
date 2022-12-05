@@ -304,6 +304,7 @@ private:
 	void make_check_args_math(const AstNode* pnode);
 	void eval_lhs(const AstNode* plhs, const AstNode* prhs, CVar& lhs_index, CVar& RHS, uint16_t& typelhs, bool& contig, bool isreplica, const CVar* cell_item = NULL);
 	void mod_sig(CVar& lvar, const CVar& lhs_index, const CVar& robj, bool contig, const AstNode* plhs, const AstNode* prhs);
+	void extract_by_index(CVar& out, const CVar& index, const CVar& obj, bool contig);
 	void right_to_left(const AstNode* plhs, const CVar& lhs_index, CVar& robj, uint16_t typelhs, bool contig, const AstNode* prhs = NULL, CVar* lobj = NULL);
 	void eval_index(const AstNode* pInd, const CVar& varLHS, CVar& index);
 	void insertreplace(const AstNode* pnode, const CVar& sec, const CVar& indsig, CVar* lobj, bool isreplica);
@@ -328,14 +329,9 @@ public:
 	string varname; // tracks the "full" name of variable including the index, the dot or { }, etc.
 	char status[8]; // limit to 7 characters
 
-	CVar* TID_condition(const AstNode* pnode, AstNode* pLHS, AstNode* pRHS);
 	CVar* TID_RHS2LHS(const AstNode* pnode, AstNode* p, AstNode* pRHS);
-	CVar& ExtractByIndex(const AstNode* pnode, AstNode* p);
-	CVar& eval_indexing(const AstNode* pInd, CVar& indSig);
-	CVar* extract(const AstNode* pnode, CTimeSeries& isig);
 	void insertreplace(const AstNode* pnode, CVar& sec, CVar& indsig);
 	CTimeSeries& replace(const AstNode* pnode, CTimeSeries* pobj, CSignal& sec, int id1, int id2);
 	CTimeSeries& replace(const AstNode* pnode, CTimeSeries* pobj, body& sec, body& index);
-	void tree_NARGS(const AstNode* pnode, AstNode* ppar);
 	CVar* cell_indexing(CVar* pBase, AstNode* pn);
 }; 

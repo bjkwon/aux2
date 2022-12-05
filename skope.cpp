@@ -497,7 +497,9 @@ AstNode* skope::read_node(CNodeProbe& np, AstNode* ptree, AstNode* ppar, bool& R
 	}
 	else if (ptree->type == N_ARGS)
 	{
-		np.tree_NARGS(ptree, ppar);
+		CVar ind;
+		eval_index(ppar->alt->child, *np.psigBase, ind);
+		extract_by_index(Sig, ind, np.psigBase, false);
 	}
 	else if (ptree->type == N_TIME_EXTRACT)
 	{
@@ -525,61 +527,47 @@ AstNode* skope::read_node(CNodeProbe& np, AstNode* ptree, AstNode* ppar, bool& R
 	}
 	else
 	{
-		if (IsConditional(ptree))
+		//Need to scan the whole statement whether this is a pgo statement requiring an update of GO
+		if (!np.varname.empty()) np.varname += '.';
+		np.varname += ptree->str;
+		if (!(pres = GetVariable(ptree->str, np.psigBase)))
 		{
-			printf("^^^^^^^^^^^^^^^^^^^^^^^^^^\n");
-			if (np.psigBase->type() & TYPEBIT_CELL)
-				throw exception_misuse(*this, ppar, string("A cell array ") + string(ppar->str) + " cannot be accessed with().").raise();
-			CVar isig, isig2;
-			np.eval_indexing(ptree, isig);
-			pres = np.extract(ptree, isig);
-			if (!ptree->next) // 1D indexing, unGroup it
-				Sig.nGroups = 1;
-		}
-		else
-		{
-			//Need to scan the whole statement whether this is a pgo statement requiring an update of GO
-			if (!np.varname.empty()) np.varname += '.';
-			np.varname += ptree->str;
-			if (!(pres = GetVariable(ptree->str, np.psigBase)))
+			AstNode* t_func;
+			if ((t_func = ReadUDF(emsg, ptree->str)))
 			{
-				AstNode* t_func;
-				if ((t_func = ReadUDF(emsg, ptree->str)))
+				if (ptree->child /* || RHSpresent*/)	throw_LHS_lvalue(ptree, true);
+				// if static function, np.psigBase must be NULL
+				if (t_func->suppress == 3 && np.psigBase)
+					throw exception_misuse(*this, t_func, string(ptree->str) + "() : function declared as static cannot be called as a member function.").raise();
+				PrepareAndCallUDF(ptree, &Sig);
+				// if a function call follows N_ARGS, skip it for next_parsible_node
+				np.psigBase = &Sig;
+				if (ptree->alt && (ptree->alt->type == N_ARGS || IsConditional(ptree->alt)))
+					ptree = ptree->alt; // to skip N_ARGS
+				return get_next_parsible_node(ptree);
+			}
+			else
+			{
+				if (emsg.empty())
 				{
-					if (ptree->child /* || RHSpresent*/)	throw_LHS_lvalue(ptree, true);
-					// if static function, np.psigBase must be NULL
-					if (t_func->suppress == 3 && np.psigBase)
-						throw exception_misuse(*this, t_func, string(ptree->str) + "() : function declared as static cannot be called as a member function.").raise();
-					PrepareAndCallUDF(ptree, &Sig);
-					// if a function call follows N_ARGS, skip it for next_parsible_node
-					np.psigBase = &Sig;
-					if (ptree->alt && (ptree->alt->type == N_ARGS || IsConditional(ptree->alt)))
-						ptree = ptree->alt; // to skip N_ARGS
-					return get_next_parsible_node(ptree);
+					string varname;
+					string ex_msg = "Variable or function not available: ";
+					if (ptree->type == N_STRUCT) varname = '.';
+					varname += ptree->str;
+					if (strlen(ptree->str) < 256)
+						throw exception_etc(*this, ptree, ex_msg.c_str() + varname).raise();
+					else
+						throw exception_etc(*this, ptree, ex_msg.c_str() + varname + string("--A UDF name cannot be longer than 255 characters.")).raise();
 				}
 				else
-				{
-					if (emsg.empty())
-					{
-						string varname;
-						string ex_msg = "Variable or function not available: ";
-						if (ptree->type == N_STRUCT) varname = '.';
-						varname += ptree->str;
-						if (strlen(ptree->str) < 256)
-							throw exception_etc(*this, ptree, ex_msg.c_str() + varname).raise();
-						else
-							throw exception_etc(*this, ptree, ex_msg.c_str() + varname + string("--A UDF name cannot be longer than 255 characters.")).raise();
-					}
-					else
-						throw exception_etc(*this, ptree, emsg.c_str()).raise();
-				}
+					throw exception_etc(*this, ptree, emsg.c_str()).raise();
 			}
-			// Need a case where both cell and strut are used?
-			// Right now it's not prohibited, but not properly processed either.
-			// Only cell is processed even if a strut has been defined 1/31/2021
-			if (pres->IsGO()) // the variable ptree->str is a GO
-				Sig = *(np.psigBase = pgo = pres);
 		}
+		// Need a case where both cell and strut are used?
+		// Right now it's not prohibited, but not properly processed either.
+		// Only cell is processed even if a strut has been defined 1/31/2021
+		if (pres->IsGO()) // the variable ptree->str is a GO
+			Sig = *(np.psigBase = pgo = pres);
 		if (IsConditional(ptree)) return get_next_parsible_node(ptree);
 		if (ptree->alt && ptree->alt->type == N_CELL)
 			//either cellvar{2} or cellvar{2}(3). cellvar or cellvar(2) doesn't come here.

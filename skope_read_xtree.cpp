@@ -2,33 +2,6 @@
 #include "psycon.tab.h"
 #include "skope_exception.h"
 
-void CNodeProbe::tree_NARGS(const AstNode* ptree, AstNode* ppar)
-{
-	if (psigBase->IsGO() && psigBase->GetFs() != 3)
-	{
-		if (pbase->Compute(ptree->child)->type() != 1)
-			throw exception_etc(*pbase, ppar, "Invalid index of a graphic object arrary.").raise();
-	}
-	else
-	{
-		if (psigBase->type() & TYPEBIT_CELL && ppar->type == T_ID)
-			throw exception_misuse(*pbase, ppar, string("A cell array ") + string(ppar->str) + " cannot be accessed with().").raise();
-		if ( ISAUDIO(psigBase->type()) && ptree->child->next)
-		{ // 2-D style notation for audio
-			if (ptree->child->type == T_FULLRANGE)
-				throw exception_misuse(*pbase, ppar, string("For audio object ") + string(ppar->str) + " The first arg in () cannot be :").raise();
-//			pbase->getchannel(psigBase, ptree, ppar); 
-		}
-		else
-			ExtractByIndex(ppar, (AstNode*)ptree); //Sig updated. No change in psig
-		//if child exists --> RHS --> Sig just computed is only used as replica. Otherwise, Sig will be ignored (overridden)
-//		if (ptree->child && root->child && pbase->searchtree(root->child, T_REPLICA))
-//			pbase->replica_prep(&pbase->Sig);
-	}
-	if (psigBase->IsGO())
-		pbase->Sig = *(pbase->pgo = psigBase);
-}
-
 CVar* CNodeProbe::cell_indexing(CVar* pBase, AstNode* pn)
 {
 	size_t cellind = (size_t)(int)pbase->Compute(pn->alt->child)->value(); // check the validity of ind...probably it will be longer than this.

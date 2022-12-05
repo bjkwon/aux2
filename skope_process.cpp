@@ -34,6 +34,7 @@ void skope::eval_index(const AstNode* pInd, const CVar &varLHS, CVar &index)
 	// output: index -- sig holding all indices
 
 	// process the first index
+	ostringstream oss;
 	unsigned int len;
 	ends.push_back(find_endpoint(pInd, varLHS));
 	try {
@@ -71,7 +72,6 @@ void skope::eval_index(const AstNode* pInd, const CVar &varLHS, CVar &index)
 			if (isig2.IsLogical()) index_array_satisfying_condition(isig2);
 			else if (isig2._max() > (double)varLHS.Len())
 			{
-				ostringstream oss;
 				oss << "max of 2nd index " << isig2._max() << " exceeds" << varLHS.Len() << ".";
 				throw exception_range(this, pInd, oss.str().c_str(), "");
 			}
@@ -83,6 +83,11 @@ void skope::eval_index(const AstNode* pInd, const CVar &varLHS, CVar &index)
 		throw e;
 	}
 	ends.pop_back();
+	//Check if index is within range 
+	if (index._max() > varLHS.nSamples || index._min() < 1) {
+		oss << index._max();
+		throw exception_range(*this, pInd, oss.str(), "").raise();
+	}
 }
 
 const CVar* skope::get_cell_item(const AstNode* plhs, const CVar &cellobj)
@@ -254,11 +259,6 @@ void skope::eval_lhs(const AstNode* plhs, const AstNode* prhs, CVar &lhs_index, 
 		}
 		// x(ind): process ind
 		eval_index(plhs->alt->child, *pvarLHS, lhs_index);
-		//Check if index is within range 
-		if (lhs_index._max() > pvarLHS->nSamples) {
-			out << lhs_index._max();
-			throw exception_range(*this, plhs, out.str(),"").raise();
-		}
 		//check size
 		if (RHS.nSamples>1 && lhs_index.nSamples > 1)
 		if (lhs_index.nSamples != RHS.nSamples || lhs_index.nGroups != RHS.nGroups)
@@ -361,6 +361,32 @@ void skope::adjust_buf(CVar& lvar, const CVar& lhs_index, const CVar& robj, bool
 	}
 	else
 		throw exception_etc(*this, pn, "Unexpected case").raise();
+}
+
+void skope::extract_by_index(CVar& out, const CVar& index, const CVar& obj, bool contig)
+{
+	// Clear
+	out.Reset();
+	out.bufType = obj.bufType;
+	//allocate the output buffer
+	out.UpdateBuffer(index.nSamples);
+	if (contig)
+		memmove(out.logbuf + out.bufBlockSize * ((uint64_t)index.buf[0] - 1), obj.buf, out.bufBlockSize * obj.nSamples);
+	else
+		for (uint64_t k = 0; k < index.nSamples; k++)
+			out.buf[k] = obj.buf[(uint64_t)index.buf[k] - 1];
+	out.nGroups = index.nGroups;
+	if (obj.next) {
+		CSignals sec;
+		sec.UpdateBuffer(index.nSamples);
+		sec.bufType = obj.next->bufType;
+		if (contig)
+			memmove(sec.logbuf + sec.bufBlockSize * ((uint64_t)index.buf[0] - 1), obj.next->buf, sec.bufBlockSize * obj.next->nSamples);
+		else
+			for (uint64_t k = 0; k < index.nSamples; k++)
+				sec.buf[k] = obj.next->buf[(uint64_t)index.buf[k] - 1];
+		out.SetNextChan(sec);
+	}
 }
 
 /* Assume that lvar is either a scalar, vector, audiosig, or tseq and has already been evaluated
