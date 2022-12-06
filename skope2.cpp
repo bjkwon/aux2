@@ -37,7 +37,7 @@ bool skope::builtin_func_call(CNodeProbe &diggy, AstNode *p)
 			if (diggy.root->child)
 				if (!diggy.root->alt)
 					throw exception_etc(*this, diggy.root, "LHS must be an l-value. Isn't it a built-in function?").raise();
-			HandleAuxFunction(p, diggy.root);
+			HandleAuxFunction(p);
 			return true;
 		}
 	}

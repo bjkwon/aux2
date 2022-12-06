@@ -240,7 +240,7 @@ public:
 	void CallUDF(const AstNode* pnode4UDFcalled, CVar* pBase, size_t nargout_requested);
 	FILE* fopen_from_path(const string& fname, const string& ext, string& fullfilename);
 	bool builtin_func_call(CNodeProbe& diggy, AstNode* p);
-	void HandleAuxFunction(const AstNode* pnode, AstNode* pRoot = NULL);
+	void HandleAuxFunction(const AstNode* pnode);
 	CVar* TSeq(const AstNode* pnode, AstNode* p);
 	void HandleMathFunc(string& fname, const body& arg);
 	CSignals gettimepoints(CTimeSeries* psig, const AstNode* pnode);

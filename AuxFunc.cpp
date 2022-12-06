@@ -467,20 +467,6 @@ bool isgraphicfunc(string fname)
 	return false;
 }
 
-string dotstring(const AstNode *pnode, AstNode *pRoot)
-{
-	string out;
-	AstNode *p = pRoot;
-	while (p)
-	{
-		if (!out.empty()) out += '.';
-		out += p->str;
-		p = p->alt;
-		if (p == pnode) break;
-	}
-	return out;
-}
-
 static bool this_is_one_of_allowedset(uint16_t thistype, const vector<set<uint16_t>>::const_iterator& allowed)
 {
 	for (auto it = allowed->begin(); it != allowed->end(); it++)
@@ -737,7 +723,7 @@ const AstNode* arg0node(const AstNode* pnode, const AstNode* pRoot0)
 	}
 }
 
-void skope::HandleAuxFunction(const AstNode *pnode, AstNode *pRoot)
+void skope::HandleAuxFunction(const AstNode *pnode)
 {
 	string fnsigs;
 	string fname = pnode->str;
@@ -770,16 +756,6 @@ void skope::HandleAuxFunction(const AstNode *pnode, AstNode *pRoot)
 	}
 	else
 	{
-		if (Sig.IsStruct() || !Sig.cell.empty() || Sig.GetFs() == 3)
-		{
-			if (structCall)
-			{
-				string dotnotation = dotstring(pnode, pRoot);
-				throw exception_etc(*this, pnode, string("Cannot take cell, class or handle object " + dotnotation)).raise();
-			}
-			else
-				throw exception_etc(*this, arg0, string("Cannot take cell, class or handle object " + fname)).raise();
-		}
 		if (Sig.type() == 0) return;
 		make_check_args_math(pnode);
 		const AstNode* p2 = get_second_arg(pnode, pnode->type == N_STRUCT);

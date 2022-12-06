@@ -483,8 +483,9 @@ AstNode* skope::read_node(CNodeProbe& np, AstNode* ptree, AstNode* ppar, bool& R
 	int ind(0);
 	CVar* pres;
 	ostringstream out;
-	if (builtin_func_call(np, ptree))
+	if ((ptree->type == T_ID || ptree->type == N_STRUCT) && pEnv->IsValidBuiltin(ptree->str))
 	{
+		HandleAuxFunction(ptree);
 		// In a top-level assignment e.g., a = 1; RHSpresent is not yet set, ptree->child should be checked instead
 		if (/*RHSpresent || */ptree->child)	throw_LHS_lvalue(ptree, false);
 		np.psigBase = &Sig;
@@ -498,7 +499,7 @@ AstNode* skope::read_node(CNodeProbe& np, AstNode* ptree, AstNode* ppar, bool& R
 	else if (ptree->type == N_ARGS)
 	{
 		CVar ind;
-		eval_index(ppar->alt->child, *np.psigBase, ind);
+		eval_index(ptree->child, *np.psigBase, ind);
 		extract_by_index(Sig, ind, np.psigBase, false);
 	}
 	else if (ptree->type == N_TIME_EXTRACT)
