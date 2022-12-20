@@ -88,7 +88,7 @@ CTimeSeries __pow(const CTimeSeries& base, void* p)
 	}
 	else if (ISCOMPLEX(tp) || ISCOMPLEX(operand.type()))
 	{
-		out.each(comp_pow, operand); // test 12/29/2021
+		out.each(comp_pow, operand);
 	}
 	else
 	{

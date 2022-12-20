@@ -32,11 +32,8 @@ bool skope::builtin_func_call(CNodeProbe &diggy, AstNode *p)
 {
 	if (p->type == T_ID || p->type == N_STRUCT)
 	{
-		if (p->str[0] == '$' || pEnv->IsValidBuiltin(p->str)) // hook bypasses IsValidBuiltin
+		if (pEnv->IsValidBuiltin(p->str)) // hook bypasses IsValidBuiltin
 		{
-			if (diggy.root->child)
-				if (!diggy.root->alt)
-					throw exception_etc(*this, diggy.root, "LHS must be an l-value. Isn't it a built-in function?").raise();
 			HandleAuxFunction(p);
 			return true;
 		}

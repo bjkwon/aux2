@@ -657,21 +657,22 @@ body& body::each_sym2(float (*fn)(float, float), const body& arg)
 
 body &body::each(complex<float >(*fn)(complex<float >, complex<float >), const body &arg)
 {
+	
 	if (arg.nSamples == 1)
 	{
-		complex<float > val = arg.cbuf[0];
+		complex<float > val = arg.IsComplex() ? arg.cbuf[0] : arg.buf[0];
 		for (unsigned int k = 0; k < nSamples; k++)	cbuf[k] = fn(cbuf[k], val);
 	}
 	else if (nSamples == 1)
 	{
-		complex<float > val = arg.cbuf[0];
+		complex<float > val = arg.IsComplex() ? cbuf[0] : buf[0];
 		UpdateBuffer(arg.nSamples);
 		for (unsigned int k = 0; k < arg.nSamples; k++) cbuf[k] = fn(val, arg.cbuf[k]);
 	}
 	else
 	{
 		nSamples = min(nSamples, arg.nSamples);
-		for (unsigned int k = 0; k < nSamples; k++) cbuf[k] = fn(cbuf[k], arg.buf[k]);
+		for (unsigned int k = 0; k < nSamples; k++) cbuf[k] = fn(cbuf[k], arg.cbuf[k]);
 	}
 	return *this;
 }
@@ -2360,15 +2361,12 @@ CTimeSeries& CTimeSeries::each(float(*fn)(float, float), const CSignal &arg2)
 	return *this;
 }
 
-CTimeSeries& CTimeSeries::each(complex<float>(*fn)(complex<float>, complex<float>), const CSignal&arg2)
+CTimeSeries& CTimeSeries::each(complex<float>(*fn)(complex<float>, complex<float>), const CSignal& arg2)
 {
-	if (IsComplex())
-		body::each(fn, arg2);
-	else
-		throw "each()--expecting complex number";
+	for (CTimeSeries* p = this; p; p = p->chain)
+		p->body::each(fn, arg2);
 	return *this;
 }
-
 
 CTimeSeries& CTimeSeries::transpose1()
 {
