@@ -122,7 +122,7 @@ void _tseqset(skope* past, const AstNode* pnode, const vector<CVar>& args)
 		}
 	}
 	const AstNode* arg0 = arg0node(pnode, past->node);
-	CVar* psig = past->GetVariable(arg0->str);
+	CVar* psig = past->GetVariable(arg0->str, arg0);
 	if (!psig) {
 		throw exception_func(*past, pnode, "Must be a variable", pnode->str, 1).raise();
 	}

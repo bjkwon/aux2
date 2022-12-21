@@ -226,8 +226,8 @@ public:
 	vector<CVar*> Compute();
 	CVar* TID(AstNode* pnode, AstNode* pRHS, CVar* psig = NULL);
 	skope& SetVar(const char* name, CVar* psig, CVar* pBase = NULL);
-	AstNode* read_node(CNodeProbe& np, AstNode* ptree, AstNode* ppar, bool& RHSpresent);
-	AstNode* read_nodes(CNodeProbe& np, bool bRHS = false);
+	AstNode* read_node(CVar** psigBase, AstNode* ptree);
+	AstNode* read_nodes(CVar** psigBase, AstNode *pnode);
 	void throw_LHS_lvalue(const AstNode* pn, bool udf);
 	AstNode* searchtree(const AstNode* pTarget, AstNode* pStart);
 	const AstNode* searchtree(const AstNode* p, int type, int line2check = -1);
@@ -235,7 +235,7 @@ public:
 	AstNode* ReadUDF(string& emsg, const char* udf_filename);
 	AstNode* RegisterUDF(const AstNode* p, const char* fullfilename, const string& filecontent);
 	CVar* GetGlobalVariable(const AstNode* pnode, const char* varname);
-	CVar* GetVariable(const char* varname, CVar* pvar = NULL);
+	CVar* GetVariable(const char* varname, const AstNode* pnode, CVar* pvar = NULL);
 	void PrepareAndCallUDF(const AstNode* pCalling, CVar* pBase, CVar* pStaticVars = NULL);
 	void CallUDF(const AstNode* pnode4UDFcalled, CVar* pBase, size_t nargout_requested);
 	FILE* fopen_from_path(const string& fname, const string& ext, string& fullfilename);
@@ -245,7 +245,7 @@ public:
 	CSignals gettimepoints(CTimeSeries* psig, const AstNode* pnode);
 	CVar* NodeVector(const AstNode* pn);
 	CVar* NodeMatrix(const AstNode* pnode);
-	CVar* Dot(AstNode* p);
+	CVar* Dot(AstNode* p, CVar* psig);
 	void Transpose(const AstNode* pnode, AstNode* p);
 	CVar* Try_here(const AstNode* pnode, AstNode* p);
 	void Concatenate(const AstNode* pnode, AstNode* p);

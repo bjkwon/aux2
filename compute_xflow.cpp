@@ -116,7 +116,7 @@ CVar* CAstSigEnv::MATRIX(skope* psk, const AstNode* pnode)
 {
 	if (pnode->child) psk->throw_LHS_lvalue(pnode, false);
 	psk->NodeMatrix(pnode);
-	return psk->Dot(pnode->alt);
+	return psk->Dot(pnode->alt, &psk->Sig);
 }
 
 CVar* CAstSigEnv::VECTOR(skope* psk, const AstNode* pnode)
@@ -138,7 +138,7 @@ CVar* CAstSigEnv::VECTOR(skope* psk, const AstNode* pnode)
 	else
 	{
 		psk->NodeVector(pnode);
-		return psk->Dot(pnode->alt);
+		return psk->Dot(pnode->alt, &psk->Sig);
 	}
 }
 

@@ -471,11 +471,10 @@ const AstNode* skope::searchtree(const AstNode* p, int type, int line2check)
 	}
 	return NULL;
 }
-AstNode* skope::read_node(CNodeProbe& np, AstNode* ptree, AstNode* ppar, bool& RHSpresent)
+AstNode* skope::read_node(CVar** psigBase, AstNode* ptree)
 {
-	ppar = NULL;
 	if (ptree->type == T_OP_CONCAT || ptree->type == '+' || ptree->type == '-' || ptree->type == T_TRANSPOSE || ptree->type == T_MATRIXMULT
-		|| ptree->type == '*' || ptree->type == '/' || ptree->type == T_OP_SHIFT || ptree->type == T_NEGATIVE || (ptree == np.root && IsConditional(ptree)))
+		|| ptree->type == '*' || ptree->type == '/' || ptree->type == T_OP_SHIFT || ptree->type == T_NEGATIVE || IsConditional(ptree))
 	{ //No further actions
 		return get_next_parsible_node(ptree);
 	}
@@ -487,9 +486,9 @@ AstNode* skope::read_node(CNodeProbe& np, AstNode* ptree, AstNode* ppar, bool& R
 	if ((ptree->type == T_ID || ptree->type == N_STRUCT) && pEnv->IsValidBuiltin(ptree->str))
 	{
 		HandleAuxFunction(ptree);
-		// In a top-level assignment e.g., a = 1; RHSpresent is not yet set, ptree->child should be checked instead
-		if (/*RHSpresent || */ptree->child)	throw_LHS_lvalue(ptree, false);
-		np.psigBase = &Sig;
+		// In a top-level assignment e.g., a = 1; ptree->child should be checked instead
+		if (ptree->child)	throw_LHS_lvalue(ptree, false);
+		*psigBase = &Sig;
 		// if a function call follows N_ARGS, skip it for next_parsible_node
 		if (ptree->alt)
 		{
@@ -500,53 +499,47 @@ AstNode* skope::read_node(CNodeProbe& np, AstNode* ptree, AstNode* ppar, bool& R
 	else if (ptree->type == N_ARGS)
 	{
 		CVar ind;
-		eval_index(ptree->child, *np.psigBase, ind);
-		extract_by_index(Sig, ind, np.psigBase, false);
+		eval_index(ptree->child, *psigBase, ind);
+		extract_by_index(Sig, ind, *psigBase, false);
 	}
 	else if (ptree->type == N_TIME_EXTRACT)
 	{
-		if (!ISAUDIO(np.psigBase->type())) {
+		if (!ISAUDIO((*psigBase)->type())) {
 			out << "LHS must be audio.";
 			throw exception_etc(*this, ptree, out.str()).raise();
 		}
-		CSignals timepoints = gettimepoints(np.psigBase, ptree);
-		if (np.psigBase->next)
-			timepoints.SetNextChan(gettimepoints(np.psigBase->next, ptree));
-		Sig = *np.psigBase;
+		CSignals timepoints = gettimepoints(*psigBase, ptree);
+		if ((*psigBase)->next)
+			timepoints.SetNextChan(gettimepoints((*psigBase)->next, ptree));
+		Sig = **psigBase;
 		Sig.Crop(timepoints);
 	}
 	else if (ptree->type == T_REPLICA || ptree->type == T_ENDPOINT)
 	{
-		Sig = *np.psigBase;
+		Sig = **psigBase;
 	}
 	else if (ptree->type == N_HOOK)
 	{
 		pres = GetGlobalVariable(ptree, ptree->str);
 		if (!pres)
-		{
-			if (np.root->child && (!ptree->alt || ptree->alt->type == N_STRUCT))
-				return NULL;
 			throw exception_etc(*this, ptree, string("Undefined special variable: ") + ptree->str).raise();
-		}
-		np.psigBase = pres;
+		*psigBase = pres;
 	}
 	else
 	{
 		//Need to scan the whole statement whether this is a pgo statement requiring an update of GO
-		if (!np.varname.empty()) np.varname += '.';
-		np.varname += ptree->str;
-		if (!(pres = GetVariable(ptree->str, np.psigBase)))
+		if (!(pres = GetVariable(ptree->str, ptree, *psigBase)))
 		{
 			AstNode* t_func;
 			if ((t_func = ReadUDF(emsg, ptree->str)))
 			{
-				if (ptree->child /* || RHSpresent*/)	throw_LHS_lvalue(ptree, true);
-				// if static function, np.psigBase must be NULL
-				if (t_func->suppress == 3 && np.psigBase)
+				if (ptree->child)	throw_LHS_lvalue(ptree, true);
+				// if static function, psigBase must be NULL
+				if (t_func->suppress == 3 && *psigBase)
 					throw exception_misuse(*this, t_func, string(ptree->str) + "() : function declared as static cannot be called as a member function.").raise();
 				PrepareAndCallUDF(ptree, &Sig);
 				// if a function call follows N_ARGS, skip it for next_parsible_node
-				np.psigBase = &Sig;
+				*psigBase = &Sig;
 				if (ptree->alt && (ptree->alt->type == N_ARGS || IsConditional(ptree->alt)))
 					ptree = ptree->alt; // to skip N_ARGS
 				return get_next_parsible_node(ptree);
@@ -572,7 +565,7 @@ AstNode* skope::read_node(CNodeProbe& np, AstNode* ptree, AstNode* ppar, bool& R
 		// Right now it's not prohibited, but not properly processed either.
 		// Only cell is processed even if a strut has been defined 1/31/2021
 		if (pres->IsGO()) // the variable ptree->str is a GO
-			Sig = *(np.psigBase = pgo = pres);
+			Sig = *(*psigBase = pgo = pres);
 		if (IsConditional(ptree)) return get_next_parsible_node(ptree);
 		if (ptree->alt && ptree->alt->type == N_CELL)
 			//either cellvar{2} or cellvar{2}(3). cellvar or cellvar(2) doesn't come here.
@@ -580,41 +573,37 @@ AstNode* skope::read_node(CNodeProbe& np, AstNode* ptree, AstNode* ppar, bool& R
 		{
 			sanitize_cell_node(ptree);
 			CVar* lobj = &Vars.find(ptree->str)->second;
-			np.psigBase = (CVar*)get_cell_item(ptree, *lobj);
+			*psigBase = (CVar*)get_cell_item(ptree, *lobj);
 			// x{n} ends here;  x{n}(ids) continues to the next parsible node
-				Sig = *np.psigBase;
+				Sig = **psigBase;
 		}
 		else
 		{
-			Sig = *(np.psigBase = pres);
+			Sig = *(*psigBase = pres);
 		}
 	}
 	return get_next_parsible_node(ptree);
 }
 
 
-AstNode* skope::read_nodes(CNodeProbe& np, bool bRHS)
+AstNode* skope::read_nodes(CVar ** psigBase, AstNode* pn)
 {
-	AstNode* pn = np.root;
-	AstNode* p, * pPrev = NULL;
+	AstNode* p;
 	AstNode* lastp = NULL;
 	CVar pvar;
-	bool RHSpresent = bRHS;
 	while (pn)
 	{
 		// Sig gets the info on the last node after this call.
 		// when np.root->child is not NULL,
 		// if pn->alt is terminal (not null), it doesn't have to go thru getvariable.
-		p = read_node(np, pn, pPrev, RHSpresent);
+		p = read_node(psigBase, pn);
 		if (!p) return pn;
 		if (p->type == N_ARGS)
 		{
-			pPrev = pn;
 			pheadthisline = NULL;
 		}
 		else
 		{
-			pPrev = NULL;
 			if (pn->type==T_ID && pn->alt && pn->alt->type==N_STRUCT) 
 				pheadthisline = pn;
 			else
@@ -644,21 +633,21 @@ void skope::bind_psig(AstNode* pn, CVar* psig)
 	else
 	{
 		assert(pn->alt->type == N_STRUCT);
-		CVar* pbasesig = GetVariable(pn->str);
+		CVar* pbasesig = GetVariable(pn->str, pn);
 		SetVar(pn->alt->str, psig, pbasesig);
 	}
 }
 
 CVar* skope::TID(AstNode* pnode, AstNode* pRHS, CVar* psig)
 {
-	CNodeProbe np(this, pnode, psig); // psig is NULL except for T_REPLICA
 	if (pnode)
 	{
 		char ebuf[256] = {};
-		AstNode* pLast = read_nodes(np); // that's all about LHS.
+		CVar * psigBase = psig;
+		AstNode* pLast = read_nodes(&psigBase, pnode); // that's all about LHS.
 		AstNode* lhsCopy = nullptr;
-		if (np.psigBase && np.psigBase->IsGO())
-			return np.psigBase;
+		if (psigBase && psigBase->IsGO())
+			return psigBase;
 		else	return &Sig;
 	}
 	return &Sig;
@@ -714,14 +703,15 @@ CVar* skope::GetGlobalVariable(const AstNode* pnode, const char* varname)
 	return &Sig;
 }
 
-CVar* skope::GetVariable(const char* varname, CVar* pvar)
+CVar* skope::GetVariable(const char* varname, const AstNode* pnode, CVar* pvar)
 { //To retrive a variable from a workspace pvar is NULL (default)
   //To retrive a member variable, specify pvar as the base variable
+  // pnode is necessary to pass the info on current the Compute() task for exception
  // For multiple GO's, calls GetGOVariable()
 	string fullvarname = "";
 	CVar* pout(NULL);
 	if (!varname)
-		throw exception_etc(*this, node, "GetVariable(): NULL varname").raise();
+		throw exception_etc(*this, pnode, "GetVariable(): NULL varname").raise();
 	if (pvar)
 	{
 		if (pvar->strut.find(varname) != pvar->strut.end())
@@ -1588,13 +1578,13 @@ CVar* skope::NodeMatrix(const AstNode* pnode)
 	return &(Sig = tsig);
 }
 
-CVar* skope::Dot(AstNode* p)
+CVar* skope::Dot(AstNode* p, CVar* psig)
 { // apply dot operator to Sig that was computed from the previous node
 	// At this point, p is alt from a previous node and should not have child (i.e., RHS);
 	// therefore, lhs should not be updated here.
-	CNodeProbe np(this, p, &Sig);
-	read_nodes(np);
-	if (np.psigBase->IsGO() && np.psigBase->GetFs() != 3) return pgo;
+	CVar* psigBase = psig;
+	read_nodes(&psigBase, p);
+	if (psigBase->IsGO() && psigBase->GetFs() != 3) return pgo;
 	else	return &Sig;
 }
 

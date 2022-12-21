@@ -33,7 +33,7 @@ void echo(int precision, int depth, skope& ctx, const AstNode* pn, CVar* pvar, c
 		ctx.get_nodes_left_right_sides(pn, &plhs, &prhs);
 		//  plhs NULL: a statement, not an assignment, use pvar from Sig (if that's not available, out of luck)
 		if (plhs || !pvar) {
-			pvar = ctx.GetVariable(pn->str);
+			pvar = ctx.GetVariable(pn->str, pn);
 			if (!pvar) return; // this filters out a null statement in a block such as a=1; b=100; 500
 		}
 		if (skope::IsLooping(pn)) return; // T_IF, T_FOR, T_WHILE

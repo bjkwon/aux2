@@ -442,7 +442,7 @@ void skope::right_to_left(const AstNode* plhs, const CVar& lhs_index, CVar& robj
 			const AstNode* pstruct;
 			CVar* struct_item = get_available_struct_item(plhs, &pstruct);
 			if (isreplica) { //RL-NS
-				replica = GetVariable(pstruct->str, (CVar*)struct_item);
+				replica = GetVariable(pstruct->str, pstruct, (CVar*)struct_item);
 				robj = Compute(prhs);
 			}
 			// p.prop1.prop2.prop3=[3 5 2] 

@@ -32,7 +32,7 @@ void _setnextchan(skope* past, const AstNode* pnode, const vector<CVar>& args)
 	CVar* second = new CVar;
 	past->Sig.SetNextChan(args.front());
 	const AstNode* arg0 = arg0node(pnode, past->node);
-	CVar* psig = past->GetVariable(arg0->str);
+	CVar* psig = past->GetVariable(arg0->str, arg0);
 	if (!psig) {
 		throw exception_func(*past, pnode, "Must be a variable", pnode->str, 1).raise();
 	}
