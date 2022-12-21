@@ -48,12 +48,6 @@
     <ClCompile Include="skope_exception.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="skope2.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="skope_read_xtree.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="typecheck.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>

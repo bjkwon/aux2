@@ -166,10 +166,8 @@
     <ClCompile Include="lame\lame_main.c" />
     <ClCompile Include="lame\parse.c" />
     <ClCompile Include="lame\timestatus.c" />
-    <ClCompile Include="skope2.cpp" />
     <ClCompile Include="skope_flow.cpp" />
     <ClCompile Include="skope_process.cpp" />
-    <ClCompile Include="skope_read_xtree.cpp" />
     <ClCompile Include="AuxFunc.cpp" />
     <ClCompile Include="Built_in_Funcs.cpp" />
     <ClCompile Include="csignals.cpp" />

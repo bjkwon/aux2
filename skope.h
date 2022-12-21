@@ -313,24 +313,3 @@ private:
 	CVar* get_available_struct_item(const AstNode* plhs, const AstNode** pstruct);
 	void sanitize_cell_node(const AstNode* p);
 };
-
-class CNodeProbe
-{
-	friend class skope;
-public:
-	CNodeProbe(skope* past, AstNode* pnode, CVar* psig);
-	virtual ~CNodeProbe() {};
-	skope* pbase;
-	AstNode* root;
-	CVar* psigBase;
-	double* lhsref; // actual double buffer location that the lhs is supposed to modify
-	bool lhsref_single; // true if lhs indicates a scalar--this guarantees a valid lhsref.
-	string varname; // tracks the "full" name of variable including the index, the dot or { }, etc.
-	char status[8]; // limit to 7 characters
-
-	CVar* TID_RHS2LHS(const AstNode* pnode, AstNode* p, AstNode* pRHS);
-	void insertreplace(const AstNode* pnode, CVar& sec, CVar& indsig);
-	CTimeSeries& replace(const AstNode* pnode, CTimeSeries* pobj, CSignal& sec, int id1, int id2);
-	CTimeSeries& replace(const AstNode* pnode, CTimeSeries* pobj, body& sec, body& index);
-	CVar* cell_indexing(CVar* pBase, AstNode* pn);
-}; 
