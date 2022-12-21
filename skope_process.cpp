@@ -108,10 +108,11 @@ const CVar* skope::get_cell_item(const AstNode* plhs, const CVar &cellobj)
 	}
 	else
 	{ // in this case x{2} means second chain
+		printf("********************************\n");
 		if (cellind > cellobj.CountChains())
 		{
 			oss << "Cell index " << cellind;
-			throw exception_range(*this, plhs->alt, oss.str().c_str(), plhs->str);
+			throw exception_range(*this, plhs->alt, oss.str().c_str(), plhs->str).raise();
 		}
 		CTimeSeries* pout = (CTimeSeries*)&cellobj;
 		for (size_t k = 0; k < cellind; k++, pout = pout->chain) {}
@@ -494,8 +495,8 @@ void skope::sanitize_cell_node(const AstNode* p)
 	if (p->alt && p->alt->type == N_CELL)
 	{
 		Compute(p->alt->child);
-		if (Sig.type() != 1)
-			throw exception_etc(*this, p, "Invalid cell index").raise();
+		if (!ISSCALARG(Sig.type()))
+			throw exception_etc(*this, p, "Cell index must be a scalar").raise();
 		p->alt->dval = Sig.value();
 		yydeleteAstNode(p->alt->child, 0);
 		p->alt->child = NULL;

@@ -473,6 +473,7 @@ const AstNode* skope::searchtree(const AstNode* p, int type, int line2check)
 }
 AstNode* skope::read_node(CNodeProbe& np, AstNode* ptree, AstNode* ppar, bool& RHSpresent)
 {
+	ppar = NULL;
 	if (ptree->type == T_OP_CONCAT || ptree->type == '+' || ptree->type == '-' || ptree->type == T_TRANSPOSE || ptree->type == T_MATRIXMULT
 		|| ptree->type == '*' || ptree->type == '/' || ptree->type == T_OP_SHIFT || ptree->type == T_NEGATIVE || (ptree == np.root && IsConditional(ptree)))
 	{ //No further actions
@@ -504,12 +505,15 @@ AstNode* skope::read_node(CNodeProbe& np, AstNode* ptree, AstNode* ppar, bool& R
 	}
 	else if (ptree->type == N_TIME_EXTRACT)
 	{
-		CVar temp = *np.psigBase;
-		CSignals timepoints = gettimepoints(&temp, ptree);
-		if (temp.next)
-			timepoints.SetNextChan(gettimepoints(temp.next, ptree));
-		temp.Crop(timepoints);
-		Sig = temp;
+		if (!ISAUDIO(np.psigBase->type())) {
+			out << "LHS must be audio.";
+			throw exception_etc(*this, ptree, out.str()).raise();
+		}
+		CSignals timepoints = gettimepoints(np.psigBase, ptree);
+		if (np.psigBase->next)
+			timepoints.SetNextChan(gettimepoints(np.psigBase->next, ptree));
+		Sig = *np.psigBase;
+		Sig.Crop(timepoints);
 	}
 	else if (ptree->type == T_REPLICA || ptree->type == T_ENDPOINT)
 	{
@@ -574,7 +578,11 @@ AstNode* skope::read_node(CNodeProbe& np, AstNode* ptree, AstNode* ppar, bool& R
 			//either cellvar{2} or cellvar{2}(3). cellvar or cellvar(2) doesn't come here.
 			// i.e., ptree->alt->child should be non-NULL
 		{
-			np.cell_indexing(pres, ptree);
+			sanitize_cell_node(ptree);
+			CVar* lobj = &Vars.find(ptree->str)->second;
+			np.psigBase = (CVar*)get_cell_item(ptree, *lobj);
+			// x{n} ends here;  x{n}(ids) continues to the next parsible node
+				Sig = *np.psigBase;
 		}
 		else
 		{

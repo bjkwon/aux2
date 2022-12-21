@@ -27,20 +27,6 @@
 #include "psycon.tab.h"
 #include "skope_exception.h"
 
-
-bool skope::builtin_func_call(CNodeProbe &diggy, AstNode *p)
-{
-	if (p->type == T_ID || p->type == N_STRUCT)
-	{
-		if (pEnv->IsValidBuiltin(p->str)) // hook bypasses IsValidBuiltin
-		{
-			HandleAuxFunction(p);
-			return true;
-		}
-	}
-	return false;
-}
-
 CNodeProbe::CNodeProbe(skope *past, AstNode *pnode, CVar *psig)
 {
 	psigBase = NULL;
