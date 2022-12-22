@@ -63,6 +63,9 @@ const AstNode* get_base_node_for_try (const AstNode* pnode, int line)
 	return NULL;
 }
 
+/* If an exception is thrown from eval(), errline or errcol value is for the eval, not the location of the eval call in the udf
+* i.e., errline or errcol is not really useful in that case. 12/21/2022
+*/
 CVar* skope::Try_here(const AstNode* pnode, AstNode* p)
 { // to be used only for udf 
 	try {

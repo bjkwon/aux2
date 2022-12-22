@@ -284,6 +284,9 @@ void CAstSigEnv::InitBuiltInFunctions()
 
 	SET_BUILTIN_FUNC("squeeze", vector);
 
+	SET_BUILTIN_FUNC("error", error_warning);
+	SET_BUILTIN_FUNC("warning", error_warning);
+
 	SET_BUILTIN_FUNC("isempty", objchecker);
 	SET_BUILTIN_FUNC("isaudio", objchecker);
 	SET_BUILTIN_FUNC("isvector", objchecker);

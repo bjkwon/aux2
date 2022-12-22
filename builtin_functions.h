@@ -144,6 +144,7 @@ DECL_GATE(_cellstruct)
 DECL_GATE(_structbase)
 DECL_GATE(_tseqget)
 DECL_GATE(_tseqset)
+DECL_GATE(_error_warning)
 void _fm(skope* past, const AstNode* pnode, const vector<CVar>& args);
 void _tsq_getvalues(skope* past, const AstNode* pnode, const vector<CVar>& args);
 void _tsq_setvalues(skope* past, const AstNode* pnode, const vector<CVar>& args);
