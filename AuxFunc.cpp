@@ -1,23 +1,16 @@
 // AUXLAB
 //
-// Copyright (c) 2009-2019 Bomjun Kwon (bjkwon at gmail)
+// Copyright (c) 2009-2022 Bomjun Kwon (bjkwon at gmail)
 // Licensed under the Academic Free License version 3.0
 //
 // Project: sigproc
 // Signal Generation and Processing Library
-// Platform-independent (hopefully)
+// Platform-independent
 //
 // Version: 1.7
-// Date: 5/17/2020
+// Date: 12/22/2022
 //
-//#include <math.h>
-//#include <stdlib.h>
-//#include <string.h> // aux_file
-//#include <time.h>
 #include <sstream>
-//#include <vector>
-//#include <map>
-//#include <unordered_map>
 #include <stdbool.h>
 
 #include "aux_classes.h"
@@ -37,17 +30,6 @@ bool CAstSigEnv::IsValidBuiltin(const string& funcname)
 		return false;
 	return builtin.find(funcname) != builtin.end();
 }
-
-//void _nullin(skope *past, const AstNode *pnode)
-//{
-//	const AstNode* p = get_first_arg(pnode, (*(past->pEnv->builtin.find(pnode->str))).second.alwaysstatic);
-//	past->checkAudioSig(pnode, past->Sig);
-//	CVar sig = past->Sig;
-//	past->Compute(p);
-//	past->checkScalar(p, past->Sig);
-//	sig.NullIn(past->Sig.value());
-//	past->Sig = sig;
-//}
 
 void _contig(skope *past, const AstNode *pnode)
 {
@@ -94,56 +76,6 @@ void _colon(skope* past, const AstNode* pnode, const vector<CVar>& args)
 		past->Sig.buf[k] = val1 + step * k;
 }
 
-AstNode *searchstr(AstNode *p, int findthis)
-{ // if there's a node with "type" in the tree, return that node
-	if (p)
-	{
-		if (p->type == findthis) return p;
-		if (p->child)
-		{
-			if (p->child->type == findthis) return p->child;
-			else return searchstr(p->child, findthis);
-		}
-		else if (p->next)
-		{
-			if (p->next->type == findthis) return p->next;
-			else return searchstr(p->next, findthis);
-		}
-	}
-	return NULL;
-}
-
-AstNode *searchstr(AstNode *p, const char* pstr)
-{ // if there's a node with "type" in the tree, return that node
-	if (p)
-	{
-		if (p->str==pstr) return p;
-		if (p->child)
-		{
-			if (p->child->str == pstr) return p->child;
-			else return searchstr(p->child, pstr);
-		}
-		else if (p->next)
-		{
-			if (p->next->str == pstr) return p->next;
-			else return searchstr(p->next, pstr);
-		}
-	}
-	return NULL;
-}
-
-int findcol(AstNode *past, const char* pstr, int line)
-{
-	for (AstNode *pn=past; pn; pn = pn->next)
-	{
-		if (pn->line<line) continue;
-		AstNode *pm = searchstr(pn->child, pstr);
-		if (pm) return pm->col;
-		else	return -1;
-	}
-	return -1;
-}
-
 //vector<string> CAstSigEnv::InitBuiltInFunctionsExt(const vector<string>& externalModules)
 //{
 //	// If there's an error (including file not found), it's reported back to the caller.
@@ -175,7 +107,6 @@ int findcol(AstNode *past, const char* pstr, int line)
 //	}
 //	return out;
 //}
-
 
 #define SET_BUILTIN_FUNC(AUXNAME,GATENAME) builtin.emplace(AUXNAME, set_builtin_function_##GATENAME(&_##GATENAME));
 #define SET_PSEUDO_VARS(AUXNAME,GATENAME) pseudo_vars.emplace(AUXNAME, set_builtin_function_constant(&_##GATENAME));
@@ -305,7 +236,6 @@ void CAstSigEnv::InitBuiltInFunctions()
 	SET_BUILTIN_FUNC("tsq_setvalues", tseqset);
 	SET_BUILTIN_FUNC("tsq_settimes", tseqset);
 
-
 	SET_PSEUDO_VARS("i", imaginary_unit);
 	SET_PSEUDO_VARS("e", natural_log_base);
 	SET_PSEUDO_VARS("pi", pi);
@@ -316,9 +246,6 @@ void CAstSigEnv::InitBuiltInFunctions()
 //	ft.funcsignature = "(audio_signal, time_pt)";
 //	ft.func =  &_isaudioat;
 //	builtin[name] = ft;
-//
-//	// end narg 2 and 2
-//
 //
 //	ft.narg1 = 1;	ft.narg2 = 2;
 //	name = "std";
@@ -338,11 +265,7 @@ void CAstSigEnv::InitBuiltInFunctions()
 //	builtin[name] = ft;
 //
 //
-//	ft.narg1 = 2;	ft.narg2 = 2;
 //	ft.funcsignature = "(audio_signal)";
-////	name = "nullin";
-////	ft.func = &_nullin;
-////	builtin[name] = ft;
 //	ft.narg1 = 1;	ft.narg2 = 1;
 //	name = "contig";
 //	ft.func = &_contig;
@@ -412,14 +335,6 @@ void CAstSigEnv::InitBuiltInFunctions()
 //	ft.func =  &_inputdlg;
 //	builtin[name] = ft;
 //
-//	ft.alwaysstatic = false;
-//	ft.narg1 = 1;	ft.narg2 = 1;
-//	ft.funcsignature = "(string)";
-//	name = "str2num";
-//	ft.func =  &_str2num;
-//	builtin[name] = ft;
-//	ft.alwaysstatic = true;
-//
 
 	ft.narg1 = 1;	ft.narg2 = 1;
 	ft.funcsignature = "(value_or_array)";
@@ -437,18 +352,6 @@ void CAstSigEnv::InitBuiltInFunctions()
 	//ft.func = &aux_input;
 	//builtin[name] = ft;
 
-	//name = "error";
-	//ft.alwaysstatic = false;
-	//ft.narg1 = ft.narg2 = 1;
-	//ft.funcsignature = "(message)";
-	//ft.func = &udf_error;
-	//builtin[name] = ft;
-	//name = "warning";
-	//ft.func = &udf_warning;
-	//builtin[name] = ft;
-	//name = "throw";
-	//ft.func = &udf_rethrow;
-	//builtin[name] = ft;
 	//name = "esc";
 	//ft.funcsignature = "(string)";
 	//ft.func = &_esc;

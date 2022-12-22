@@ -21,24 +21,7 @@
 #include "skope_exception.h"
 #include "psycon.tab.h"
 
-extern vector<skope*> xscope;
-
-AstNode* goto_try_line(const AstNode* pnode, int line)
-{
-	AstNode* p = (AstNode*)pnode;
-	for (; p; p = p->next)
-	{
-		if (p->type == T_IF || p->type == T_FOR || p->type == T_WHILE || p->type == T_TRY) // line should be inside of block, i.e., T_FOR T_IF or T_WHILE
-		{
-//			pp = skope::goto_line((const AstNode*)p->child->next, line);
-//			if (pp) return pp;
-		}
-		if (p->line == line) return p;
-	}
-	return p;
-}
-
-const AstNode* get_try_node(const AstNode* pnode)
+static const AstNode* get_try_node(const AstNode* pnode)
 {
 	const AstNode* p = pnode;
 	// for a base udf, pnode is N_BLOCK; otherwise, it is T_FUNCTION
@@ -49,7 +32,7 @@ const AstNode* get_try_node(const AstNode* pnode)
 	return NULL;
 }
 
-const AstNode* get_base_node_for_try (const AstNode* pnode, int line)
+static const AstNode* get_base_node_for_try (const AstNode* pnode, int line)
 {// Get the node of try from the t_func node of the base udf
 	// First, find out in which (local) function try was called
 	const AstNode* p = pnode;

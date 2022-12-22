@@ -585,16 +585,12 @@ AstNode* skope::read_node(CVar** psigBase, AstNode* ptree)
 	return get_next_parsible_node(ptree);
 }
 
-
 AstNode* skope::read_nodes(CVar ** psigBase, AstNode* pn)
 {
 	AstNode* p;
-	AstNode* lastp = NULL;
-	CVar pvar;
 	while (pn)
 	{
 		// Sig gets the info on the last node after this call.
-		// when np.root->child is not NULL,
 		// if pn->alt is terminal (not null), it doesn't have to go thru getvariable.
 		p = read_node(psigBase, pn);
 		if (!p) return pn;
