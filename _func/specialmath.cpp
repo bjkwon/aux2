@@ -47,7 +47,7 @@ Cfunction set_builtin_function_mod(fGate fp)
 	return ft;
 }
 
-complex<float> comp_pow(complex<float> x, complex<float> y)
+complex<double> comp_pow(complex<double> x, complex<double> y)
 {
 	return pow(x, y);
 }
@@ -59,7 +59,11 @@ CTimeSeries __pow(const CTimeSeries& base, void* p)
 	auto tp = base.type();
 	if (ISAUDIO(tp))
 	{
+#ifdef FLOAT
 		out.each_sym2(powf, operand);
+#else
+		out.each_sym2(pow, operand);
+#endif
 	}
 	else if (base._min() < 0)
 	{
@@ -69,7 +73,7 @@ CTimeSeries __pow(const CTimeSeries& base, void* p)
 		if (operand.nSamples == 1)
 		{
 			auto op = operand.value();
-			complex<float> temp;
+			complex<auxtype> temp;
 			for (auto k = 0; k < base.nSamples; k++)
 				out.cbuf[k] = pow(copy.cbuf[k], operand.value());
 		}
@@ -92,7 +96,11 @@ CTimeSeries __pow(const CTimeSeries& base, void* p)
 	}
 	else
 	{
+#ifdef FLOAT
 		out.each(powf, operand);
+#else
+		out.each(pow, operand);
+#endif		
 	}
 	return out;
 }

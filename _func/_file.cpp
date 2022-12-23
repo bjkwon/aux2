@@ -276,7 +276,7 @@ static FILE* prepare_freadwrite(skope* past, const AstNode* pnode, const vector<
 {
 	//first arg is always file identifier
 	//second arg is the signal to write to file
-	//third arg is precision--one of the following: int8 int16 int32 uint8 uint16 uint32 char float float
+	//third arg is precision--one of the following: int8 int16 int32 uint8 uint16 uint32 char float double
 
 	auto fp = (FILE*)*(uint64_t*)past->Sig.buf;
 	string fname = pnode->str;
@@ -307,16 +307,16 @@ size_t fwrite_general_floating(T var, const CVar& sig, string prec, FILE* file)
 	T* pvar = &var;
 	if (sig.next)
 	{
-		float* buf2 = sig.next->buf;
+		auxtype* buf2 = sig.next->buf;
 		for_each(sig.buf, sig.buf + sig.nSamples,
-			[buf2, pvar, file, &k](float v) {
+			[buf2, pvar, file, &k](auxtype v) {
 				*pvar = (T)v; fwrite(pvar, sizeof(T), 1, file);
 				*pvar = (T)buf2[k++]; fwrite(pvar, sizeof(T), 1, file); });
 	}
 	else
 	{
 		for_each(sig.buf, sig.buf + sig.nSamples,
-			[pvar, file](float v) { *pvar = (T)v; fwrite(pvar, sizeof(T), 1, file); });
+			[pvar, file](auxtype v) { *pvar = (T)v; fwrite(pvar, sizeof(T), 1, file); });
 	}
 	return sig.nSamples;
 }
@@ -331,9 +331,9 @@ size_t fwrite_general(T var, const CVar& sig, string prec, FILE* file, int bytes
 	T* pvar = &var;
 	if (sig.next)
 	{
-		float* buf2 = sig.next->buf;
+		auxtype* buf2 = sig.next->buf;
 		for_each(sig.buf, sig.buf + sig.nSamples,
-			[buf2, pvar, factor, bytes, file, &k](float v) {
+			[buf2, pvar, factor, bytes, file, &k](auxtype v) {
 				*pvar = (T)(factor * v - .5); fwrite(pvar, bytes, 1, file);
 				*pvar = (T)(factor * buf2[k++] - .5); fwrite(pvar, bytes, 1, file); });
 	}
@@ -341,14 +341,17 @@ size_t fwrite_general(T var, const CVar& sig, string prec, FILE* file, int bytes
 	{
 		if (ISAUDIO(tp))
 			for_each(sig.buf, sig.buf + sig.nSamples,
-				[pvar, bytes, factor, file](float v) { *pvar = (T)(factor * v - .5); fwrite(pvar, bytes, 1, file); });
+				[pvar, bytes, factor, file](auxtype v) { *pvar = (T)(factor * v - .5); fwrite(pvar, bytes, 1, file); });
 		else
 			for_each(sig.buf, sig.buf + sig.nSamples,
-				[pvar, bytes, factor, file](float v) { *pvar = (T)(v - .5); fwrite(pvar, bytes, 1, file); });
+				[pvar, bytes, factor, file](auxtype v) { *pvar = (T)(v - .5); fwrite(pvar, bytes, 1, file); });
 	}
 	return sig.nSamples;
 }
 
+
+// As of 12/22/2022, if aux2 was built with float, fwrite may generate double, but that's not true double (it's float in double format)
+// Likewise, fread with double may succeed, but the data is stored in the float buffer
 void _fwrite(skope* past, const AstNode* pnode, const vector<CVar>& args)
 {
 	CVar firstarg = args[0];
@@ -436,21 +439,21 @@ void fread_general(T var, CVar& sig, FILE* file, int bytes, char* addarg, uint64
 	T* pvar = &var;
 	if (!strcmp(addarg, "audio") || !strcmp(addarg, "a"))
 		for_each(sig.buf, sig.buf + sig.nSamples,
-			[pvar, bytes, file, factor](float& v) { fread(pvar, bytes, 1, file); v = *pvar / (float)factor; });
+			[pvar, bytes, file, factor](auxtype& v) { fread(pvar, bytes, 1, file); v = *pvar / (auxtype)factor; });
 	else if (!strcmp(addarg, "audio2") || !strcmp(addarg, "a2"))
 	{
 		int k = 0;
 		CSignals next(CSignal(sig.GetFs(), sig.nSamples));
 		sig.SetNextChan(next);
-		float* buf2 = sig.next->buf;
+		auxtype* buf2 = sig.next->buf;
 		for_each(sig.buf, sig.buf + sig.nSamples,
-			[buf2, pvar, bytes, file, factor, &k](float& v) {
-				fread(pvar, bytes, 1, file); v = *pvar / (float)factor;
-				fread(pvar, bytes, 1, file); buf2[k++] = *pvar / (float)factor; });
+			[buf2, pvar, bytes, file, factor, &k](auxtype& v) {
+				fread(pvar, bytes, 1, file); v = *pvar / (auxtype)factor;
+				fread(pvar, bytes, 1, file); buf2[k++] = *pvar / (auxtype)factor; });
 	}
 	else
 		for_each(sig.buf, sig.buf + sig.nSamples,
-			[pvar, bytes, file](float& v) { fread(pvar, bytes, 1, file); v = *pvar; });
+			[pvar, bytes, file](auxtype& v) { fread(pvar, bytes, 1, file); v = *pvar; });
 }
 
 void _fread(skope* past, const AstNode* pnode, const vector<CVar>& args)
@@ -508,9 +511,9 @@ void _fread(skope* past, const AstNode* pnode, const vector<CVar>& args)
 		float temp = 0.;
 		fread_general(temp, past->Sig, file, bytes, addarg, 1);
 	}
-	else if (prec == "float")
+	else if (prec == "double")
 	{
-		float temp = 0.;
+		double temp = 0.;
 		fread_general(temp, past->Sig, file, bytes, addarg, 1);
 	}
 	if (!strcmp(addarg, "audio") || !strcmp(addarg, "a") | !strcmp(addarg, "audio2") || !strcmp(addarg, "a2"))
@@ -600,9 +603,15 @@ void _write(skope* past, const AstNode* pnode, const vector<CVar>& args)
 		past->Sig.MakeChainless();
 		char errStr[256] = { 0 };
 		x.fs = past->Sig.GetFs();
+#ifdef FLOAT
 		x.fbuf_l = past->Sig.buf;
 		x.fbuf_r = past->Sig.next? past->Sig.next->buf : NULL;
 		x.floatbuf = 1;
+#else
+		x.buf_l = past->Sig.buf;
+		x.buf_r = past->Sig.next ? past->Sig.next->buf : NULL;
+		x.floatbuf = 1;
+#endif
 		x.length = past->Sig.nSamples;
 		int res = write_mp3(&x, filename.c_str(), errStr);
 		if (!res)
@@ -655,12 +664,36 @@ static void resample_if_fs_different(skope* past, const AstNode* p)
 	}
 }
 
+
+
+template<typename T>
+sf_count_t sf_readf(SNDFILE* sndfile, T* ptr, sf_count_t frames)
+{
+#ifdef FLOAT
+	return sf_readf_float(sndfile, ptr, frames);
+#else
+	return sf_readf_double(sndfile, ptr, frames);
+#endif
+}
+
+template<typename T>
+sf_count_t sf_writef(SNDFILE* sndfile, const T* ptr, sf_count_t frames)
+{
+#ifdef FLOAT
+	return sf_writef_float(sndfile, ptr, frames);
+#else
+	return sf_writef_double(sndfile, ptr, frames);
+#endif
+}
+
+
+
 void _wave(skope *past, const AstNode *pnode, const vector<CVar>& args)
 {
 	string estr;
 	string filename = past->Sig.str();
-	float beginMs = args[0].value();
-	float durMs = args[1].value();
+	double beginMs = args[0].value();
+	double durMs = args[1].value();
 	SF_INFO sfinfo; 
 	SNDFILE* wavefileID = read_wav_info(filename, sfinfo, estr);
 	if (!wavefileID)
@@ -680,19 +713,19 @@ void _wave(skope *past, const AstNode *pnode, const vector<CVar>& args)
 	if (sfinfo.channels == 1)
 	{
 		past->Sig.UpdateBuffer((uint64_t)frames2read);
-		count = sf_readf_float(wavefileID, past->Sig.buf, frames2read);  // sndfile.h
+		count = sf_readf(wavefileID, past->Sig.buf, frames2read);  // sndfile.h
 	}
 	else
 	{
-		float* buffer = new float[sfinfo.channels * (int)frames2read];
-		count = sf_readf_float(wavefileID, buffer, frames2read);  // sndfile.h
-		float(*buf3)[2];
+		auxtype* buffer = new auxtype[sfinfo.channels * (int)frames2read];
+		count = sf_readf(wavefileID, buffer, frames2read);  // sndfile.h
+		auxtype(*buf3)[2];
 		past->Sig.next = new CSignals(sfinfo.samplerate);
 		int m(0);
-		buf3 = (float(*)[2]) & buffer[m++];
+		buf3 = (auxtype(*)[2]) & buffer[m++];
 		past->Sig.UpdateBuffer((int)frames2read);
 		for (unsigned int k = 0; k < frames2read; k++)			past->Sig.buf[k] = buf3[k][0];
-		buf3 = (float(*)[2]) & buffer[m++];
+		buf3 = (auxtype(*)[2]) & buffer[m++];
 		past->Sig.next->UpdateBuffer((int)frames2read);
 		for (unsigned int k = 0; k < frames2read; k++)			past->Sig.next->buf[k] = buf3[k][0];
 		delete[] buffer;
@@ -754,8 +787,8 @@ void _file(skope* past, const AstNode* pnode, const vector<CVar>& args)
 	case 1:
 		//as of now Jan 2022, args is empty
 		// supplying default args for _wave()
-		((vector<CVar>*) & args)->push_back(CVar(0.f));
-		((vector<CVar>*) & args)->push_back(CVar(-1.f));
+		((vector<CVar>*) & args)->push_back(CVar(0.));
+		((vector<CVar>*) & args)->push_back(CVar(-1.));
 		_wave(past, pnode, args);
 		resample_if_fs_different(past, pnode);
 		break;
@@ -771,18 +804,32 @@ void _file(skope* past, const AstNode* pnode, const vector<CVar>& args)
 			past->Sig.SetNextChan(CSignals(fs));
 			past->Sig.next->UpdateBuffer(len);
 		}
+#ifdef FLOAT
 		x.floatbuf = 1;
 		x.fbuf_l = past->Sig.buf;
 		x.fbuf_r = (nChans > 1) ? past->Sig.next->buf : NULL;
+#else
+		x.floatbuf = 0;
+		x.buf_l = past->Sig.buf;
+		x.buf_r = (nChans > 1) ? past->Sig.next->buf : NULL;
+#endif
 		x.length = len;
 		if (!(ret = read_mp3(&x, filename.c_str(), errStr)))
 			throw exception_func(*past, pnode, errStr).raise();
 		past->Sig.nSamples = ret;
+#ifdef FLOAT
 		past->Sig.buf = x.fbuf_l;
 		if (nChans > 1) {
 			past->Sig.next->nSamples = ret;
 			past->Sig.next->buf = x.fbuf_r;
 		}
+#else
+		past->Sig.buf = x.buf_l;
+		if (nChans > 1) {
+			past->Sig.next->nSamples = ret;
+			past->Sig.next->buf = x.buf_r;
+		}
+#endif
 		resample_if_fs_different(past, pnode);
 		break;
 	case 4:
@@ -793,29 +840,23 @@ void _file(skope* past, const AstNode* pnode, const vector<CVar>& args)
 			nLines = str2vector(line, content, "\r\n");
 			for (size_t k = 0; k < nLines; k++)
 			{
-				//if there's at least one non-numeric character except for space and tab, treat the whole line as a string.
-				//if (!isnumeric(line[k].c_str()))
-				//{
-				//	past->Sig.appendcell((CVar)line[k]);
-				//}
-				//else
+				vector<string> datavect;
+				res = str2vector(datavect, line[k], " \t");
+				auxtype* data = new auxtype[res];
+				k = 0;
+				for (auto str : datavect)
 				{
-					vector<string> datavect;
-					res = str2vector(datavect, line[k], " \t");
-					float* data = new float[res];
-					k = 0;
-					for (auto str : datavect)
-					{
-						if (sscanf(str.c_str(), "%f", data + k++)==EOF)
-							throw exception_func(*past, pnode, "Error in reading and converting to float data").raise();
-					}
-					CSignals tp(data, res);
-					if (nLines == 1)
-						past->Sig = tp;
-					//else
-					//	past->Sig.appendcell((CVar)tp);
-					delete[] data;
+#ifdef FLOAT
+					if (sscanf(str.c_str(), "%f", data + k++) == EOF)
+#else
+					if (sscanf(str.c_str(), "%lf", data + k++) == EOF)
+#endif						
+						throw exception_func(*past, pnode, "Error in reading and converting to auxtype data").raise();
 				}
+				CSignals tp(data, res);
+				if (nLines == 1)
+					past->Sig = tp;
+				delete[] data;
 			}
 		}
 		else
@@ -864,26 +905,26 @@ int CSignals::Wavwrite(const char* wavname, char* errstr, std::string wavformat)
 		sf_close(wavefileID);
 		return 0;
 	}
-	float* dbuffer = nullptr;
+	auxtype* dbuffer = nullptr;
 	int lengthAllocated = -1, length = -1;
 	CSignals nextblock, nextblock2;
 	nextblock <= *this;
 	int nChan = next == NULL ? 1 : 2;
 	while (nextblock.nSamples != 0 || nextblock.tmark != 0.)
 	{
-		float* buffer;
-		float tp1, tp2;
+		auxtype* buffer;
+		double tp1, tp2;
 		length = nextblock.getBufferLength(tp1, tp2, 300/*skope::play_block_ms*/);
 		if (tp1 == 0. && tp2 == 0. || nChan > 1)
 		{
 			if (length > lengthAllocated)
 			{
 				if (dbuffer) delete[] dbuffer;
-				dbuffer = new float[length * nChan];
+				dbuffer = new auxtype[length * nChan];
 				lengthAllocated = length;
 			}
 			buffer = dbuffer;
-			if (!nextblock.makebuffer<float>(dbuffer, length, tp1, tp2, nextblock2)) // sig is empty
+			if (!nextblock.makebuffer<auxtype>(dbuffer, length, tp1, tp2, nextblock2)) // sig is empty
 				return 0;
 		}
 		else
@@ -892,7 +933,7 @@ int CSignals::Wavwrite(const char* wavname, char* errstr, std::string wavformat)
 			nextblock2 <= nextblock;
 			nextblock.nextCSignals(tp1, tp2, nextblock2);
 		}
-		sf_writef_float(wavefileID, buffer, length);
+		sf_writef(wavefileID, buffer, length);
 		nextblock = nextblock2;
 	}
 	if (dbuffer) delete[] dbuffer;

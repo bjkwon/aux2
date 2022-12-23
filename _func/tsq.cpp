@@ -68,13 +68,13 @@ void _tseqget(skope* past, const AstNode* pnode, const vector<CVar>& args)
 		out.UpdateBuffer(nItems * past->Sig.nSamples);
 		//	out.nGroups = nItems;
 		for (CTimeSeries* p = &past->Sig; p; p = p->chain)
-			memmove(out.buf + k++ * p->nSamples, p->buf, sizeof(float) * p->nSamples); // assuming that p->nSamples is always the same
+			memmove(out.buf + k++ * p->nSamples, p->buf, sizeof(auxtype) * p->nSamples); // assuming that p->nSamples is always the same
 		past->Sig = out;
 	}
 	else if (!strcmp(pnode->str, "tsq_gettimes")) { 
 		//get the item count; i.e., the number of chains
 		int nItems = past->Sig.CountChains();
-		float* dbuf = new float[nItems];
+		auxtype* dbuf = new auxtype[nItems];
 		int k = 0;
 		int nChains = 1;
 		bool relative = past->Sig.GetFs() == 0;
@@ -83,13 +83,13 @@ void _tseqget(skope* past, const AstNode* pnode, const vector<CVar>& args)
 		past->Sig.Reset(1);
 		past->Sig.UpdateBuffer(nItems * nChains);
 		past->Sig.nGroups = 1;// nChains;
-		memmove(past->Sig.buf, dbuf, sizeof(float) * past->Sig.nSamples);
+		memmove(past->Sig.buf, dbuf, sizeof(auxtype) * past->Sig.nSamples);
 		delete[] dbuf;
 	}
 	else { // tsq_isrel
 		int type = past->Sig.GetType();
 		bool res = past->Sig.GetFs() == 0;
-		float dres = res ? 1. : 0.;
+		auxtype dres = res ? 1. : 0.;
 		past->Sig.SetValue(dres);
 		past->Sig.MakeLogical();
 	}
@@ -108,7 +108,7 @@ void _tseqset(skope* past, const AstNode* pnode, const vector<CVar>& args)
 		for (CTimeSeries* p = &past->Sig; p; p = p->chain)
 		{
 			p->UpdateBuffer(args.front().Len());
-			memmove(p->buf, args.front().buf + id++ * args.front().Len(), sizeof(float) * args.front().Len());
+			memmove(p->buf, args.front().buf + id++ * args.front().Len(), sizeof(auxtype) * args.front().Len());
 		}
 	}
 	else { // "tsq_settimes"

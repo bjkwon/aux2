@@ -20,22 +20,22 @@ Cfunction set_builtin_function_tparamonly(fGate fp)
 	return ft;
 }
 
-static inline void __noise(float* buf, unsigned int length, int fs)
+static inline void __noise(auxtype* buf, unsigned int length, int fs)
 {
 	auto k = (unsigned int)0;
-	for_each(buf, buf + length, [&k, fs](float& v)
-		{ v = 2.f * ((float)rand() / (float)RAND_MAX - .5); });
+	for_each(buf, buf + length, [&k, fs](auxtype& v)
+		{ v = 2.f * ((auxtype)rand() / (auxtype)RAND_MAX - .5); });
 }
 
-static inline void __gnoise(float* buf, unsigned int length, int fs)
+static inline void __gnoise(auxtype* buf, unsigned int length, int fs)
 { //Gaussian noise
-	float fac, r, v1, v2, sum(0.);
+	auxtype fac, r, v1, v2, sum(0.);
 	for (unsigned int k = 0; k < length; k++)
 	{
 		do {
 			do {
-				v1 = (2.f * (float)rand() / (float)RAND_MAX) - 1.0;
-				v2 = (2.f * (float)rand() / (float)RAND_MAX) - 1.0;
+				v1 = (2.f * (auxtype)rand() / (auxtype)RAND_MAX) - 1.0;
+				v2 = (2.f * (auxtype)rand() / (auxtype)RAND_MAX) - 1.0;
 				r = (v1 * v1) + (v2 * v2);
 			} while (r >= 1.0);
 			fac = sqrt(-2.0 * log(r) / r);
@@ -60,9 +60,9 @@ void _tparamonly(skope* past, const AstNode* pnode, const vector<CVar>& args)
 	else if (!strcmp(pnode->str, "gnoise"))
 		__gnoise(past->Sig.buf, nSamplesNeeded, fs);
 	else if (!strcmp(pnode->str, "silence"))
-		memset(past->Sig.buf, 0, sizeof(float) * nSamplesNeeded);
+		memset(past->Sig.buf, 0, sizeof(auxtype) * nSamplesNeeded);
 	else if (!strcmp(pnode->str, "dc"))
-		for_each(past->Sig.buf, past->Sig.buf + nSamplesNeeded, [](float& v) {v = 1.; });
+		for_each(past->Sig.buf, past->Sig.buf + nSamplesNeeded, [](auxtype& v) {v = 1.; });
 	else
 		throw exception_etc(*past, pnode, "(not to be seen)").raise();
 }

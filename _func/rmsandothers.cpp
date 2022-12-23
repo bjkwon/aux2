@@ -25,26 +25,25 @@ Cfunction set_builtin_function_rmsetc(fGate fp)
 	return ft;
 }
 
-inline static float _getdB(double x)
+inline static double _getdB(double x)
 {
 	// 3 dB is added to make rms of full scale sinusoid 0 dB
-	return 20 * log10f(x) + 3.0103f;
+	return 20 * log10f(x) + 3.0103;
 }
 
-CSignal __rms(float *buf, unsigned int len, void* pargin, void* pargout)
+CSignal __rms(double *buf, unsigned int len, void* pargin, void* pargout)
 {
 	CSignal out(*(int*)pargin); // fs
 	out.UpdateBuffer(1);
-	if (len == 0) out.buf[0] = std::numeric_limits<float>::infinity();
+	if (len == 0) out.buf[0] = std::numeric_limits<double>::infinity();
 	else
 	{
-		float val = 0.f;
-		for_each(buf, buf + len, [&val](float& v) {val += v * v; });
+		double val = 0.f;
+		for_each(buf, buf + len, [&val](double& v) {val += v * v; });
 		out.buf[0] = _getdB(sqrt(val / len));
 	}
 	return out;
 }
-
 
 void _rmsetc(skope* past, const AstNode* pnode, const vector<CVar>& args)
 {

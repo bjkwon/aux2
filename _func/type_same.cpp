@@ -78,12 +78,12 @@ void _veq(skope* past, const AstNode* pnode, const vector<CVar>& args)
 		}
 		else
 		{
-			if (arg1.bufBlockSize == sizeof(float))
+			if (arg1.bufBlockSize == sizeof(auxtype))
 				for (unsigned k = 0; k < arg1.nSamples; k++)
 				{
 					if (arg1.buf[k] != arg2.buf[k]) throw 0;
 				}
-			else if (arg1.bufBlockSize == 2 * sizeof(float))
+			else if (arg1.bufBlockSize == 2 * sizeof(auxtype))
 				for (unsigned k = 0; k < arg1.nSamples; k++)
 				{
 					if (arg1.cbuf[k] != arg2.cbuf[k]) throw 0;

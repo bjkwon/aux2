@@ -7,12 +7,10 @@
 // Signal Generation and Processing Library
 // Platform-independent (hopefully)
 //
-// Version: 1.7
-// Date: 5/24/2020
-
+// Version: 2.0
+// Date: 12/22/2022
 
 #pragma once
-
 
 #include <string>
 #include <complex>
@@ -21,7 +19,16 @@
 #include <functional>
 
 using namespace std;
-typedef void (*fmodify) (float*, uint64_t, void*, void*);
+
+//#define FLOAT  //=============================== ADJUST HERE, KEEP THIS LINE OR DELETE TO MAKE IT DOUBLE
+
+#ifdef FLOAT
+typedef float auxtype;
+#else
+typedef double auxtype;
+#endif
+
+typedef void (*fmodify) (auxtype*, uint64_t, void*, void*);
 
 #ifdef _WIN32
 #define DIRMARKER '\\'
@@ -56,11 +63,11 @@ typedef void (*fmodify) (float*, uint64_t, void*, void*);
 // The difference between audio and TYPEBIT_TEMPO_CHAINS_SNAP:
 // one object of audio is represented in grid of 1/fs
 // chains of TYPEBIT_TEMPO_CHAINS_SNAP are stacked on the same tmark.
-#define TYPEBIT_REAL		(uint16_t)0x0000 // 4 bytes -- sizeof(float)
+#define TYPEBIT_REAL		(uint16_t)0x0000 // sizeof(auxtype)-- 4 bytes (float) or 8 bytes (double)
 #define TYPEBIT_SIZE1		(uint16_t)0x0010 // use this for boolean  0b001
 #define TYPEBIT_STRING 		(uint16_t)0x0030 // 0x0020 + 0x0010  0b011
 #define TYPEBIT_BYTE 		(uint16_t)0x0050 // 0x0040 + 0x0010  0b101
-#define TYPEBIT_COMPLEX		(uint16_t)0x0060 // 0b110 8 bytes -- sizeof(float) times 2
+#define TYPEBIT_COMPLEX		(uint16_t)0x0060 // 0b110 sizeof(auxtype) times 2-- 8 bytes (float) or 16 bytes (double)
  // last three binary digits of HIWORD: number of channels minus one
 #define TYPEBIT_MULTICHANS	(uint16_t)0x0100
 #define TYPEBIT_CELL		(uint16_t)0x1000
@@ -158,8 +165,8 @@ public:
 	union
 	{
 		char *strbuf;
-		complex<float> *cbuf;
-		float *buf;
+		complex<auxtype> *cbuf;
+		auxtype *buf;
 		bool *logbuf;
 	};
 	char bufType;
@@ -169,51 +176,51 @@ public:
 	// Constructors
 	body();
 	body(const body& src);
-	body(float value);
-	body(complex<float> value);
-	body(float *y, int len);
+	body(auxtype value);
+	body(complex<auxtype> value);
+	body(auxtype *y, int len);
 	body(bool *y, int len);
-	body(const vector<float> & src);
+	body(const vector<auxtype> & src);
 	virtual ~body();
 
 	body& operator=(const body& rhs);
-	body& operator=(const vector<float> & rhs);
+	body& operator=(const vector<auxtype> & rhs);
 	body& operator<=(const body& rhs);
 
-	body& operator+=(float con);
-	body& operator*=(float con);
-	body& operator/=(float con);
+	body& operator+=(auxtype con);
+	body& operator*=(auxtype con);
+	body& operator/=(auxtype con);
 	bool operator==(const body & rhs);
 
 	body& UpdateBuffer(uint64_t length, uint64_t offset = 0);
 	void Reset();
 
-	float value() const;
+	auxtype value() const;
 	string valuestr(int digits = 14) const;
-	complex<float> cvalue() const;
-	void SetValue(float v);
-	void SetValue(complex<float> v);
+	complex<auxtype> cvalue() const;
+	void SetValue(auxtype v);
+	void SetValue(complex<auxtype> v);
 	void SetComplex();
 	void SetByte();
 	void SetReal();
-	bool IsComplex() const {return bufBlockSize == 2 * sizeof(float);	};
+	bool IsComplex() const {return bufBlockSize == 2 * sizeof(auxtype);	};
 	bool IsBool() const { return bufBlockSize == 1; };
 
 	void SwapContents1node(body &sec);
-	vector<float> ToVector() const;	
+	vector<auxtype> ToVector() const;	
 	
 	body &addmult(char op, body &arg, unsigned int id0 = 0, uint64_t len = 0);
-	body& each(float (*fn)(float));
-	body& each_sym(float (*fn)(float));
-	body& each_sym2(float (*fn)(float, float), const body& arg);
-	body &each(float (*fn)(complex<float>));
-	body &each(complex<float>(*fn)(float));
-	body &each(complex<float> (*fn)(complex<float>));
-	body &each(float (*fn)(float, float), const body &arg2);
-	body &each(complex<float> (*fn)(complex<float>, complex<float>), const body &arg2);
+	body& each(auxtype (*fn)(auxtype));
+	body& each_sym(auxtype (*fn)(auxtype));
+	body& each_sym2(auxtype (*fn)(auxtype, auxtype), const body& arg);
+	body &each(auxtype (*fn)(complex<auxtype>));
+	body &each(complex<auxtype>(*fn)(auxtype));
+	body &each(complex<auxtype> (*fn)(complex<auxtype>));
+	body &each(auxtype (*fn)(auxtype, auxtype), const body &arg2);
+	body &each(complex<auxtype> (*fn)(complex<auxtype>, complex<auxtype>), const body &arg2);
 
-	float* begin() { return nSamples>0 ? &buf[0] : nullptr; }
-	float* end() { return nSamples>0 ? &buf[nSamples] : nullptr; }
+	auxtype* begin() { return nSamples>0 ? &buf[0] : nullptr; }
+	auxtype* end() { return nSamples>0 ? &buf[nSamples] : nullptr; }
 
 	body &transpose();
 	body& MakeLogical();
@@ -222,11 +229,11 @@ public:
 
 	body& replacebyindex(vector<unsigned int>::iterator idBegin, vector<unsigned int>::iterator idEnd, const body& RHS);
 	body& replacebyindex(unsigned int id0, unsigned int len, const body& RHS);
-	float _max FARGS const;
-	float _min FARGS const;
-	float sum FARGS const;
-	float mean FARGS const;
-	float stdev FARGS const;
+	auxtype _max FARGS const;
+	auxtype _min FARGS const;
+	auxtype sum FARGS const;
+	auxtype mean FARGS const;
+	auxtype stdev FARGS const;
 	bool operator < (const body &rhs) const;
 
 protected:
@@ -240,7 +247,7 @@ class CSignal : public body
 {
 public:
 	int fs;
-	float tmark;
+	double tmark;
 	short snap; // 0 for regular; 1 for time seq or an object where data stack up on the same tmark (vertically), like FFT
 	uint64_t Len() const { if (fs == 2) return (nSamples-1) / nGroups; else  return nSamples / nGroups; }
 	bool operator < (const CSignal &rhs) const;
@@ -261,29 +268,29 @@ public:
 	CSignal & operator=(const CSignal & rhs);
 	CSignal & operator<=(const CSignal & rhs);
 	bool operator== (const CSignal &rhs);
-	bool operator == (float rhs);
+	bool operator == (auxtype rhs);
 	bool operator == (string rhstr);
 	CSignal & operator+=(CSignal *yy); // Concatenation
-	CSignal & operator>>=(float delta);
+	CSignal & operator>>=(double delta);
 	CSignal & operator-(void);	// Unary minus
 
 	// Retrieve signal characteristics (single channel ONLY)
 	int GetType() const;
 	int GetFs() const {return fs;};
 	void SetFs(int  newfs);
-	float* GetBuffer() {return buf;}
-	float length FARGS const;
-	float dur FARGS const;
-	float durc FARGS const;
-	float begint FARGS const;
-	float endt FARGS const;
-	float RMS FARGS const;
+	auxtype* GetBuffer() {return buf;}
+	auxtype length FARGS const;
+	double dur FARGS const;
+	double durc FARGS const;
+	auxtype begint FARGS const;
+	auxtype endt FARGS const;
+	auxtype RMS FARGS const;
 
 	CSignal &_atmost FARGS;
 	CSignal &_atleast FARGS;
 
 	CSignal & resample FARGS;
-	CSignal& _filter(const vector<float>& num, const vector<float>& den, vector<float>& initialfinal, unsigned int id0 = 0, unsigned int len = 0);
+	CSignal& _filter(const vector<auxtype>& num, const vector<auxtype>& den, vector<auxtype>& initialfinal, unsigned int id0 = 0, unsigned int len = 0);
 
 	inline bool IsEmpty() const { return fs == 1 && nSamples == 0 && tmark == 0.; }
 	/*Don't use these Is___() functions. Backward compatible only*/
@@ -301,11 +308,11 @@ public:
 	CSignal();
 	CSignal(int sampleRate); // construct with a specified sample rate.
 	CSignal(int sampleRate, unsigned int len); // construct with a specified sample rate and buffer size
-	CSignal(float value); // construct a scala with the specified value
+	CSignal(auxtype value); // construct a scala with the specified value
 	CSignal(const body & src); // copy constructor
 	CSignal(const CSignal & src); // copy constructor
-	CSignal(float *y, int  len);
-	CSignal(vector<float> vv);
+	CSignal(auxtype *y, int  len);
+	CSignal(vector<auxtype> vv);
 	CSignal(string str); // make a string CSignal
 
 	virtual ~CSignal();
@@ -337,27 +344,27 @@ public:
 		if (bufType == 'S') out += TYPEBIT_STRING;
 		else if (bufType == 'B') out += TYPEBIT_BYTE;
 		else if (bufBlockSize == 1) out += TYPEBIT_SIZE1;
-		else if (bufBlockSize == sizeof(float)) out += TYPEBIT_REAL;
-		else if (bufBlockSize == sizeof(float) *2) out += TYPEBIT_COMPLEX;
+		else if (bufBlockSize == sizeof(auxtype)) out += TYPEBIT_REAL;
+		else if (bufBlockSize == sizeof(auxtype) *2) out += TYPEBIT_COMPLEX;
 		if (tmark > 0 || (fs == 0 || fs > 500) && nSamples > 1) out += TYPEBIT_TEMPO_ONE;
 		return out;
 	};
 
 protected:
-	float _dur() { return (float)nSamples * 1000.f / fs; }// for backward compatibility 5/18. No reason to get rid of it. 10/18/2019
+	double _dur() { return (double)nSamples * 1000.f / fs; }// for backward compatibility 5/18. No reason to get rid of it. 10/18/2019
 	CSignal & operator<=(CSignal * prhs);
 	CSignal & operator%(const CSignal & v); // scale operator (absolute)
-	CSignal & operator%(float v); // scale operator (absolute)
-	CSignal & operator|(float v); // scale operator (relative)
+	CSignal & operator%(double v); // scale operator (absolute)
+	CSignal & operator|(double v); // scale operator (relative)
 	CSignal & operator|(const CSignal & RMS2adjust);
-	CSignal & operator*(pair<vector<float>, vector<float>> coef);
+	CSignal & operator*(pair<vector<double>, vector<double>> coef);
 	pair<unsigned int, uint64_t> grid() const {	return make_pair((unsigned int)round(tmark*fs/1000.), nSamples-1+ (uint64_t)round(tmark*fs / 1000.));	};
 	bool overlap(const CSignal &sec);
-	function<float(float)> op;
-	function<float(float)> op1(float me) { return [me](float you) {return me + you; }; };
-	function<float(float)> op2(float me) { return [me](float you) {return me - you; }; };
-	function<float(float)> op3(float me) { return [me](float you) {return me * you; }; };
-	function<float(float)> op4(float me) { return [me](float you) {return me / you; }; };
+	function<auxtype(auxtype)> op;
+	function<auxtype(auxtype)> op1(auxtype me) { return [me](auxtype you) {return me + you; }; };
+	function<auxtype(auxtype)> op2(auxtype me) { return [me](auxtype you) {return me - you; }; };
+	function<auxtype(auxtype)> op3(auxtype me) { return [me](auxtype you) {return me * you; }; };
+	function<auxtype(auxtype)> op4(auxtype me) { return [me](auxtype you) {return me / you; }; };
 	bool operate(const CSignal & sec, char op);
 
 private:
@@ -373,13 +380,13 @@ public:
 
 	bool operator < (const CTimeSeries & rhs) const;
 
-	CTimeSeries evoke_getval(float (CSignal::*)(unsigned int, unsigned int, void *) const, void *popt = NULL);
+	CTimeSeries evoke_getval(auxtype (CSignal::*)(unsigned int, unsigned int, void *) const, void *popt = NULL);
 	CTimeSeries & evoke_modsig(fmodify, void* popt1 = NULL, void* popt2 = NULL);
 	CTimeSeries evoke_modsig2(CSignal(*fp) (const CSignal&, void*, void*), void* popt1 = NULL, void* popt2 = NULL);
 	
-	CTimeSeries evoke_group2chain(CSignal(*func) (float*, unsigned int, void*, void*), void* pargin, void* pargout);
+	CTimeSeries evoke_group2chain(CSignal(*func) (auxtype*, unsigned int, void*, void*), void* pargin, void* pargout);
 	CTimeSeries evoke_getsig(CTimeSeries(*fgetCSignals) (const CTimeSeries&, void*), void* popt = NULL);
-	CTimeSeries evoke_getsig2(CSignal(*fp) (float*, unsigned int, void*, void*), void *popt1 = NULL, void *popt = NULL);
+	CTimeSeries evoke_getsig2(CSignal(*fp) (auxtype*, unsigned int, void*, void*), void *popt1 = NULL, void *popt = NULL);
 
 	CTimeSeries & Reset(int fs2set = 0);
 	CTimeSeries & AddChain(const CTimeSeries &sec);
@@ -389,58 +396,58 @@ public:
 	CTimeSeries & MergeChains();
 	CTimeSeries & ConnectChains();
 	CTimeSeries & reciprocal(void);	// Multiplicative inverse
-	CTimeSeries & timeshift(float tp_ms);
-	CTimeSeries & removeafter(float timems);
+	CTimeSeries & timeshift(double tp_ms);
+	CTimeSeries & removeafter(double timems);
 	CTimeSeries & Squeeze();
-	CTimeSeries & Crop(float begin_ms, float end_ms);
-	CTimeSeries & ReplaceBetweenTPs(const CTimeSeries &newsig, float t1, float t2);
-	CTimeSeries & NullIn(float tpoint);
+	CTimeSeries & Crop(double begin_ms, double end_ms);
+	CTimeSeries & ReplaceBetweenTPs(const CTimeSeries &newsig, double t1, double t2);
+	CTimeSeries & NullIn(double tpoint);
 
 	CTimeSeries & operator=(const CSignal & rhs);
 	CTimeSeries & operator=(const CTimeSeries & rhs);
 	CTimeSeries & operator<=(const CTimeSeries & rhs);
-	CTimeSeries & operator+=(float con);
-	CTimeSeries & operator*=(float con);
-	CTimeSeries & operator/=(float con);
+	CTimeSeries & operator+=(double con);
+	CTimeSeries & operator*=(double con);
+	CTimeSeries & operator/=(double con);
 	CTimeSeries & operator-(void);	// Unary minus
 	CTimeSeries & operator*=(CTimeSeries &scaleArray);
 	CTimeSeries & operator+=(CTimeSeries *yy); // Concatenation
 	CTimeSeries & operator/=(CTimeSeries &scaleArray);
-	CTimeSeries & operator>>=(float delta);
-	CTimeSeries & operator%(float v);
-	CTimeSeries & operator|(float v);
+	CTimeSeries & operator>>=(double delta);
+	CTimeSeries & operator%(double v);
+	CTimeSeries & operator|(double v);
 	CTimeSeries & operator|(CTimeSeries * RMS2adjust);
 	bool operator==(const CTimeSeries & rhs);
 
 	void setsnap(int set=1) {	for (CTimeSeries*p = this; p; p = p->chain)		p->snap = set;	};
-	bool IsAudioOnAt(float timept);
+	bool IsAudioOnAt(double timept);
 	bool chained_scalar() const;
 	void SwapContents1node(CTimeSeries &sec);
 	CTimeSeries & LogOp(CTimeSeries &rhs, int type);
 	void ReverseTime();
 
-	CTimeSeries & each(float(*fn)(float));
-	CTimeSeries& each_allownegative(float(*fn)(float));
-	CTimeSeries & each(float(*fn)(complex<float>));
-	CTimeSeries & each(float(*fn)(float, float), const CSignal &arg2);
-	CTimeSeries & each(complex<float>(*fn)(complex<float>));
-	CTimeSeries & each(complex<float>(*fn)(complex<float>, complex<float>), const CSignal&arg2);
+	CTimeSeries & each(auxtype(*fn)(auxtype));
+	CTimeSeries& each_allownegative(auxtype(*fn)(auxtype));
+	CTimeSeries & each(auxtype(*fn)(complex<auxtype>));
+	CTimeSeries & each(auxtype(*fn)(auxtype, auxtype), const CSignal &arg2);
+	CTimeSeries & each(complex<auxtype>(*fn)(complex<auxtype>));
+	CTimeSeries & each(complex<auxtype>(*fn)(complex<auxtype>, complex<auxtype>), const CSignal&arg2);
 	CTimeSeries & transpose1();
 
-	float MakeChainless();
- 	CTimeSeries * AtTimePoint(float timept);
-	pair<CTimeSeries*, int> FindChainAndID(float timept, bool begin);
+	double MakeChainless();
+ 	CTimeSeries * AtTimePoint(double timept);
+	pair<CTimeSeries*, int> FindChainAndID(double timept, bool begin);
 
 	// Constructors
 	CTimeSeries();
 	CTimeSeries(int sampleRate); // construct with a specified sample rate.
 	CTimeSeries(int sampleRate, unsigned int len); // construct with a specified sample rate and buffer size
-	CTimeSeries(float value); // construct a scalar with the specified value ---is it necessary? 5/19/2018
+	CTimeSeries(auxtype value); // construct a scalar with the specified value ---is it necessary? 5/19/2018
 	CTimeSeries(const CSignal & src);
 	CTimeSeries(const CTimeSeries & src);
 	virtual ~CTimeSeries();
 
-	float alldur() const;
+	double alldur() const;
 	bool IsEmpty() const { return chain == nullptr && CSignal::IsEmpty(); }
 
 	bool operate(const CTimeSeries & sec, char op);
@@ -469,19 +476,19 @@ public:
 
 	bool operator < (const CSignals & rhs) const;
 
-	CSignals evoke_getval(float(*)(float), void* popt = NULL);
-	CSignals evoke_getval(float (CSignal::*)(unsigned int, unsigned int, void* p) const, void *popt = NULL) ;
+	CSignals evoke_getval(auxtype(*)(auxtype), void* popt = NULL);
+	CSignals evoke_getval(auxtype (CSignal::*)(unsigned int, unsigned int, void* p) const, void *popt = NULL) ;
 	CSignals& evoke_modsig(fmodify, void* popt1 = NULL, void* popt2 = NULL);
 	CSignals evoke_modsig2(CSignal(*fp) (const CSignal&, void*, void*), void* popt1 = NULL, void* popt2 = NULL);
 
 	CSignals evoke_getsig(CTimeSeries(*fgetCSignals) (const CTimeSeries&, void*), void* popt = NULL);
-	CSignals evoke_getsig2(CSignal(*fp) (float*, unsigned int, void*, void*), void* popt1 = NULL, void* popt = NULL);
+	CSignals evoke_getsig2(CSignal(*fp) (auxtype*, unsigned int, void*, void*), void* popt1 = NULL, void* popt = NULL);
 
 	// Constructors
 	CSignals();
 	CSignals(int sampleRate);
-	CSignals(float value);
-	CSignals(float *y, int len);
+	CSignals(auxtype value);
+	CSignals(auxtype *y, int len);
 	CSignals(const CTimeSeries & src);
 	CSignals(const CSignals & src);
 	CSignals(std::string str); // make a string CSignals
@@ -489,17 +496,17 @@ public:
 	virtual ~CSignals();
 
 	bool operator==(const CSignals & rhs);
-	bool operator==(float rhs);
+	bool operator==(auxtype rhs);
 	bool operator==(std::string rhstr);
 	CSignals & operator=(const CTimeSeries & rhs);
 	CSignals & operator=(const CSignals & rhs);
-	CSignals & operator+=(float con);
+	CSignals & operator+=(auxtype con);
 	const CSignals & operator+=(CSignals *yy);
-	CSignals& operator/=(float con);
-	CSignals & operator*=(float con);
+	CSignals& operator/=(auxtype con);
+	CSignals & operator*=(auxtype con);
 	CSignals & operator%(const CSignals &targetRMS);
-	CSignals & operator%(float v);
-	CSignals & operator|(float v);
+	CSignals & operator%(auxtype v);
+	CSignals & operator|(auxtype v);
 	CSignals & operator|(const CSignals & RMS2adjust);
 
 	int IsStereo() const { return 0 + (next!=NULL); }
@@ -507,8 +514,7 @@ public:
 
 	inline bool IsEmpty() const { return next == nullptr && CTimeSeries::IsEmpty(); }
 
-	float MakeChainless();
-//	void SetValue(float v);
+	auxtype MakeChainless();
 
 	int ReadAXL(FILE* fp, bool logical, char *errstr);
 	int WriteAXL(FILE* fp);
@@ -520,14 +526,14 @@ public:
 	void SetNextChan(const CSignals& second, bool need2makeghost = false);
 	CTimeSeries *DetachNextChan() {CTimeSeries *p=next;next=NULL;return p;}
 	CSignals & Reset(int fs2set=0);
-	void SetValue(float v);
-	void SetValue(complex<float> v);
+	void SetValue(auxtype v);
+	void SetValue(complex<auxtype> v);
 
 	CSignals & reciprocal(void);
 	CSignals & operator-(void);
 	CSignals & operator<=(const CSignals & rhs); // ghost assignment operator2
 	CSignals & operator<=(CSignals * prhs); // ghost assignment operator2
-	CSignals & operator>>=(float delta);
+	CSignals & operator>>=(double delta);
 	CSignals & Crop(const CSignals& timepoints);
 
 	CSignals & ReplaceBetweenTPs(const CSignals &newsig, const CSignals& timepoints);
@@ -535,18 +541,18 @@ public:
 
 	void setsnap(int set=1) {	CTimeSeries::setsnap(set); if (next) next->CTimeSeries::setsnap(set);	};
 
-	CSignals & NullIn(float tpoint);
-	float alldur() const;
+	CSignals & NullIn(double tpoint);
+	double alldur() const;
 
-	CSignals & each(float (*fn)(float));
-	CSignals& each_allownegative(float(*fn)(float));
-	CSignals & each(float (*fn)(complex<float>));
-	CSignals & each(complex<float> (*fn)(complex<float>));
+	CSignals & each(auxtype (*fn)(auxtype));
+	CSignals& each_allownegative(auxtype(*fn)(auxtype));
+	CSignals & each(auxtype (*fn)(complex<auxtype>));
+	CSignals & each(complex<auxtype> (*fn)(complex<auxtype>));
 	CSignals & transpose1();
-	int getBufferLength(float & lasttp, float & lasttp_with_silence, float blockDur) const;
-	void nextCSignals(float lasttp, float lasttp_with_silence, CSignals &ghcopy);
+	int getBufferLength(double & lasttp, double& lasttp_with_silence, double blockDur) const;
+	void nextCSignals(double lasttp, double lasttp_with_silence, CSignals &ghcopy);
 	template<typename T>
-	int makebuffer(T * outbuffer, int length, float lasttp, float lasttp_with_silence, CSignals &ghcopy)
+	int makebuffer(T * outbuffer, int length, double lasttp, double lasttp_with_silence, CSignals &ghcopy)
 	{
 		int nChan = next == nullptr ? 1 : 2;
 		memset(outbuffer, 0, sizeof(T) * length * nChan);
@@ -636,7 +642,7 @@ public:
 	CVar& Reset(int fs2set = 0);
 	bool IsGO() const;
 
-	CSignals evoke_getsig2(CSignal(*fp) (float*, unsigned int, void*, void*), void* popt1 = NULL, void* popt = NULL);
+	CSignals evoke_getsig2(CSignal(*fp) (auxtype*, unsigned int, void*, void*), void* popt1 = NULL, void* popt = NULL);
 
 	CVar & bringnext();
 
@@ -646,7 +652,7 @@ public:
 
 	bool operator==(const CVar& rhs);
 	bool operator==(string rhstr);
-	bool operator==(float val);
+	bool operator==(auxtype val);
 
 	CVar & initcell(CVar &sec);
 	CVar & appendcell(CVar &sec);

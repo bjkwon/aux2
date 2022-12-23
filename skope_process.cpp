@@ -330,7 +330,7 @@ void skope::adjust_buf(CVar& lvar, const CVar& lhs_index, const CVar& robj, bool
 	{ // truncate the LHS var buffer
 		if (contig)
 		{
-			memmove(lvar.buf + (uint64_t)lhs_index.buf[0] - 1, lvar.buf + (uint64_t)lhs_index.buf[lhs_index.nSamples - 1], lhs_index.nSamples * sizeof(float));
+			memmove(lvar.buf + (uint64_t)lhs_index.buf[0] - 1, lvar.buf + (uint64_t)lhs_index.buf[lhs_index.nSamples - 1], lhs_index.nSamples * sizeof(auxtype));
 			lvar.nSamples -= lhs_index.nSamples;
 		}
 		else
@@ -347,11 +347,11 @@ void skope::adjust_buf(CVar& lvar, const CVar& lhs_index, const CVar& robj, bool
 	{
 		auto nCopied = lvar.nSamples + 1 - (uint16_t)lhs_index.buf[0];
 		lvar.UpdateBuffer(lvar.nSamples + robj.nSamples);
-		float* pv = lvar.buf;
+		auxtype* pv = lvar.buf;
 		auto j = (uint64_t)lhs_index.buf[0] - 1;
-		memmove(&pv[j + robj.nSamples], &pv[j], nCopied * sizeof(float));
+		memmove(&pv[j + robj.nSamples], &pv[j], nCopied * sizeof(auxtype));
 		auto pval = robj.buf;
-		memcpy(&pv[j], pval, robj.nSamples * sizeof(float));
+		memcpy(&pv[j], pval, robj.nSamples * sizeof(auxtype));
 	}
 	else if (lhs_index.nSamples == robj.nSamples) {
 		if (contig)

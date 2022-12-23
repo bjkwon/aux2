@@ -63,9 +63,9 @@ Cfunction set_builtin_function_colon(fGate fp)
 
 void _colon(skope* past, const AstNode* pnode, const vector<CVar>& args)
 {
-	float val1 = past->Sig.value();
-	float val2 = args[0].value();
-	float step;
+	auxtype val1 = past->Sig.value();
+	auxtype val2 = args[0].value();
+	auxtype step;
 	if (ISSCALAR(args.back().type()))
 		step = args[1].value();
 	else
@@ -358,10 +358,10 @@ void CAstSigEnv::InitBuiltInFunctions()
 	//builtin[name] = ft;
 }
 
-static inline complex<float> r2c_sqrt(complex<float> x) { return sqrt(x); }
-static inline complex<float> r2c_log(complex<float> x) { return log(x); }
-static inline complex<float> r2c_log10(complex<float> x) { return log10(x); }
-static inline complex<float> r2c_pow(complex<float> x, complex<float> y) { return pow(x, y); }
+static inline complex<auxtype> r2c_sqrt(complex<auxtype> x) { return sqrt(x); }
+static inline complex<auxtype> r2c_log(complex<auxtype> x) { return log(x); }
+static inline complex<auxtype> r2c_log10(complex<auxtype> x) { return log10(x); }
+static inline complex<auxtype> r2c_pow(complex<auxtype> x, complex<auxtype> y) { return pow(x, y); }
 
 bool isgraphicfunc(string fname)
 {

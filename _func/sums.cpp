@@ -59,29 +59,29 @@ Cfunction set_builtin_function_lens(fGate fp)
 	return ft;
 }
 
-CSignal __sum(float *buf, unsigned int len, void* pargin, void* pargout)
+CSignal __sum(auxtype *buf, unsigned int len, void* pargin, void* pargout)
 {
 	auto res = accumulate(buf, buf + len, 0.f);
 	return CSignal(res);
 }
 
-CSignal __mean(float* buf, unsigned int len, void* pargin, void* pargout)
+CSignal __mean(auxtype* buf, unsigned int len, void* pargin, void* pargout)
 {
 	auto res = accumulate(buf, buf + len, 0.f);
 	return CSignal(res/len);
 }
 
-CSignal __length(float* buf, unsigned int len, void* pargin, void* pargout)
+CSignal __length(auxtype* buf, unsigned int len, void* pargin, void* pargout)
 {
-	return CSignal((float)len);
+	return CSignal((auxtype)len);
 }
 
-CSignal __stdev(float* buf, unsigned int len, void* pargin, void* pargout)
+CSignal __stdev(auxtype* buf, unsigned int len, void* pargin, void* pargout)
 {
 	auto sum = std::accumulate(buf, buf + len, 0.f);
 	auto mean = sum / len;
 	auto adder = 0.0f;
-	std::for_each(buf, buf + len, [&](const float d) {
+	std::for_each(buf, buf + len, [&](const auxtype d) {
 		adder += (d - mean) * (d - mean);
 		});
 	auto stdev = sqrtf(adder / (len - 1));
@@ -106,7 +106,7 @@ void _lens(skope* past, const AstNode* pnode, const vector<CVar>& args)
 	{
 		if (!past->Sig.cell.empty())
 		{
-			past->Sig.SetValue((float)past->Sig.cell.size());
+			past->Sig.SetValue((auxtype)past->Sig.cell.size());
 			past->Sig.cell.clear();
 		}
 		else
@@ -114,9 +114,9 @@ void _lens(skope* past, const AstNode* pnode, const vector<CVar>& args)
 	}
 	else if (fname == "size")
 	{
-		CVar out((float)past->Sig.nGroups);
+		CVar out((auxtype)past->Sig.nGroups);
 		out.UpdateBuffer(2);
-		out.buf[1] = (float)past->Sig.Len();
+		out.buf[1] = (auxtype)past->Sig.Len();
 		past->Sig = out;
 	}
 }

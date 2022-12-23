@@ -43,8 +43,8 @@ int CSignal::operator_prep(const CSignal& sec, uint64_t &idx4op1, uint64_t &idx4
 	nGroups = sec.nGroups;
 	if (i1 == 0 && i2 == 0 && f2 == 0)
 	{
-		float val = buf[0];
-		for_each(buf + 1, buf + nSamples, [val](float &v) { v = val; });
+		auxtype val = buf[0];
+		for_each(buf + 1, buf + nSamples, [val](auxtype &v) { v = val; });
 	}
 	if (i2 < i1)
 	{
@@ -113,41 +113,41 @@ bool CSignal::operate(const CSignal& sec, char op)
 	{
 		if (sec.IsComplex())
 		{
-			complex<float > val = sec.cvalue();
+			complex<auxtype > val = sec.cvalue();
 			if (!IsComplex()) SetComplex();
 			if (op == '+')
-				for_each(cbuf, cbuf + nSamples, [val](complex<float >& v) { v += val; });
+				for_each(cbuf, cbuf + nSamples, [val](complex<auxtype >& v) { v += val; });
 			else if (op == '-')
-				for_each(cbuf, cbuf + nSamples, [val](complex<float >& v) { v -= val; });
+				for_each(cbuf, cbuf + nSamples, [val](complex<auxtype >& v) { v -= val; });
 			else if (op == '*')
-				for_each(cbuf, cbuf + nSamples, [val](complex<float >& v) { v *= val; });
+				for_each(cbuf, cbuf + nSamples, [val](complex<auxtype >& v) { v *= val; });
 			else if (op == '/')
-				for_each(cbuf, cbuf + nSamples, [val](complex<float >& v) { v /= val; });
+				for_each(cbuf, cbuf + nSamples, [val](complex<auxtype >& v) { v /= val; });
 		}
 		else
 		{
-			float  val = sec.value();
+			auxtype  val = sec.value();
 			if (IsComplex())
 			{
 				if (op == '+')
-					for_each(cbuf, cbuf + nSamples, [val](complex<float >& v) { v += val; });
+					for_each(cbuf, cbuf + nSamples, [val](complex<auxtype >& v) { v += val; });
 				else if (op == '-')
-					for_each(cbuf, cbuf + nSamples, [val](complex<float >& v) { v -= val; });
+					for_each(cbuf, cbuf + nSamples, [val](complex<auxtype >& v) { v -= val; });
 				else if (op == '*')
-					for_each(cbuf, cbuf + nSamples, [val](complex<float >& v) { v *= val; });
+					for_each(cbuf, cbuf + nSamples, [val](complex<auxtype >& v) { v *= val; });
 				else if (op == '/')
-					for_each(cbuf, cbuf + nSamples, [val](complex<float >& v) { v /= val; });
+					for_each(cbuf, cbuf + nSamples, [val](complex<auxtype >& v) { v /= val; });
 			}
 			else
 			{
 				if (op == '+')
-					for_each(buf, buf + nSamples, [val](float & v) { v += val; });
+					for_each(buf, buf + nSamples, [val](auxtype & v) { v += val; });
 				else if (op == '-')
-					for_each(buf, buf + nSamples, [val](float & v) { v -= val; });
+					for_each(buf, buf + nSamples, [val](auxtype & v) { v -= val; });
 				else if (op == '*')
-					for_each(buf, buf + nSamples, [val](float & v) { v *= val; });
+					for_each(buf, buf + nSamples, [val](auxtype & v) { v *= val; });
 				else if (op == '/')
-					for_each(buf, buf + nSamples, [val](float & v) { v /= val; });
+					for_each(buf, buf + nSamples, [val](auxtype & v) { v /= val; });
 			}
 		}
 		snap += sec.snap;
@@ -171,40 +171,40 @@ bool CSignal::operate(const CSignal& sec, char op)
 		int k = 0;
 		if (sec.IsComplex())
 		{
-			complex<float>* cbuf2 = sec.cbuf + offset;
+			complex<auxtype>* cbuf2 = sec.cbuf + offset;
 			if (op == '+')
-				for_each(cbuf + idBegin, cbuf + idEnd, [cbuf2, &k](complex<float>& v) { v += cbuf2[k++]; });
+				for_each(cbuf + idBegin, cbuf + idEnd, [cbuf2, &k](complex<auxtype>& v) { v += cbuf2[k++]; });
 			else if (op == '-')
-				for_each(cbuf + idBegin, cbuf + idEnd, [cbuf2, &k](complex<float>& v) { v -= cbuf2[k++]; });
+				for_each(cbuf + idBegin, cbuf + idEnd, [cbuf2, &k](complex<auxtype>& v) { v -= cbuf2[k++]; });
 			else if (op == '*')
-				for_each(cbuf + idBegin, cbuf + idEnd, [cbuf2, &k](complex<float>& v) { v *= cbuf2[k++]; });
+				for_each(cbuf + idBegin, cbuf + idEnd, [cbuf2, &k](complex<auxtype>& v) { v *= cbuf2[k++]; });
 			else if (op == '/')
-				for_each(cbuf + idBegin, cbuf + idEnd, [cbuf2, &k](complex<float>& v) { v /= cbuf2[k++]; });
+				for_each(cbuf + idBegin, cbuf + idEnd, [cbuf2, &k](complex<auxtype>& v) { v /= cbuf2[k++]; });
 		}
 		else
 		{
-			float* buf2 = sec.buf + offset;
+			auxtype* buf2 = sec.buf + offset;
 			if (IsComplex())
 			{
 				if (op == '+')
-					for_each(cbuf + idBegin, cbuf + idEnd, [buf2, &k](complex<float>& v) { v += buf2[k++]; });
+					for_each(cbuf + idBegin, cbuf + idEnd, [buf2, &k](complex<auxtype>& v) { v += buf2[k++]; });
 				else if (op == '-')
-					for_each(cbuf + idBegin, cbuf + idEnd, [buf2, &k](complex<float>& v) { v -= buf2[k++]; });
+					for_each(cbuf + idBegin, cbuf + idEnd, [buf2, &k](complex<auxtype>& v) { v -= buf2[k++]; });
 				else if (op == '*')
-					for_each(cbuf + idBegin, cbuf + idEnd, [buf2, &k](complex<float>& v) { v *= buf2[k++]; });
+					for_each(cbuf + idBegin, cbuf + idEnd, [buf2, &k](complex<auxtype>& v) { v *= buf2[k++]; });
 				else if (op == '/')
-					for_each(cbuf + idBegin, cbuf + idEnd, [buf2, &k](complex<float>& v) { v /= buf2[k++]; });
+					for_each(cbuf + idBegin, cbuf + idEnd, [buf2, &k](complex<auxtype>& v) { v /= buf2[k++]; });
 			}
 			else
 			{
 				if (op == '+')
-					for_each(buf + idBegin, buf + idEnd, [buf2, &k](float& v) { v += buf2[k++]; });
+					for_each(buf + idBegin, buf + idEnd, [buf2, &k](auxtype& v) { v += buf2[k++]; });
 				else if (op == '-')
-					for_each(buf + idBegin, buf + idEnd, [buf2, &k](float& v) { v -= buf2[k++]; });
+					for_each(buf + idBegin, buf + idEnd, [buf2, &k](auxtype& v) { v -= buf2[k++]; });
 				else if (op == '*')
-					for_each(buf + idBegin, buf + idEnd, [buf2, &k](float& v) { v *= buf2[k++]; });
+					for_each(buf + idBegin, buf + idEnd, [buf2, &k](auxtype& v) { v *= buf2[k++]; });
 				else if (op == '/')
-					for_each(buf + idBegin, buf + idEnd, [buf2, &k](float& v) { v /= buf2[k++]; });
+					for_each(buf + idBegin, buf + idEnd, [buf2, &k](auxtype& v) { v /= buf2[k++]; });
 			}
 		}
 	}
@@ -412,12 +412,12 @@ bool body::operator==(const body & rhs)
 		if (bufType!='S' && logbuf[nSamples - 1] != rhs.logbuf[nSamples - 1])
 			return false;
 	}
-	else if (bufBlockSize == sizeof(float))
+	else if (bufBlockSize == sizeof(auxtype))
 		for (unsigned int k = 0; k < nSamples; k++)
 		{
 			if (buf[k] != rhs.buf[k]) return false;
 		}
-	else //if (bufBlockSize == 2*sizeof(float))
+	else //if (bufBlockSize == 2*sizeof(auxtype))
 		for (unsigned int k = 0; k < nSamples; k++)
 		{
 			if (cbuf[k] != rhs.cbuf[k]) return false;
@@ -442,9 +442,9 @@ CVar & CVar::operator+=(CVar * psec)
 
 CSignal& CSignal::operator-(void) 	// Unary minus
 {
-	if (bufBlockSize == sizeof(float))
+	if (bufBlockSize == sizeof(auxtype))
 		for (unsigned int k = 0; k < nSamples; k++) buf[k] = -buf[k];
-	if (bufBlockSize == 2 * sizeof(float))
+	if (bufBlockSize == 2 * sizeof(auxtype))
 		for (unsigned int k = 0; k < nSamples; k++) cbuf[k] = -cbuf[k];
 	return *this;
 }
@@ -461,19 +461,19 @@ CSignals& CSignals::operator-(void)	// Unary minus
 	return *this;
 }
 
-CSignal & CSignal::operator*(pair<vector<float>, vector<float>> coef)
+CSignal & CSignal::operator*(pair<vector<auxtype>, vector<auxtype>> coef)
 { // modulate this with coef
-	vector<float> tpoints = coef.first;
-	vector<float> vals = coef.second;
+	vector<auxtype> tpoints = coef.first;
+	vector<auxtype> vals = coef.second;
 	//assumption: tpoints is increasing 
 	auto itval = vals.begin();
 	for (auto it = tpoints.begin(); it != tpoints.end() - 1; it++)
 	{
 		if (*it > endt()) continue;
-		float t1 = *it + tmark;
-		float t2 = *(it + 1) + tmark;
-		float slope = (*(itval + 1) - *itval) / (t2 - t1);
-		float slopePerSample = (*(itval + 1) - *itval) / (t2 - t1) / fs * 1000.;
+		auxtype t1 = *it + tmark;
+		auxtype t2 = *(it + 1) + tmark;
+		auxtype slope = (*(itval + 1) - *itval) / (t2 - t1);
+		auxtype slopePerSample = (*(itval + 1) - *itval) / (t2 - t1) / fs * 1000.;
 		int beginID = max(0, (int)round((t1 - tmark)*fs / 1000.));
 		int endID = min((int)nSamples, (int)round((t2 - tmark)*fs / 1000.));
 		for (int k = beginID; k < endID; k++)
@@ -483,21 +483,21 @@ CSignal & CSignal::operator*(pair<vector<float>, vector<float>> coef)
 	return *this;
 }
 
-CSignal & CSignal::operator%(float v)
+CSignal & CSignal::operator%(auxtype v)
 { // "at" operator; set the RMS at ____
-	float rms = RMS();
-	float factor = v - rms;
+	auxtype rms = RMS();
+	auxtype factor = v - rms;
 	*this *= pow(10, factor / 20.);
 	return *this;
 }
-CTimeSeries & CTimeSeries::operator%(float v)
+CTimeSeries & CTimeSeries::operator%(auxtype v)
 {
 	CSignal::operator%(v);
 	for (CTimeSeries *p = this; p; p = p->chain)
 		p->CSignal::operator%(v);
 	return *this;
 }
-CSignals & CSignals::operator%(float v)
+CSignals & CSignals::operator%(auxtype v)
 {
 	CTimeSeries::operator%(v);
 	if (next)
@@ -525,14 +525,14 @@ CTimeSeries & CTimeSeries::operator%(CTimeSeries * targetRMS)
 	}
 	if (timescalar)
 	{ // time scalars 
-		vector<float> _tpoints, vals;
+		vector<auxtype> _tpoints, vals;
 		bool relTime = targetRMS->fs == 0;
 		for (CTimeSeries *p = targetRMS; p; p = p->chain)
 		{
 			_tpoints.push_back(p->tmark);
 			vals.push_back(p->value());
 		}
-		vector<float> tpoints(_tpoints);
+		vector<auxtype> tpoints(_tpoints);
 		if (relTime)
 		{
 			for (auto &tp : tpoints)
@@ -552,7 +552,7 @@ CTimeSeries & CTimeSeries::operator%(CTimeSeries * targetRMS)
 	}
 	else
 	{
-		float v = targetRMS->buf[0];
+		auxtype v = targetRMS->buf[0];
 		CSignal::operator%(v);
 		for (CTimeSeries *p = chain, *q = targetRMS->chain; p; p = p->chain)
 		{
@@ -586,19 +586,19 @@ CSignals & CSignals::operator%(const CSignals &targetRMS)
 	return *this;
 }
 
-CSignal & CSignal::operator|(float v)
+CSignal & CSignal::operator|(auxtype v)
 { // Set the RMS at ____ (go up or down)
 	*this *= pow(10, v / 20.);
 	return *this;
 }
-CTimeSeries & CTimeSeries::operator|(float v)
+CTimeSeries & CTimeSeries::operator|(auxtype v)
 {
 	CSignal::operator|(v);
 	for (CTimeSeries *p = this; p; p = p->chain)
 		p->CSignal::operator|(v);
 	return *this;
 }
-CSignals & CSignals::operator|(float v)
+CSignals & CSignals::operator|(auxtype v)
 {
 	CTimeSeries::operator|(v);
 	if (next)
@@ -613,7 +613,7 @@ CSignal & CSignal::operator|(const CSignal & RMS2adjust)
 }
 CTimeSeries & CTimeSeries::operator|(CTimeSeries * RMS2adjust)
 {
-	float v = RMS2adjust->buf[0];
+	auxtype v = RMS2adjust->buf[0];
 	CSignal::operator|(v);
 	for (CTimeSeries *p = chain, *q = RMS2adjust->chain; p; p = p->chain)
 	{
@@ -652,11 +652,11 @@ bool body::operator < (const body &rhs) const
 	if (nGroups > rhs.nGroups) return false;
 	if (bufBlockSize < rhs.bufBlockSize) return true;
 	if (bufBlockSize > rhs.bufBlockSize) return false;
-	if (bufBlockSize== sizeof(float)) {
+	if (bufBlockSize== sizeof(auxtype)) {
 		for (unsigned int k = 0; k < nSamples; k++)
 			if (buf[k] < rhs.buf[k]) return true;
 	}
-        else if (bufBlockSize == 2*sizeof(float)) {
+        else if (bufBlockSize == 2*sizeof(auxtype)) {
 		for (unsigned int k = 0; k < nSamples; k++)
 			if (real(cbuf[k]) < real(rhs.cbuf[k]) && imag(cbuf[k]) < imag(rhs.cbuf[k])) return true;
 	}
@@ -847,43 +847,43 @@ CSignals& CSignals::operator<=(CSignals* rhs)
 	return *this;
 }
 
-float CSignal::begint(unsigned int id0, unsigned int len, void* p) const
+auxtype CSignal::begint(unsigned int id0, unsigned int len, void* p) const
 {
 	return tmark + id0 * 1000.f / fs;
 }
 
-float CSignal::endt(unsigned int id0, unsigned int len, void* p) const
+auxtype CSignal::endt(unsigned int id0, unsigned int len, void* p) const
 {
 	return begint(id0, len) + dur(id0, len);
 }
 
-float CSignal::length(unsigned int id0, unsigned int len, void* p) const
+auxtype CSignal::length(unsigned int id0, unsigned int len, void* p) const
 {
 	if (len == 0) len = nSamples;
 	if (IsString())
-		return (float)strlen(strbuf);
+		return (auxtype)strlen(strbuf);
 	else
-		return (float)len;
+		return (auxtype)len;
 }
-float CSignal::dur(unsigned int id0, unsigned int len, void* p) const
+double CSignal::dur(unsigned int id0, unsigned int len, void* p) const
 {
 	if (len == 0) len = nSamples;
 	return 1000.f * len / fs;
 }
 
-inline static float _getdB(float x)
+inline static auxtype _getdB(auxtype x)
 {
 	// 3 dB is added to make rms of full scale sinusoid 0 dB
 	return 20 * log10f(x) + 3.0103f;
 }
 // Left for Legacy use only, called by SetLevel()
-// Upgrading to follow the new convention in  CSignal __rms(float* buf, unsigned int len, void* pargin, void* pargout)
+// Upgrading to follow the new convention in  CSignal __rms(auxtype* buf, unsigned int len, void* pargin, void* pargout)
 // takes more work than desired. 1/6/2022
-float CSignal::RMS(unsigned int id0, unsigned int len, void* p) const
+auxtype CSignal::RMS(unsigned int id0, unsigned int len, void* p) const
 {
 	if (len == 0) len = nSamples;
-	if (len == 0) return std::numeric_limits<float>::infinity();
-	float val(0);
-	for_each(buf + id0, buf + id0 + len, [&val](float& v) {val += v * v; });
+	if (len == 0) return std::numeric_limits<auxtype>::infinity();
+	auxtype val(0);
+	for_each(buf + id0, buf + id0 + len, [&val](auxtype& v) {val += v * v; });
 	return _getdB(sqrt(val / len));
 }

@@ -80,9 +80,9 @@ CVar* skope::Try_here(const AstNode* pnode, AstNode* p)
 			SetVar("body", &msg, &Vars[name]);
 			msg = e.udffile;
 			SetVar("source", &msg, &Vars[name]);
-			msg.SetValue((float)e.line);
+			msg.SetValue((auxtype)e.line);
 			SetVar("errline", &msg, &Vars[name]);
-			msg.SetValue((float)e.col);
+			msg.SetValue((auxtype)e.col);
 			SetVar("errcol", &msg, &Vars[name]);
 			process_statement(pnode_try->alt);
 			skope* pbaskope = NULL;

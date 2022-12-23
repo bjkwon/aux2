@@ -26,7 +26,7 @@ Cfunction set_builtin_function_minmax(fGate fp)
 	return ft;
 }
 
-CSignal __max_aux2(float *buf, unsigned int len, void* pargin, void* pargout)
+CSignal __max_aux2(auxtype *buf, unsigned int len, void* pargin, void* pargout)
 { // assume: parg is a pointer to a CTimeSeries obj; used to store the index of max/min 
 	auto maxy = max_element(buf, buf + len);
 	CSignal out(*maxy);
@@ -34,13 +34,13 @@ CSignal __max_aux2(float *buf, unsigned int len, void* pargin, void* pargout)
 	if (pargout)
 	{
 		int ind = (int)(maxy - buf);
-		((CTimeSeries*)pargout)->SetValue((float)ind + 1); // one-based index
+		((CTimeSeries*)pargout)->SetValue((auxtype)ind + 1); // one-based index
 		((CTimeSeries*)pargout)->SetFs(*(int*)pargin);
 	}
 	return out;
 }
 
-CSignal __min_aux2(float* buf, unsigned int len, void* pargin, void* pargout)
+CSignal __min_aux2(auxtype* buf, unsigned int len, void* pargin, void* pargout)
 { // assume: parg is a pointer to a CTimeSeries obj; used to store the index of max/min 
 	auto miny = min_element(buf, buf + len);
 	CTimeSeries out(*miny);
@@ -48,7 +48,7 @@ CSignal __min_aux2(float* buf, unsigned int len, void* pargin, void* pargout)
 	if (pargout)
 	{
 		int ind = (int)(miny - buf);
-		((CTimeSeries*)pargout)->SetValue((float)ind + 1); // one-based index
+		((CTimeSeries*)pargout)->SetValue((auxtype)ind + 1); // one-based index
 		((CTimeSeries*)pargout)->SetFs(*(int*)pargin);
 	}
 	return out;
@@ -61,7 +61,7 @@ CTimeSeries __max_aux(const CTimeSeries& base, void* parg)
 	if (parg)
 	{
 		int ind = (int)(maxy - base.buf);
-		((CTimeSeries*)parg)->SetValue((float)ind+1); // one-based index
+		((CTimeSeries*)parg)->SetValue((auxtype)ind+1); // one-based index
 	}
 	return out;
 }
@@ -73,7 +73,7 @@ CTimeSeries __min_aux(const CTimeSeries& base, void* parg)
 	if (parg)
 	{
 		int ind = (int)(miny - base.buf);
-		((CTimeSeries*)parg)->SetValue((float)ind+1); // one-based index
+		((CTimeSeries*)parg)->SetValue((auxtype)ind+1); // one-based index
 	}
 	return out;
 }

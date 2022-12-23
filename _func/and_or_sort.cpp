@@ -108,7 +108,7 @@ void _andor2(skope* past, const AstNode* pnode, const vector<CVar>& args)
 }
 void _andor(skope* past, const AstNode* pnode, const vector<CVar>& args)
 { // single arguments
-	float res;
+	auxtype res;
 	if (!strcmp(pnode->str, "and")) {
 		res = 1.f;
 		if (past->Sig.IsLogical())
@@ -155,16 +155,16 @@ int dcompR(const void* arg1, const void* arg2)
 	else	return -1;
 }
 
-static void __sort(float* buf, uint64_t len, void* parg, void* parg2)
+static void __sort(auxtype* buf, uint64_t len, void* parg, void* parg2)
 {
 	int8_t bufBlockSize = *(int8_t*)parg;
 	int8_t order = *(int8_t*)parg2;
-	if (bufBlockSize == sizeof(float))
+	if (bufBlockSize == sizeof(auxtype))
 	{
 		if (order > 0)
-			qsort((void*)buf, len, bufBlockSize, dcomp<float>);
+			qsort((void*)buf, len, bufBlockSize, dcomp<auxtype>);
 		else
-			qsort((void*)buf, len, bufBlockSize, dcompR<float>);
+			qsort((void*)buf, len, bufBlockSize, dcompR<auxtype>);
 	}
 	else if (bufBlockSize == 1)
 	{
@@ -182,11 +182,11 @@ void _sort(skope* past, const AstNode* pnode, const vector<CVar>& args)
 	past->Sig.evoke_modsig(__sort, &bufBlockSize, &order);
 }
 
-static void __atmost(float* buf, uint64_t len, void* parg, void* parg2)
+static void __atmost(auxtype* buf, uint64_t len, void* parg, void* parg2)
 {
 	CVar *param = (CVar*)parg;
 	if (param->IsScalar()) {
-		float limit = param->value();
+		auxtype limit = param->value();
 		for (uint64_t k = 0; k < len; k++)
 			if (buf[k] > limit) buf[k] = limit;
 	}
@@ -196,11 +196,11 @@ static void __atmost(float* buf, uint64_t len, void* parg, void* parg2)
 	}
 }
 
-static void __atleast(float* buf, uint64_t len, void* parg, void* parg2)
+static void __atleast(auxtype* buf, uint64_t len, void* parg, void* parg2)
 {
 	CVar *param = (CVar*)parg;
 	if (param->IsScalar()) {
-		float limit = param->value();
+		auxtype limit = param->value();
 		for (uint64_t k = 0; k < len; k++)
 			if (buf[k] < limit) buf[k] = limit;
 	}

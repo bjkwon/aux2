@@ -7,7 +7,7 @@
 #include "psycon.tab.h"
 
 #include <algorithm>
-#define PI	3.141592f
+#define PI	3.141592
 
 #ifdef _WIN32
 #include <windows.h>
@@ -251,7 +251,7 @@ public:
 	void Concatenate(const AstNode* pnode, AstNode* p);
 	CVar* ConditionalOperation(const AstNode* pnode, AstNode* p);
 	CVar* SetLevel(const AstNode* pnode, AstNode* p);
-	float find_endpoint(const AstNode* p, const CVar& var);
+	double find_endpoint(const AstNode* p, const CVar& var);
 	void interweave_indices(CVar& isig, CVar& isig2, unsigned int len);
 	void index_array_satisfying_condition(CVar& isig);
 	CVar* InitCell(const AstNode* pnode, AstNode* p);

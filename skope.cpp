@@ -373,7 +373,7 @@ CVar* skope::TSeq(const AstNode* pnode, AstNode* p)
 			{
 				unsigned int len = tsig2.Len();
 				tp.UpdateBuffer(len);
-				memcpy(tp.buf, tsig2.buf + len * k, len * sizeof(float));
+				memcpy(tp.buf, tsig2.buf + len * k, len * sizeof(auxtype));
 			}
 		}
 		if (k == 0) *run = tp;
@@ -875,8 +875,8 @@ void skope::CallUDF(const AstNode* pnode4UDFcalled, CVar* pBase, size_t nargout_
 
 	// u.debug.status is set when debug key is pressed (F5, F10, F11), prior to this call.
 	// For an initial entry UDF, u.debug.status should be null
-	CVar nargin((float)u.nargin);
-	CVar nargout((float)nargout_requested);
+	CVar nargin((auxtype)u.nargin);
+	CVar nargout((auxtype)nargout_requested);
 	SetVar("nargin", &nargin);
 	SetVar("nargout", &nargout);
 	// If the udf has multiple statements, p->type is N_BLOCK), then go deeper
@@ -1392,8 +1392,8 @@ CVar* skope::NodeVector(const AstNode* pn)
 	bool GO0, GO = false;
 	unsigned int ngroups0, ngroups = 0;
 	vector<bool> bbuf;
-	vector<float> dbuf;
-	vector<complex<float>> cbuf;
+	vector<auxtype> dbuf;
+	vector<complex<auxtype>> cbuf;
 	unsigned int nCount = 0;
 	for (p = p->alt; p; p = p->next, nCount++)
 	{
@@ -1409,7 +1409,7 @@ CVar* skope::NodeVector(const AstNode* pn)
 				if (psig->GetFs() == 3)
 					for (unsigned int k = 0; k < psig->nSamples; k++) dbuf.push_back(psig->buf[k]);
 				else
-					dbuf.push_back((float)(INT_PTR)pgo); // psig is the address of Sig, which is a copy; pgo is correct 9/28/2020
+					dbuf.push_back((auxtype)(INT_PTR)pgo); // psig is the address of Sig, which is a copy; pgo is correct 9/28/2020
 			}
 			else if (psig->IsBool())
 				for (unsigned int k = 0; k < psig->nSamples; k++) bbuf.push_back(psig->logbuf[k]);
@@ -1439,7 +1439,7 @@ CVar* skope::NodeVector(const AstNode* pn)
 					if (psig->GetFs() == 3)
 						for (unsigned int k = 0; k < psig->nSamples; k++) dbuf.push_back(psig->buf[k]);
 					else
-						dbuf.push_back((float)(INT_PTR)pgo);
+						dbuf.push_back((auxtype)(INT_PTR)pgo);
 				}
 				else if (psig->IsBool() && !psig->IsGO())
 					throw exception_etc(*this, pn, "Attempting to append a bool element to a non-bool array").raise();
@@ -1497,7 +1497,7 @@ CVar* skope::NodeVector(const AstNode* pn)
 
 CSignals skope::gettimepoints(CTimeSeries* pobj, const AstNode* pnode)
 { // assume: pnode type is N_TIME_EXTRACT
-	float endpoint;
+	auxtype endpoint;
 	CTimeSeries* pts = pobj;
 	for (; pts; pts = pts->chain)
 		endpoint = pts->CSignal::endt();
@@ -1610,7 +1610,7 @@ void skope::Concatenate(const AstNode* pnode, AstNode* p)
 		//if (Sig.GetType() == CSIG_HDLARRAY)
 		//{
 		//	Sig.UpdateBuffer(Sig.nSamples + 1);
-		//	Sig.buf[Sig.nSamples - 1] = (float)(INT_PTR)tp.front();
+		//	Sig.buf[Sig.nSamples - 1] = (auxtype)(INT_PTR)tp.front();
 		//}
 		return;
 	}
@@ -1637,8 +1637,8 @@ void skope::Concatenate(const AstNode* pnode, AstNode* p)
 			for (unsigned int k, kk = 0; kk < Sig.nGroups; kk++)
 			{
 				k = Sig.nGroups - kk - 1;
-				memcpy(Sig.buf + len1 * k, Sig.buf + len0 * k, sizeof(float) * len0);
-				memcpy(Sig.buf + len1 * k + len0, tsig.buf + lent * k, sizeof(float) * lent);
+				memcpy(Sig.buf + len1 * k, Sig.buf + len0 * k, sizeof(auxtype) * len0);
+				memcpy(Sig.buf + len1 * k + len0, tsig.buf + lent * k, sizeof(auxtype) * lent);
 			}
 		}
 		else
@@ -1812,12 +1812,12 @@ CVar* skope::SetLevel(const AstNode* pnode, AstNode* p)
 	return &Sig;
 }
 
-float skope::find_endpoint(const AstNode* p, const CVar &var)
+double skope::find_endpoint(const AstNode* p, const CVar &var)
 {  // p is the node the indexing starts (e.g., child of N_ARGS... wait is it also child of conditional p?
 	if (p->next) // first index in 2D
-		return (float)var.nGroups;
+		return (double)var.nGroups;
 	else
-		return (float)var.nSamples;
+		return (double)var.nSamples;
 }
 
 void skope::interweave_indices(CVar& isig, CVar& isig2, unsigned int len)

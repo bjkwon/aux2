@@ -49,18 +49,18 @@ Cfunction set_builtin_function_resample(fGate fp)
 	return ft;
 }
 
-void __movespec(float* buf, uint64_t len, void* parg, void* parg2)
+void __movespec(auxtype* buf, uint64_t len, void* parg, void* parg2)
 {
-	float shift = *(float*)parg;
-	float fs = *((float*)parg + 1);
-	vector<float> copy(buf, buf + len);
+	auxtype shift = *(auxtype*)parg;
+	auxtype fs = *((auxtype*)parg + 1);
+	vector<auxtype> copy(buf, buf + len);
 	//	Hilbert();
-	float t(0), grid(1.f / fs);
-	const complex<float> j(0.0, 1.0);
-	complex<float> datum;
+	auxtype t(0), grid(1.f / fs);
+	const complex<auxtype> j(0.0, 1.0);
+	complex<auxtype> datum;
 	for (unsigned int k = 0; k < len; k++)
 	{
-		datum = (copy.data()[k] + buf[k] * j) * exp(j * shift * 2.f * PI * t);
+		datum = (copy.data()[k] + buf[k] * j) * exp(j * shift * 2. * PI * t);
 		buf[k] = real(datum);
 		t += grid;
 	}
@@ -68,7 +68,7 @@ void __movespec(float* buf, uint64_t len, void* parg, void* parg2)
 
 void _movespec(skope* past, const AstNode* pnode, const vector<CVar>& args)
 {
-	float shift_fs[2] = { args[0].value(), (float)past->Sig.GetFs() };
+	auxtype shift_fs[2] = { args[0].value(), (auxtype)past->Sig.GetFs() };
 	past->Sig.evoke_modsig(__movespec, &shift_fs);
 }
 
@@ -122,14 +122,14 @@ CSignal __resample(const CSignal& base, void* pargin, void* pargout)
 	else
 	{
 		//int blockCount = 0;
-		//vector<float> outbuffer;
+		//vector<auxtype> outbuffer;
 		////inspect pratio to estimate the output length
 		//int cum = 0, cumID = 0;
 		//for (CTimeSeries* p = pratio; p && p->chain; p = p->chain)
 		//	cum += (int)((p->chain->tmark - p->tmark) * fs / 1000 * p->value());
 		//outbuffer.reserve(cum);
 		//int lastSize = 1, lastPt = 0;
-		//data_out = new float[lastSize];
+		//data_out = new auxtype[lastSize];
 		//long inputSamplesLeft = (long)len;
 		//int orgSampleCounts = 0;
 		////assume that pratio time sequence is well prepared--
@@ -137,7 +137,7 @@ CSignal __resample(const CSignal& base, void* pargin, void* pargout)
 		//{
 		//	conv.end_of_input = 0;
 		//	unsigned int i1, i2;
-		//	float ratio_mean;
+		//	auxtype ratio_mean;
 		//	int inBuffersize, outBuffersize;
 		//	if (p->value() == p->chain->value())
 		//		src_set_ratio(handle, conv.src_ratio = ratio_mean = 1. / p->value());
@@ -161,7 +161,7 @@ CSignal __resample(const CSignal& base, void* pargin, void* pargout)
 		//	if (conv.output_frames > lastSize)
 		//	{
 		//		delete[] data_out;
-		//		data_out = new float[lastSize = conv.output_frames + 20000];//reserve the buffer size big enough to avoid memory crash, but find out a better than this.... 3/20/2019
+		//		data_out = new auxtype[lastSize = conv.output_frames + 20000];//reserve the buffer size big enough to avoid memory crash, but find out a better than this.... 3/20/2019
 		//	}
 		//	conv.data_out = data_out;
 		//	int harmean;
@@ -204,7 +204,7 @@ CSignal __resample(const CSignal& base, void* pargin, void* pargout)
 		//	p->chain->tmark = p->tmark + 1000. / fs * outBuffersize;
 		//}
 		//UpdateBuffer((unsigned int)outbuffer.size());
-		//memcpy(buf, &outbuffer[0], sizeof(float) * outbuffer.size());
+		//memcpy(buf, &outbuffer[0], sizeof(auxtype) * outbuffer.size());
 	}
 	src_delete(handle);
 	if (data_in) delete[] data_in;

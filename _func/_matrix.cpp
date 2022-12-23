@@ -65,13 +65,13 @@ Cfunction set_builtin_function_buffer(fGate fp)
 	return ft;
 }
 
-CSignal __group(float* buf, unsigned int len, void* pargin, void* pargout)
+CSignal __group(auxtype* buf, unsigned int len, void* pargin, void* pargout)
 {
 	auto in = *(vector<CVar>*)pargin;
 	int fs = (int)in[2].value();
 	CSignal out(fs);
-	float val = in[0].value();
-	float rem = fmod(len, val);
+	auxtype val = in[0].value();
+	auxtype rem = fmod(len, val);
 	if (rem > 0)
 	{
 		unsigned int nPtsNeeded = (unsigned int)(val - rem);
@@ -80,19 +80,19 @@ CSignal __group(float* buf, unsigned int len, void* pargin, void* pargout)
 	else
 		out.UpdateBuffer(len);
 	out.nGroups = (unsigned int)val;
-	memcpy(out.buf, buf, len * sizeof(float));
+	memcpy(out.buf, buf, len * sizeof(auxtype));
 	return out;
 }
 
 void _group(skope* past, const AstNode* pnode, const vector<CVar>& args)
 {
-	float val = args[0].value();
-	if (val != (float)(int)val)
+	auxtype val = args[0].value();
+	if (val != (auxtype)(int)val)
 		exception_func(*past, pnode, "argument must be an integer.", "group", 2).raise();
-	if (args[1].value() != (float)(int)args[1].value())
+	if (args[1].value() != (auxtype)(int)args[1].value())
 		exception_func(*past, pnode, "argument must be an integer.", "group", 3).raise();
 	int overlap = (int)args[1].value();
-	float nCols = past->Sig.nSamples / val;
+	auxtype nCols = past->Sig.nSamples / val;
 	auto tp = past->Sig.type();
 	if (ISSCALAR(tp) || ISVECTOR(tp))
 	{
@@ -102,7 +102,7 @@ void _group(skope* past, const AstNode* pnode, const vector<CVar>& args)
 	else
 	{
 		vector<CVar> argin(args);
-		argin.push_back(CVar((float)past->Sig.GetFs()));
+		argin.push_back(CVar((auxtype)past->Sig.GetFs()));
 		past->Sig = past->Sig.evoke_getsig2(__group, (void*)&argin);
 		//taking care of nGroups for chains
 		if (past->Sig.chain)
@@ -136,8 +136,8 @@ void _group(skope* past, const AstNode* pnode, const vector<CVar>& args)
 //	}
 //	if (!second.IsScalar())
 //		throw CAstException(FUNC_SYNTAX, *past, pnode).proc("2nd argument must be a scalar.");
-//	float _overlap, _blocklen = second.value();
-//	if (_blocklen != (float)(int)_blocklen)
+//	auxtype _overlap, _blocklen = second.value();
+//	if (_blocklen != (auxtype)(int)_blocklen)
 //		throw CAstException(FUNC_SYNTAX, *past, pnode).proc("2nd argument must be an integer.");
 //	if (third.type() == TYPEBIT_NULL) _overlap = 0.;
 //	else
@@ -145,7 +145,7 @@ void _group(skope* past, const AstNode* pnode, const vector<CVar>& args)
 //		if (!third.IsScalar())
 //			throw CAstException(FUNC_SYNTAX, *past, pnode).proc("3rd argument must be a scalar.");
 //		_overlap = third.value();
-//		if (_overlap != (float)(int)_overlap)
+//		if (_overlap != (auxtype)(int)_overlap)
 //			throw CAstException(FUNC_SYNTAX, *past, pnode).proc("3rd argument must be an integer.");
 //	}
 //	unsigned int nGroups;
@@ -193,8 +193,8 @@ void _group(skope* past, const AstNode* pnode, const vector<CVar>& args)
 
 void _ungroup(skope* past, const AstNode* pnode, const vector<CVar>& args)
 {
-	float _overlap = args[0].value();
-	if (_overlap != (float)(int)_overlap)
+	auxtype _overlap = args[0].value();
+	if (_overlap != (auxtype)(int)_overlap)
 		exception_func(*past, pnode, "argument must be an integer.", "group", 1).raise();
 	auto tp = past->Sig.type();
 	auto overlap = (int)_overlap;

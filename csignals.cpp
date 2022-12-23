@@ -32,7 +32,7 @@
 void filter(int nTabs, double *num, double *den, int length, double *in, double *out);
 void filter(int nTabs, double *num, int length, double *in, double *out);
 
-static float quantizetmark(float delta, int fs)
+static double quantizetmark(double delta, int fs)
 {
 	//quantize delta based on the fs grid.  3/31/2016. Rev. 5/19/2018
 	if (fs > 1)
@@ -45,21 +45,21 @@ static float quantizetmark(float delta, int fs)
 
 /*bufBlockSize is 1 (for logical, string), sizeof(double) (regular), or sizeof(double)*2 (complex).     4/4/2017 bjkwon */
 body::body()
-	: bufType(0), nSamples(0), bufBlockSize(sizeof(float)), buf(NULL), nGroups(1), ghost(false)
+	: bufType(0), nSamples(0), bufBlockSize(sizeof(auxtype)), buf(NULL), nGroups(1), ghost(false)
 {
 }
 
-body::body(float value)
+body::body(auxtype value)
 	: bufType('R'), nSamples(0), buf(NULL), ghost(false)
 {
 	SetValue(value);
 }
 
-body::body(complex<float> value)
+body::body(complex<auxtype> value)
 	: bufType('C'), nSamples(0), buf(NULL), ghost(false)
 {
 	cbuf[0] = value;
-	bufBlockSize = 2 * sizeof(float);
+	bufBlockSize = 2 * sizeof(auxtype);
 }
 
 body::body(const body& src)
@@ -67,8 +67,8 @@ body::body(const body& src)
 	*this = src;
 }
 
-body::body(float *y, int len)
-	: nSamples(len), bufBlockSize(sizeof(float)), buf(new float[len]), nGroups(1), ghost(false)
+body::body(auxtype *y, int len)
+	: nSamples(len), bufBlockSize(sizeof(auxtype)), buf(new auxtype[len]), nGroups(1), ghost(false)
 {
 	memcpy(buf, y, bufBlockSize*len);
 }
@@ -79,19 +79,19 @@ body::body(bool *y, int len)
 	memcpy(buf, y, bufBlockSize*len);
 }
 
-body::body(const vector<float> & src)
-	: nSamples((unsigned int)src.size()), bufBlockSize(sizeof(float)), buf(new float[src.size()]), nGroups(1), ghost(false)
+body::body(const vector<auxtype> & src)
+	: nSamples((unsigned int)src.size()), bufBlockSize(sizeof(auxtype)), buf(new auxtype[src.size()]), nGroups(1), ghost(false)
 {
-	memcpy(buf, src.data(), sizeof(float)*nSamples);
+	memcpy(buf, src.data(), sizeof(auxtype)*nSamples);
 }
 
-body& body::operator=(const vector<float> & rhs)
+body& body::operator=(const vector<auxtype> & rhs)
 {
 	nSamples = (unsigned int)rhs.size();
 	bufBlockSize = 8;
 	nGroups = 1;
 	ghost = false;
-	buf = new float[nSamples];
+	buf = new auxtype[nSamples];
 	return *this;
 }
 
@@ -123,13 +123,13 @@ body& body::operator=(const body & rhs)
 }
 
 // DO NOT CALL this function with empty buf
-float body::_max(unsigned int id, int unsigned len, void* pind) const
+auxtype body::_max(unsigned int id, int unsigned len, void* pind) const
 {
 	if (len == 0) len = nSamples;
 	return *max_element(buf + id, buf + id + len);
 }
 
-float body::_min(unsigned int id, unsigned int len, void* pind) const
+auxtype body::_min(unsigned int id, unsigned int len, void* pind) const
 {
 	if (len == 0) len = nSamples;
 	return *min_element(buf + id, buf + id + len);
@@ -211,12 +211,12 @@ bool CVar::operator==(std::string rhstr)
 {
 	return *this == CSignals(rhstr);
 }
-bool CVar::operator==(float val)
+bool CVar::operator==(auxtype val)
 {
 	return *this == CSignals(val);
 }
 
-bool CSignals::operator==(float rhs)
+bool CSignals::operator==(auxtype rhs)
 {
 	return *this == CSignals(rhs);
 }
@@ -236,7 +236,7 @@ CTimeSeries& CTimeSeries::operator=(const CSignal& rhs)
 	return *this;
 }
 
-bool CSignal::operator==(float rhs)
+bool CSignal::operator==(auxtype rhs)
 {
 	return *this == CSignal(rhs);
 }
@@ -290,16 +290,16 @@ CSignals& CSignals::operator=(const CSignals& rhs)
 	return *this;
 }
 
-body& body::operator+=(float con)
+body& body::operator+=(auxtype con)
 {
-	unsigned int blockSize = bufBlockSize / sizeof(float);
+	unsigned int blockSize = bufBlockSize / sizeof(auxtype);
 	for (unsigned int k = 0; k < nSamples; k++) buf[k*blockSize] += con;
 	return *this;
 }
 
-body& body::operator*=(float con)
+body& body::operator*=(auxtype con)
 {
-	unsigned int blockSize = bufBlockSize / sizeof(float);
+	unsigned int blockSize = bufBlockSize / sizeof(auxtype);
 	switch (blockSize)
 	{
 	case 1:
@@ -312,7 +312,7 @@ body& body::operator*=(float con)
 	return *this;
 }
 
-body& body::operator/=(float con)
+body& body::operator/=(auxtype con)
 {
 	return *this *= 1. / con;
 }
@@ -323,15 +323,15 @@ body::~body()
 	nSamples = 0;
 }
 
-void body::SetValue(float v)
+void body::SetValue(auxtype v)
 { // why did I change it this way?
  // this way I can just replace a value with the existing value 
  // (i.e., if it was already CSIG_SCALR, just reuse the buffer) 8/15/2018
-	if (bufBlockSize != sizeof(float) || nSamples != 1)
+	if (bufBlockSize != sizeof(auxtype) || nSamples != 1)
 	{ 
-		bufBlockSize = sizeof(float);
+		bufBlockSize = sizeof(auxtype);
 		if (buf) delete[] buf;
-		buf = new float[1];
+		buf = new auxtype[1];
 		nSamples = 1;
 	}
 	nGroups = 1;
@@ -339,13 +339,13 @@ void body::SetValue(float v)
 	bufType = 'R';
 }
 
-void body::SetValue(complex<float> v)
+void body::SetValue(complex<auxtype> v)
 {
-	if (bufBlockSize != 2 * sizeof(float) || nSamples != 1)
+	if (bufBlockSize != 2 * sizeof(auxtype) || nSamples != 1)
 	{
-		bufBlockSize = 2 * sizeof(float);
+		bufBlockSize = 2 * sizeof(auxtype);
 		if (buf) delete[] buf;
-		buf = new float[2];
+		buf = new auxtype[2];
 		nSamples = 1;
 	}
 	nGroups = 1;
@@ -387,7 +387,7 @@ void body::Reset()
 	nSamples = 0;
 	nGroups = 1;
 	ghost = false;
-	bufBlockSize = sizeof(float);
+	bufBlockSize = sizeof(auxtype);
 }
 
 string body::valuestr(int digits) const
@@ -397,8 +397,8 @@ string body::valuestr(int digits) const
 	out.precision(digits);
 	if (nSamples >= 1)
 	{
-		if (bufBlockSize == sizeof(float))	out << buf[0];
-		else if (bufBlockSize == 1)	out << (float)logbuf[0];
+		if (bufBlockSize == sizeof(auxtype))	out << buf[0];
+		else if (bufBlockSize == 1)	out << (auxtype)logbuf[0];
 		else out << "complex";
 	}
 	else if (nSamples == 0)
@@ -408,12 +408,12 @@ string body::valuestr(int digits) const
 	return out.str();
 }
 
-float body::value() const
+auxtype body::value() const
 {
 	if (nSamples == 1)
 	{
-		if (bufBlockSize == sizeof(float))	return buf[0];
-		else if (bufBlockSize == 1)	return (float)logbuf[0];
+		if (bufBlockSize == sizeof(auxtype))	return buf[0];
+		else if (bufBlockSize == 1)	return (auxtype)logbuf[0];
 		else throw "value( ) on complex value. Use cvalue instead.";
 	}
 	else if (nSamples == 0)
@@ -422,7 +422,7 @@ float body::value() const
 		throw "value( ) on vector/array.";
 }
 
-complex<float> body::cvalue() const
+complex<auxtype> body::cvalue() const
 {
 	if (nSamples == 1)
 		return cbuf[0];
@@ -440,7 +440,7 @@ void body::SetReal()
 	bufType = 'R';
 	if (IsComplex())
 	{
-		bufBlockSize = sizeof(float);
+		bufBlockSize = sizeof(auxtype);
 		for (; k < nSamples; k++) buf[k] = buf[2 * k];
 	}
 	//if logical or string, it will turn to regular 8 
@@ -448,7 +448,7 @@ void body::SetReal()
 	{
 		body out;
 		out.UpdateBuffer(nSamples);
-		for (auto &v : *this) out.buf[k++] = (float)v;
+		for (auto &v : *this) out.buf[k++] = (auxtype)v;
 		*this = out;
 	}
 }
@@ -459,13 +459,13 @@ void body::SetByte()
 void body::SetComplex()
 {
 	bufType = 'C';
-	if (bufBlockSize != sizeof(float) * 2)
+	if (bufBlockSize != sizeof(auxtype) * 2)
 	{
-		bufBlockSize = sizeof(float) * 2;
+		bufBlockSize = sizeof(auxtype) * 2;
 		if (nSamples > 0)
 		{
-			float*newbuf = new float[2 * nSamples];
-			memset(newbuf, 0, sizeof(float) * 2 * nSamples);
+			auxtype*newbuf = new auxtype[2 * nSamples];
+			memset(newbuf, 0, sizeof(auxtype) * 2 * nSamples);
 			for (unsigned int k = 0; k < nSamples; k++) newbuf[2 * k] = buf[k];
 			delete[] buf;
 			buf = newbuf;
@@ -474,7 +474,7 @@ void body::SetComplex()
 	else if (bufBlockSize == 1)
 	{
 		body out;
-		out.bufBlockSize = sizeof(float) * 2;
+		out.bufBlockSize = sizeof(auxtype) * 2;
 		out.UpdateBuffer(nSamples);
 		for (unsigned int k = 0; k < nSamples; k++) out.buf[2 * k] = buf[k];
 		*this = out;
@@ -551,7 +551,7 @@ body &body::addmult(char op, body &sec, unsigned int id0, uint64_t len)
 }
 
 
-body &body::each(float (*fn)(float))
+body &body::each(auxtype (*fn)(auxtype))
 {
 	if (bufBlockSize == 1)
 		for (unsigned int k = 0; k < nSamples; ++k)	logbuf[k] = fn(logbuf[k]) != 0;
@@ -560,7 +560,7 @@ body &body::each(float (*fn)(float))
 	return *this;
 }
 
-body& body::each_sym(float (*fn)(float))
+body& body::each_sym(auxtype (*fn)(auxtype))
 {
 	for (unsigned int k = 0; k < nSamples; ++k)	
 		if (buf[k] >= 0) buf[k] = fn(buf[k]);
@@ -568,33 +568,33 @@ body& body::each_sym(float (*fn)(float))
 	return *this;
 }
 
-body &body::each(float (*fn)(complex<float>))
+body &body::each(auxtype (*fn)(complex<auxtype>))
 {
-	float *out = new float [nSamples];
+	auxtype *out = new auxtype [nSamples];
 	for (unsigned int k = 0; k < nSamples; ++k)	out[k] = fn(cbuf[k]);
 	delete[] buf;
 	buf = out;
-	bufBlockSize = sizeof(float);
+	bufBlockSize = sizeof(auxtype);
 	return *this;
 }
 
-body &body::each(complex<float>(*fn)(float))
+body &body::each(complex<auxtype>(*fn)(auxtype))
 {
 	for (unsigned int k = 0; k < nSamples; ++k)	cbuf[k] = fn(buf[k]);
 	return *this;
 }
 
-body &body::each(complex<float>(*fn)(complex<float>))
+body &body::each(complex<auxtype>(*fn)(complex<auxtype>))
 {
 	for (unsigned int k = 0; k < nSamples; ++k)	cbuf[k] = fn(cbuf[k]);
 	return *this;
 }
 
-body &body::each(float (*fn)(float, float), const body &arg)
+body &body::each(auxtype (*fn)(auxtype, auxtype), const body &arg)
 {
 	if (arg.nSamples == 1)
 	{
-		float val = arg.value();
+		auxtype val = arg.value();
 		if (bufBlockSize == 1 && arg.bufBlockSize == 1)
 			for (unsigned int k = 0; k < nSamples; k++)	logbuf[k] = fn(logbuf[k], arg.logbuf[0]) != 0;
 		else if (bufBlockSize == 1 && arg.bufBlockSize != 1)
@@ -604,7 +604,7 @@ body &body::each(float (*fn)(float, float), const body &arg)
 	}
 	else if (nSamples == 1)
 	{
-		float baseval = buf[0];
+		auxtype baseval = buf[0];
 		UpdateBuffer(arg.nSamples);
 		if (bufBlockSize == 1 && arg.bufBlockSize == 1)
 			for (unsigned int k = 0; k < arg.nSamples; k++) logbuf[k] = fn(baseval, arg.logbuf[k]) != 0;
@@ -626,18 +626,18 @@ body &body::each(float (*fn)(float, float), const body &arg)
 	return *this;
 }
 
-body& body::each_sym2(float (*fn)(float, float), const body& arg)
+body& body::each_sym2(auxtype (*fn)(auxtype, auxtype), const body& arg)
 {
 	if (arg.nSamples == 1)
 	{
-		float val = arg.value();
+		auxtype val = arg.value();
 		for (unsigned int k = 0; k < nSamples; k++)	
 			if (buf[k] >= 0) buf[k] = fn(buf[k], val);
 			else buf[k] = -fn(-buf[k], val);
 	}
 	else if (nSamples == 1)
 	{
-		float baseval = buf[0];
+		auxtype baseval = buf[0];
 		UpdateBuffer(arg.nSamples);
 		for (unsigned int k = 0; k < arg.nSamples; k++)
 			if (buf[k] >= 0) buf[k] = fn(baseval, arg.buf[k]);
@@ -655,17 +655,17 @@ body& body::each_sym2(float (*fn)(float, float), const body& arg)
 
 
 
-body &body::each(complex<float >(*fn)(complex<float >, complex<float >), const body &arg)
+body &body::each(complex<auxtype >(*fn)(complex<auxtype >, complex<auxtype >), const body &arg)
 {
 	
 	if (arg.nSamples == 1)
 	{
-		complex<float > val = arg.IsComplex() ? arg.cbuf[0] : arg.buf[0];
+		complex<auxtype > val = arg.IsComplex() ? arg.cbuf[0] : arg.buf[0];
 		for (unsigned int k = 0; k < nSamples; k++)	cbuf[k] = fn(cbuf[k], val);
 	}
 	else if (nSamples == 1)
 	{
-		complex<float > val = arg.IsComplex() ? cbuf[0] : buf[0];
+		complex<auxtype > val = arg.IsComplex() ? cbuf[0] : buf[0];
 		UpdateBuffer(arg.nSamples);
 		for (unsigned int k = 0; k < arg.nSamples; k++) cbuf[k] = fn(val, arg.cbuf[k]);
 	}
@@ -677,39 +677,39 @@ body &body::each(complex<float >(*fn)(complex<float >, complex<float >), const b
 	return *this;
 }
 
-float lt(float a, float b)
+auxtype lt(auxtype a, auxtype b)
 {
 	return a < b;
 }
-static float le(float a, float b)
+static auxtype le(auxtype a, auxtype b)
 {
 	return a <= b;
 }
-static float gt(float a, float b)
+static auxtype gt(auxtype a, auxtype b)
 {
 	return a > b;
 }
-static float ge(float a, float b)
+static auxtype ge(auxtype a, auxtype b)
 {
 	return a >= b;
 }
-static float eq(float a, float b)
+static auxtype eq(auxtype a, auxtype b)
 {
 	return a == b;
 }
-static float ne(float a, float b)
+static auxtype ne(auxtype a, auxtype b)
 {
 	return a != b;
 }
-static float and_(float a, float b)
+static auxtype and_(auxtype a, auxtype b)
 {
 	return a && b;
 }
-static float or_(float a, float b)
+static auxtype or_(auxtype a, auxtype b)
 {
 	return a || b;
 }
-static float not_(float a)
+static auxtype not_(auxtype a)
 {
 	if (a == 0) return 1.;
 	else  return 0.;
@@ -718,7 +718,7 @@ static float not_(float a)
 
 body& body::LogOp(body &rhs, int type)
 {
-	float(*fn)(float, float);
+	auxtype(*fn)(auxtype, auxtype);
 	switch (type)
 	{
 	case '<':
@@ -843,7 +843,7 @@ int migra(int input, int nGroup, int nSamples)
 body &body::transpose()
 {
 	if (nSamples < 2) return *this;
-	float tp1, tp2;
+	auxtype tp1, tp2;
 	int next, id;
 	unsigned int counter(0);
 	unsigned char *check = new unsigned char[nSamples];
@@ -918,13 +918,13 @@ CTimeSeries::CTimeSeries(int sampleRate, unsigned int len)
 }
 
 
-CSignal::CSignal(float value)
+CSignal::CSignal(auxtype value)
 	:fs(1), tmark(0.), snap(0)
 {
 	SetValue(value);
 }
 
-CTimeSeries::CTimeSeries(float value)
+CTimeSeries::CTimeSeries(auxtype value)
 	: chain(NULL)
 {
 	fs = 1;
@@ -932,7 +932,7 @@ CTimeSeries::CTimeSeries(float value)
 	SetValue(value);
 }
 
-CSignal::CSignal(vector<float> vv)
+CSignal::CSignal(vector<auxtype> vv)
 {
 	fs = 1;
 	tmark = 0;
@@ -970,19 +970,19 @@ CTimeSeries::CTimeSeries(const CTimeSeries& src)
 	*this = src;
 }
 
-CSignal::CSignal(float *y, int len)
+CSignal::CSignal(auxtype *y, int len)
 	: fs(1), tmark(0.), snap(0)
 {
 	UpdateBuffer(len);
-	memcpy((void*)buf, (void*)y, sizeof(float)*len);
+	memcpy((void*)buf, (void*)y, sizeof(auxtype)*len);
 }
 
-vector<float> body::ToVector() const
+vector<auxtype> body::ToVector() const
 {
-	vector<float> out;
+	vector<auxtype> out;
 	out.resize((size_t)nSamples);
 	int k = 0;
-	for (vector<float>::iterator it = out.begin(); it != out.end(); it++)
+	for (vector<auxtype>::iterator it = out.begin(); it != out.end(); it++)
 		*it = buf[k++];
 	return out;
 }
@@ -1014,15 +1014,15 @@ void CSignals::SetFs(int newfs)
 void CSignal::SetFs(int newfs)
 {  // the old data (the content of buf) should be retained; don't call Reset() carelessly.
 	if (bufBlockSize == 1 && newfs != fs)
-	{// Trying to convert a data type with a byte size to float size
-		float *newbuf = new float[nSamples];
-		memset(newbuf, 0, sizeof(float)*nSamples);
+	{// Trying to convert a data type with a byte size to auxtype size
+		auxtype *newbuf = new auxtype[nSamples];
+		memset(newbuf, 0, sizeof(auxtype)*nSamples);
 		if (IsLogical())
 			for (unsigned int k = 0; k < nSamples; k++)
 				if (logbuf[k]) newbuf[k] = 1.;
 		delete buf;
 		buf = newbuf;
-		bufBlockSize = sizeof(float);
+		bufBlockSize = sizeof(auxtype);
 	}
 	fs = newfs; 
 }
@@ -1154,13 +1154,13 @@ CSignal CTimeSeries::TSeries2CSignal()
 	return out;
 }
 
-CTimeSeries CTimeSeries::evoke_getval(float (CSignal::*fp)(unsigned int, unsigned int, void*) const, void *popt)
+CTimeSeries CTimeSeries::evoke_getval(auxtype (CSignal::*fp)(unsigned int, unsigned int, void*) const, void *popt)
 {
 	// As of 12/19/2020, there's no need to worry about using a function going through evoke_getval for string or logical type.
 	int _fs = fs == 2 ? 1 : fs;
 	CTimeSeries out(_fs);
-	// aout output argument from evoke_getval function pointer is always a scalar, i.e., float
-	float outcarrier; 
+	// aout output argument from evoke_getval function pointer is always a scalar, i.e., auxtype
+	auxtype outcarrier; 
 	//if (GetType() == CSIG_TSERIES)
 	//{
 	//	out.Reset(1); // 1 means new fs
@@ -1186,7 +1186,7 @@ CTimeSeries CTimeSeries::evoke_getval(float (CSignal::*fp)(unsigned int, unsigne
 			{
 				tp.tmark = tmark + round(1000.*k*Len() / fs);
 				if (popt)
-				{ // popt is always a pointer to float
+				{ // popt is always a pointer to auxtype
 					tp.SetValue((this->*fp)(k * len, len, &outcarrier));
 					aout.buf[k] = outcarrier; // fed from individual function
 				}
@@ -1200,7 +1200,7 @@ CTimeSeries CTimeSeries::evoke_getval(float (CSignal::*fp)(unsigned int, unsigne
 				{
 					tp.tmark = p->tmark + round(1000. * k * p->Len() / fs);
 					if (popt)
-					{ // popt is always a pointer to float
+					{ // popt is always a pointer to auxtype
 						tp.SetValue((p->*fp)(k * p->Len(), p->Len(), &outcarrier));
 						CTimeSeries tp2(_fs);
 						tp2.buf[k] = outcarrier;
@@ -1244,7 +1244,7 @@ CSignal& CSignal::evoke_modsig(fmodify fp, void* pargin, void* pargout)
 	auto len = Len();
 	for (unsigned int k = 0; k < nGroups; k++)
 	{
-		(fp)((float*)(strbuf + k * bufBlockSize * len), len, pargin, pargout);
+		(fp)((auxtype*)(strbuf + k * bufBlockSize * len), len, pargin, pargout);
 	}
 	return *this;
 }
@@ -1260,12 +1260,12 @@ CSignal CSignal::evoke_modsig2(CSignal(*func) (const CSignal&, void*, void*), vo
 	{
 		CSignal bit(fs);
 		bit.UpdateBuffer(len);
-		memcpy(bit.buf, buf + k * len, sizeof(float) * len);
+		memcpy(bit.buf, buf + k * len, sizeof(auxtype) * len);
 		indy = (func)(bit, pargin, pargout);
 		count += indy.nSamples;
 		if (count > out.nSamples)
 			out.UpdateBuffer(count);
-		memcpy(out.buf + lastcount, indy.buf, sizeof(float) * indy.nSamples);
+		memcpy(out.buf + lastcount, indy.buf, sizeof(auxtype) * indy.nSamples);
 		lastcount = count;
 	}
 	out.nSamples = count;
@@ -1304,7 +1304,7 @@ CTimeSeries CTimeSeries::evoke_modsig2(CSignal(*func) (const CSignal&, void*, vo
 	}	return out;
 }
 
-CTimeSeries CTimeSeries::evoke_group2chain(CSignal(*func) (float*, unsigned int, void*, void*), void* pargin, void* pargout)
+CTimeSeries CTimeSeries::evoke_group2chain(CSignal(*func) (auxtype*, unsigned int, void*, void*), void* pargin, void* pargout)
 {
 	auto len = Len();
 	uint16_t tp = type();
@@ -1336,7 +1336,7 @@ CTimeSeries CTimeSeries::evoke_group2chain(CSignal(*func) (float*, unsigned int,
 	}
 	for (unsigned int k = 1; k < nGroups; k++)
 	{
-		auto outrow = func((float*)(strbuf + len * k * bufBlockSize), len, pargin, temp);
+		auto outrow = func((auxtype*)(strbuf + len * k * bufBlockSize), len, pargin, temp);
 		if (!ISTEMPORAL(tp)) {
 			memcpy(out.strbuf + len0 * k * outrow.bufBlockSize, outrow.buf, len0 * outrow.bufBlockSize);
 			if (pargout)
@@ -1364,7 +1364,7 @@ CTimeSeries CTimeSeries::evoke_group2chain(CSignal(*func) (float*, unsigned int,
 	return out;
 } 
 
-CTimeSeries CTimeSeries::evoke_getsig2(CSignal(*func) (float*, unsigned int, void*, void*), void* pargin, void* pargout)
+CTimeSeries CTimeSeries::evoke_getsig2(CSignal(*func) (auxtype*, unsigned int, void*, void*), void* pargin, void* pargout)
 {
 	CTimeSeries out(fs);
 	CTimeSeries outExt(fs);
@@ -1418,7 +1418,7 @@ CSignal &CSignal::matrixmult(CSignal *arg)
 	for (unsigned int m = 0; m < nGroups; m++)
 		for (unsigned int n = 0; n < col2; n++)
 		{
-			float tp = 0;
+			auxtype tp = 0;
 			for (unsigned int k = 0; k < col; k++)
 			{
 				tp += buf[m*col + k] * arg->buf[k*col2 + n];
@@ -1473,7 +1473,7 @@ void CTimeSeries::AddMultChain(char op, CTimeSeries *sec)
 				if (chained_scalar())
 					SwapContents1node(*sec);
 				bool relTime = sec->fs == 0;
-				vector<float> tpoints, tvals;
+				vector<double> tpoints, tvals;
 				for (CTimeSeries *p = sec; p; p = p->chain)
 				{
 					tpoints.push_back(p->tmark);
@@ -1499,8 +1499,8 @@ void CTimeSeries::AddMultChain(char op, CTimeSeries *sec)
 		return;
 	}
 
-	vector<float> thistmark;
-	vector<float> sectmark;
+	vector<double> thistmark;
+	vector<double> sectmark;
 	for (p = this; p; p = p->chain)
 	{
 		thistmark.push_back(p->tmark);
@@ -1512,9 +1512,9 @@ void CTimeSeries::AddMultChain(char op, CTimeSeries *sec)
 		sectmark.push_back(p->tmark + p->_dur());
 	}
 	unsigned int k, im(0), is(0); // im: index for master (this), is: index for sec
-	float anc1, anc0;
+	double anc1, anc0;
 	short status(0);
-	vector<float> anc; // just for debugging/tracking purposes... OK to delete.
+	vector<double> anc; // just for debugging/tracking purposes... OK to delete.
 	unsigned int count;
 	anc0 = min(thistmark[im], sectmark[is]);
 	anc.push_back(anc0);
@@ -1549,7 +1549,7 @@ void CTimeSeries::AddMultChain(char op, CTimeSeries *sec)
 			// status indicates in the time range between the last two values of anc, what signal is present
 			// 1 means this, 2 means sec, 3 means both
 			count = (unsigned int)round((anc1 - anc0) / 1000.*fs);
-			unsigned int blockSize = bufBlockSize / sizeof(float);
+			unsigned int blockSize = bufBlockSize / sizeof(auxtype);
 			{
 				part.UpdateBuffer(count);
 				part.tmark = anc0;
@@ -1604,7 +1604,7 @@ CTimeSeries& CTimeSeries::ConnectChains()
 	if (p == NULL || p->chain == NULL) return *this;
 	if (tmark > 0)
 	{
-		float shift(tmark);
+		double shift(tmark);
 		for (; p; p = p->chain)	p->tmark -= shift;
 		ConnectChains();
 		p = this;
@@ -1662,7 +1662,7 @@ CTimeSeries& CTimeSeries::operator/=(CTimeSeries &scaleArray)
 	return *this;
 }
 
-CTimeSeries& CTimeSeries::operator/=(float con)
+CTimeSeries& CTimeSeries::operator/=(auxtype con)
 { // used in fft.cpp
 	operate(CTimeSeries(con), '/');
 	return *this;
@@ -1681,10 +1681,10 @@ CTimeSeries& CTimeSeries::reciprocal(void)
 	return *this;
 }
 
-CSignal& CSignal::operator>>=(float delta)
+CSignal& CSignal::operator>>=(double delta)
 {
 	if (delta == 0)		return *this;
-	float newtmark = quantizetmark(tmark + delta, fs);
+	double newtmark = quantizetmark(tmark + delta, fs);
 	if (newtmark < 0) // cut off negative time domain
 	{
 		auto remainingDur = quantizetmark(endt() + delta, fs);
@@ -1704,7 +1704,7 @@ CSignal& CSignal::operator>>=(float delta)
 	return *this;
 }
 
-CTimeSeries& CTimeSeries::operator>>=(float delta)
+CTimeSeries& CTimeSeries::operator>>=(double delta)
 {
 	for (CTimeSeries *p = this; p; p = p->chain)
 	{ // CSignal with the face of CTimeSeries. No need to worry about chain processing
@@ -1725,7 +1725,7 @@ CTimeSeries& CTimeSeries::AddChain(const CTimeSeries &sec)
 		return *this = sec;
 	if (chain == NULL)
 	{
-		auto _dur = (float)nSamples / fs;
+		auto _dur = (double)nSamples / fs;
 		if (1000.f * nSamples / fs >= sec.tmark)
 			operate(sec, '+');
 		else
@@ -1754,26 +1754,26 @@ uint64_t CTimeSeries::CountChains(uint64_t *maxlength) const
 	return res;
 }
 
-float CSignals::alldur() const
+double CSignals::alldur() const
 {
-	float out = CTimeSeries::alldur();
+	double out = CTimeSeries::alldur();
 	if (next)
 		out = max(out, next->alldur());
 	return out;
 }
 
-float CTimeSeries::alldur() const
+double CTimeSeries::alldur() const
 {
-	float out;
+	double out;
 	for (CTimeSeries *p = (CTimeSeries *)this; p; p = p->chain)
 		out = p->CSignal::endt();
 	return out;
 }
 
-float CTimeSeries::MakeChainless()
+double CTimeSeries::MakeChainless()
 { //This converts the null intervals of the signal to zero.
 	fs = max(fs, 1);
-	float newdur = alldur();	// doing this here as fs might have changed.
+	double newdur = alldur();	// doing this here as fs might have changed.
 	if (!tmark && !chain)	// already chainless && no padding required.
 		return newdur;
 
@@ -1819,7 +1819,7 @@ CTimeSeries& CTimeSeries::MergeChains()
 
 	for (CTimeSeries* p(this); p && p->chain; p = p->chain)
 	{
-		float et = p->tmark + p->_dur();
+		double et = p->tmark + p->_dur();
 		if (et >= p->chain->tmark) // consolidate 
 		{
 			temp = *p->chain;
@@ -1847,14 +1847,14 @@ CTimeSeries& CTimeSeries::LogOp(CTimeSeries &rhs, int type)
 	return *this;
 }
 
-int mceil(float x)
+int mceil(auxtype x)
 { // modified ceil with reasonable tolerance
   // This function prevents uncessarily rounding-up
   // if x has long trailing zeros followed by one (due to rounding) such as 513.0000000001 
   // In that case we don't want 514...
   // 5/26/2018
 	int implicitFloor = (int)x;
-	float ceiled = ceil(x);
+	auxtype ceiled = ceil(x);
 	if (ceiled - implicitFloor == 0.)
 		return implicitFloor;
 	if (x - implicitFloor < 1.e-6)
@@ -1863,7 +1863,7 @@ int mceil(float x)
 		return (int)ceiled;
 }
 
-CTimeSeries& CTimeSeries::removeafter(float timems)
+CTimeSeries& CTimeSeries::removeafter(double timems)
 { // if timems is in the grid, the point is removed (but dur will be until that grid point)
 	CTimeSeries *last = NULL;
 	for (CTimeSeries *p(this); p; p = p->chain)
@@ -1892,7 +1892,7 @@ CTimeSeries& CTimeSeries::removeafter(float timems)
 	return *this;
 }
 
-CTimeSeries& CTimeSeries::timeshift(float timems)
+CTimeSeries& CTimeSeries::timeshift(double timems)
 { // if timems is in the grid, the point is kept.
 	int chainlevel(0);
 	CTimeSeries *p(this);
@@ -1938,7 +1938,7 @@ CTimeSeries& CTimeSeries::timeshift(float timems)
 	return *this;
 }
 
-CTimeSeries& CTimeSeries::Crop(float begin_ms, float end_ms)
+CTimeSeries& CTimeSeries::Crop(double begin_ms, double end_ms)
 {
 	if (begin_ms == end_ms) { Reset(); return *this; }
 	if (begin_ms > end_ms) {
@@ -1960,13 +1960,13 @@ CSignal& CSignal::movespec(unsigned int id0, unsigned int len, void *parg)
 	CSignals shift = *(CSignals*)parg;
 	CSignals copy(*this);
 //	Hilbert();
-	float t(0), grid(1.f / fs);
-	const complex<float> j(0.0, 1.0);
-	complex<float> datum;
-	float val = shift.value();
+	auxtype t(0), grid(1.f / fs);
+	const complex<auxtype> j(0.0, 1.0);
+	complex<auxtype> datum;
+	auxtype val = shift.value();
 	for (unsigned int k = 0; k < nSamples; k++)
 	{
-		datum = (copy.buf[k] + buf[k] * j) * exp(j * val *  2.f * PI * t);
+		datum = (copy.buf[k] + buf[k] * j) * exp(j * val *  2. * PI * t);
 		buf[k] = real(datum);
 		t += grid;
 	}
@@ -1975,7 +1975,7 @@ CSignal& CSignal::movespec(unsigned int id0, unsigned int len, void *parg)
 
 #endif 
 
-pair<CTimeSeries*, int> CTimeSeries::FindChainAndID(float timept, bool begin)
+pair<CTimeSeries*, int> CTimeSeries::FindChainAndID(double timept, bool begin)
 { 
 	CTimeSeries *body = NULL;
 	CTimeSeries* p = this;
@@ -2005,15 +2005,15 @@ pair<CTimeSeries*, int> CTimeSeries::FindChainAndID(float timept, bool begin)
 	return make_pair(body, id);
 }
 
-CTimeSeries& CTimeSeries::ReplaceBetweenTPs(const CTimeSeries &newsig, float t1, float t2)
+CTimeSeries& CTimeSeries::ReplaceBetweenTPs(const CTimeSeries &newsig, double t1, double t2)
 { // signal portion between t1 and t2 is replaced by newsig
  // t1 and t2 are in ms
 //	float lastendtofnewsig = newsig.GetDeepestChain()->endt();
 
 	CTimeSeries *p(this);
 	CTimeSeries copy(*this);
-	float samplegrid = 1.f / fs;
-	float deviationfromgrid = t1 - ((float)(int)(t1*fs)) / fs;
+	double samplegrid = 1.f / fs;
+	double deviationfromgrid = t1 - ((double)(int)(t1*fs)) / fs;
 	bool inbet(false); // true means t1 is in between chains.
 	for (p = this; p && !inbet; p = p->chain)
 	{
@@ -2028,20 +2028,20 @@ CTimeSeries& CTimeSeries::ReplaceBetweenTPs(const CTimeSeries &newsig, float t1,
 	//if (newsig.chain) { delete newsig.chain; newsig.chain = NULL; }
 	*this += (CTimeSeries*)&newsig;
 	//if t2 coincides with the sampling grid, don't take that point here (it will be taken twice)
-	deviationfromgrid = t2 - ((float)(int)(t2*fs)) / fs;
+	deviationfromgrid = t2 - ((double)(int)(t2*fs)) / fs;
 	// deviationfromgrid of zero can masquerade as a very small number
 	if (fabs(deviationfromgrid) > 1.e-8 && deviationfromgrid > -samplegrid && deviationfromgrid < samplegrid)
 		t2 += 1000.f*samplegrid;  // because its in ms
-	copy.Crop(t2, std::numeric_limits<float>::infinity());
+	copy.Crop(t2, std::numeric_limits<double>::infinity());
 	*this += &copy;
 	MergeChains();
 	return *this;
 }
 
 //Move it to auxfunc
-CTimeSeries& CTimeSeries::NullIn(float tpoint)
+CTimeSeries& CTimeSeries::NullIn(double tpoint)
 {
-	float tp = quantizetmark(tpoint, fs);
+	double tp = quantizetmark(tpoint, fs);
 	for (CTimeSeries *p = this; p; p = p->chain)
 	{
 		if (p->endt() < tp) continue;
@@ -2049,7 +2049,7 @@ CTimeSeries& CTimeSeries::NullIn(float tpoint)
 		CTimeSeries *temp = p->chain;
 		CTimeSeries *newchain = new CTimeSeries(fs);
 		newchain->UpdateBuffer(p->nSamples - count);
-		memcpy(newchain->buf, p->buf + count, sizeof(float)*count);
+		memcpy(newchain->buf, p->buf + count, sizeof(auxtype)*count);
 		newchain->tmark = tp;
 		newchain->chain = temp;
 		p->nSamples = count;
@@ -2060,7 +2060,7 @@ CTimeSeries& CTimeSeries::NullIn(float tpoint)
 }
 
 // Remove from the class; move it to auxFunc 11/14/2021
-bool CTimeSeries::IsAudioOnAt(float timept)
+bool CTimeSeries::IsAudioOnAt(double timept)
 {
 	if (!IsAudio()) return false;
 	CTimeSeries *p(this);
@@ -2088,7 +2088,7 @@ bool CTimeSeries::chained_scalar() const
 	return false;
 }
 
-CTimeSeries * CTimeSeries::AtTimePoint(float timept)
+CTimeSeries * CTimeSeries::AtTimePoint(double timept)
 { // This retrieves CSignal at the specified time point. If no CSignal exists, return NULL.
 	for (CTimeSeries *p = this; p; p = p->chain)
 	{
@@ -2262,7 +2262,7 @@ void CTimeSeries::ReverseTime()
 void CSignal::ReverseTime()
 {
 	CSignal temp(*this);
-	float *tempBuf = temp.GetBuffer();
+	double *tempBuf = temp.GetBuffer();
 	for (unsigned int i = 0; i < nSamples; i++)
 		tempBuf[nSamples - i - 1] = buf[i];
 	*this = temp;
@@ -2310,21 +2310,21 @@ CSignal &CSignal::SetString(const char c)
 	return *this;
 }
 
-CTimeSeries& CTimeSeries::each(float(*fn)(float))
+CTimeSeries& CTimeSeries::each(auxtype(*fn)(auxtype))
 {
 	for (CTimeSeries* p = this; p; p = p->chain)
 		p->body::each(fn);
 	return *this;
 }
 
-CTimeSeries& CTimeSeries::each_allownegative(float(*fn)(float))
+CTimeSeries& CTimeSeries::each_allownegative(auxtype(*fn)(auxtype))
 {
 	for (CTimeSeries* p = this; p; p = p->chain)
 		p->body::each_sym(fn);
 	return *this;
 }
 
-CTimeSeries& CTimeSeries::each(complex<float>(*fn)(complex<float>))
+CTimeSeries& CTimeSeries::each(complex<auxtype>(*fn)(complex<auxtype>))
 {
 	if (IsAudio())
 	{
@@ -2338,14 +2338,14 @@ CTimeSeries& CTimeSeries::each(complex<float>(*fn)(complex<float>))
 	return *this;
 }
 
-CTimeSeries& CTimeSeries::each(float(*fn)(complex<float>))
+CTimeSeries& CTimeSeries::each(auxtype(*fn)(complex<auxtype>))
 {
 	for (CTimeSeries* p = this; p; p = p->chain)
 		p->body::each(fn);
 	return *this;
 }
 
-CTimeSeries& CTimeSeries::each(float(*fn)(float, float), const CSignal &arg2)
+CTimeSeries& CTimeSeries::each(auxtype(*fn)(auxtype, auxtype), const CSignal &arg2)
 {
 	if (IsAudio())
 	{
@@ -2361,7 +2361,7 @@ CTimeSeries& CTimeSeries::each(float(*fn)(float, float), const CSignal &arg2)
 	return *this;
 }
 
-CTimeSeries& CTimeSeries::each(complex<float>(*fn)(complex<float>, complex<float>), const CSignal& arg2)
+CTimeSeries& CTimeSeries::each(complex<auxtype>(*fn)(complex<auxtype>, complex<auxtype>), const CSignal& arg2)
 {
 	for (CTimeSeries* p = this; p; p = p->chain)
 		p->body::each(fn, arg2);
@@ -2414,7 +2414,7 @@ CSignals::CSignals(int sampleRate)
 	SetFs(max(sampleRate, 0));
 }
 
-CSignals::CSignals(float value)
+CSignals::CSignals(auxtype value)
 	: next(NULL)
 {
 	SetFs(1);
@@ -2433,12 +2433,12 @@ CSignals::CSignals(const CTimeSeries& src)
 	*this = src;
 }
 
-CSignals::CSignals(float* y, int len)
+CSignals::CSignals(auxtype* y, int len)
 	: next(NULL)
 {
 	SetFs(1);
 	UpdateBuffer(len);
-	memcpy(buf, y, sizeof(float) * len);
+	memcpy(buf, y, sizeof(auxtype) * len);
 }
 
 CSignals::~CSignals()
@@ -2492,19 +2492,19 @@ CSignals& CSignals::Reset(int fs2set)	// Empty all data fields - sets nSamples t
 	return *this;
 }
 
-void CSignals::SetValue(float v)
+void CSignals::SetValue(auxtype v)
 {
 	Reset(1);
 	body::SetValue(v);
 }
 
-void CSignals::SetValue(complex<float> v)
+void CSignals::SetValue(complex<auxtype> v)
 {
 	Reset(1);
 	body::SetValue(v);
 }
 
-CSignals CSignals::evoke_getval(float (CSignal::*fp)(unsigned int, unsigned int, void *) const, void *popt)
+CSignals CSignals::evoke_getval(auxtype (CSignal::*fp)(unsigned int, unsigned int, void *) const, void *popt)
 {
 	CSignals newout = CTimeSeries::evoke_getval(fp, popt);
 	if (next)
@@ -2528,7 +2528,7 @@ CSignals CSignals::evoke_modsig2(CSignal(*func) (const CSignal&, void*, void*), 
 	return newout;
 }
 
-CSignals CSignals::evoke_getsig2(CSignal(*func) (float*, unsigned int, void*, void*), void* pargin, void* pargout)
+CSignals CSignals::evoke_getsig2(CSignal(*func) (auxtype*, unsigned int, void*, void*), void* pargin, void* pargout)
 {
 	CSignals newout = CTimeSeries::evoke_getsig2(func, pargin, pargout);
 	if (next)
@@ -2536,7 +2536,7 @@ CSignals CSignals::evoke_getsig2(CSignal(*func) (float*, unsigned int, void*, vo
 	return newout;
 }
 
-CSignals CVar::evoke_getsig2(CSignal(*func) (float*, unsigned int, void*, void*), void* pargin, void* pargout)
+CSignals CVar::evoke_getsig2(CSignal(*func) (auxtype*, unsigned int, void*, void*), void* pargin, void* pargout)
 {
 	CSignals newout = CSignals::evoke_getsig2(func, pargin, pargout);
 	auto tp = type();
@@ -2556,7 +2556,7 @@ CSignals CSignals::evoke_getsig(CTimeSeries(*func) (const CTimeSeries&, void*) ,
 	return newout;
 }
 
-CSignals& CSignals::NullIn(float tpoint)
+CSignals& CSignals::NullIn(auxtype tpoint)
 {
 	CTimeSeries::NullIn(tpoint);
 	if (next != NULL)
@@ -2567,17 +2567,17 @@ CSignals& CSignals::NullIn(float tpoint)
 }
 
 
-CSignals& CSignals::operator+=(float con)
+CSignals& CSignals::operator+=(auxtype con)
 {
 	operate(CSignals(con), '+');
 	return *this ;
 }
-CSignals& CSignals::operator*=(float con)
+CSignals& CSignals::operator*=(auxtype con)
 {
 	operate(CSignals(con), '*');
 	return *this;
 }
-CSignals& CSignals::operator/=(float con)
+CSignals& CSignals::operator/=(auxtype con)
 {
 	operate(CSignals(con), '/');
 	return *this;
@@ -2648,7 +2648,7 @@ CSignals& CSignals::reciprocal(void)
 	return *this;
 }
 
-CSignals& CSignals::operator>>=(float delta)
+CSignals& CSignals::operator>>=(auxtype delta)
 {
 	CTimeSeries::operator>>=(delta);
 	if (next)	*next >>= delta;
@@ -2689,7 +2689,7 @@ CSignals& CSignals::LogOp(CSignals &rhs, int type)
 	return *this;
 }
 
-float CSignals::MakeChainless()
+auxtype CSignals::MakeChainless()
 {
 	if (next != NULL && nSamples == 0)
 	{
@@ -2710,28 +2710,28 @@ float CSignals::MakeChainless()
 	return alldur();
 }
 
-CSignals &CSignals::each(float(*fn)(float))
+CSignals &CSignals::each(auxtype(*fn)(auxtype))
 {
 	CTimeSeries::each(fn);
 	if (next) 	next->each(fn);
 	return *this;
 }
 
-CSignals& CSignals::each_allownegative(float(*fn)(float))
+CSignals& CSignals::each_allownegative(auxtype(*fn)(auxtype))
 {
 	CTimeSeries::each_allownegative(fn);
 	if (next) 	next->each(fn);
 	return *this;
 }
 
-CSignals &CSignals::each(complex<float>(*fn)(complex<float>))
+CSignals &CSignals::each(complex<auxtype>(*fn)(complex<auxtype>))
 {
 	CTimeSeries::each(fn);
 	if (next) 	next->each(fn);
 	return *this;
 }
 
-CSignals &CSignals::each(float(*fn)(complex<float>))
+CSignals &CSignals::each(auxtype(*fn)(complex<auxtype>))
 {
 	CTimeSeries::each(fn);
 	if (next) 	next->each(fn);
@@ -2834,7 +2834,7 @@ CVar&  CVar::length()
 {
 	if (IsGO())
 	{
-		if (fs == 3) SetValue((float)nSamples);
+		if (fs == 3) SetValue((auxtype)nSamples);
 		else SetValue(1.);
 	}
 //	else // checkcheckcheck
@@ -2882,9 +2882,9 @@ void CVar::set_class_head(const CSignals & rhs)
 	CSignals::operator=(rhs);
 }
 
-int CSignals::getBufferLength(float& lasttp, float& lasttp_with_silence, float blockDur) const
+int CSignals::getBufferLength(double& lasttp, double& lasttp_with_silence, double blockDur) const
 {
-	float nullportion = tmark;
+	double nullportion = tmark;
 	if (nullportion >= blockDur)
 	{
 		if (!next || next->tmark >= blockDur)
@@ -2895,14 +2895,14 @@ int CSignals::getBufferLength(float& lasttp, float& lasttp_with_silence, float b
 		}
 	}
 	const CSignals* p = this;
-	multimap<float, int> timepoints;
+	multimap<double, int> timepoints;
 	for (int k = 0; p && k < 2; k++, p = (CSignals*)p->next)
 	{
 		for (const CTimeSeries* q = p; q; q = q->chain)
 		{
 			if (q->IsEmpty()) continue;
-			timepoints.insert(pair<float, int>(q->tmark, 1));
-			timepoints.insert(pair<float, int>(q->CSignal::endt(), -1));
+			timepoints.insert(pair<double, int>(q->tmark, 1));
+			timepoints.insert(pair<double, int>(q->CSignal::endt(), -1));
 		}
 	}
 	auto it = timepoints.begin();
@@ -2926,7 +2926,7 @@ int CSignals::getBufferLength(float& lasttp, float& lasttp_with_silence, float b
 	return (int)round(lasttp_with_silence / 1000. * fs);
 }
 
-void CSignals::nextCSignals(float lasttp, float lasttp_with_silence, CSignals& ghcopy)
+void CSignals::nextCSignals(double lasttp, double lasttp_with_silence, CSignals& ghcopy)
 {
 	CSignals* p = &ghcopy;
 	CTimeSeries* q, * q1 = NULL;
@@ -2961,7 +2961,7 @@ void CSignals::nextCSignals(float lasttp, float lasttp_with_silence, CSignals& g
 		ghcopy.Reset();
 }
 
-static float RMS_concatenated(const CTimeSeries& sig)
+static auxtype RMS_concatenated(const CTimeSeries& sig)
 {
 	// Compute the "overall" RMS of entire chain as if all chains were concatenated.
 	// input sig represents RMS value of each chain (nSamples of each chain is 1)
@@ -2976,7 +2976,7 @@ static float RMS_concatenated(const CTimeSeries& sig)
 	return 10.f * log10f(cum / len) + 3.0103f;
 }
 
-CSignal __rms(float* buf, unsigned int len, void* pargin, void* pargout); // from rmsandothers.cpp
+CSignal __rms(auxtype* buf, unsigned int len, void* pargin, void* pargout); // from rmsandothers.cpp
 
 CSignals& CSignals::RMS()
 { // calculating the RMS of the entire CSignals as if all chain's were concatenated.
@@ -2984,7 +2984,7 @@ CSignals& CSignals::RMS()
 	CSignals rmsComputed = evoke_getsig2(__rms, (void*)&fs);
 	// at this point rmsComputed is chain'ed with next (also possibly chain'ed) and nSamples = 1 for each of them 
 	CSignals out(1);
-	float rmsnow;
+	auxtype rmsnow;
 	rmsnow = RMS_concatenated(rmsComputed);
 	out.SetValue(rmsnow);
 	if (rmsComputed.next)
