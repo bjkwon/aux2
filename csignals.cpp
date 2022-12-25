@@ -1982,16 +1982,17 @@ pair<CTimeSeries*, int> CTimeSeries::FindChainAndID(double timept, bool begin)
 	int id;
 	for (; p; p = p->chain)
 	{
+		auto ent = p->CSignal::endt();
 		if (timept >= p->tmark && timept < p->CSignal::endt()) {
 			body = p;
-			id = round((timept - p->tmark) / 1000. * fs);
+			id = round((timept - p->tmark) / 1000. * fs - .5);
 			if (!begin) id--;
 			break;
 		}
 		if (begin) {
 			if (timept < p->tmark) {
 				body = p;
-				id = 0;
+				id = round((timept - p->tmark) / 1000. * fs);
 				break;
 			}
 		}
@@ -2455,6 +2456,59 @@ CSignals::CSignals(std::string str)
 	:next(NULL)
 {
 	SetString(str.c_str());
+}
+
+vector<auxtype> CTimeSeries::bufDataAt(double tpoint_sec, int len)
+{ // Make a data buffer at specified time_point in sec. len is leant to be small enough to make copying of the data buffer easy.
+	auto loc = FindChainAndID(tpoint_sec * 1000., true);
+	auto res = loc.second;
+	int k = 0;
+	if (res >= 0) {
+		vector<auxtype> out;
+		for (; k < min(len, loc.first->nSamples - res); k++)
+			out.push_back(loc.first->buf[res + k]);
+		if (loc.first->nSamples - res < len ) {
+			auto timeadvance = round(1000. * k / fs) / 1000.;
+			// out buffer filled up for 
+			auto out2 = bufDataAt(tpoint_sec + timeadvance, len - k);
+			for (auto v : out2)
+				out.push_back(v);
+		}
+		return out;
+	}
+	else {
+		vector<auxtype> out(min(len, -res), 0);
+		if (len < -res) {
+			fill(out.begin(), out.begin() + len, 0);
+			return out;
+		}
+		for (; k < min(len + res, loc.first->nSamples); k++)
+			out.push_back(loc.first->buf[k]);
+		if (loc.first->nSamples < len + res) {
+			auto timeadvance = round(1000. * (k-res) / fs) / 1000. + .0001;
+			auto newtimepoint = tpoint_sec + timeadvance;
+			auto out2 = bufDataAt(newtimepoint, len - out.size());
+			for (auto v : out2)
+				out.push_back(v);
+		}
+		return out;
+	}
+}
+/* bufDataAt
+* Make a copy of the buf data at the specified time point and the length.
+* If null at the time point, the data is zero buffer until a non-null portion is available.
+* The output :
+        CTimeSeries::bufDataAt : vector 
+		CSignals::bufDataAt : pair of vectors (for mono, the first item is the buffer, the second is a vector of size zero
+*/
+pair<vector<auxtype>, vector<auxtype>> CSignals::bufDataAt(double tpoint_sec, int len)
+{
+	vector<auxtype> out1 = CTimeSeries::bufDataAt(tpoint_sec, len);
+	vector<auxtype> out2;
+	if (next) 
+		out2 = next->CTimeSeries::bufDataAt(tpoint_sec, len);
+	auto out = make_pair(out1, out2);
+	return out;
 }
 
 void CSignals::SetNextChan(const CSignals& second, bool need2makeghost)

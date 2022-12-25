@@ -70,10 +70,8 @@ void json2CVar(CVar& out, const json& in, skope* past, const AstNode* pnode, con
 
 void _json(skope* past, const AstNode* pnode, const vector<CVar>& args)
 {
-	char errStr[16];
 	string filename = past->Sig.str();
 	string errstr, content;
-	size_t len, nLines;
 	CVar out;
 
 	ifstream infc; // input file stream carrier
