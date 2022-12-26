@@ -97,6 +97,7 @@ static void show_result(skope& sc, int precision, const string& display, int dis
 
 CVar interpreter(skope& sc, int display_precision, const string& instr)
 {
+	sc.statusMsg.clear();
 	auto nodes = sc.makenodes(instr);
 	if (!nodes)
 		throw sc.emsg.c_str();
