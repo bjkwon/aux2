@@ -15,7 +15,7 @@ Cfunction set_builtin_function_play(fGate fp)
 	vector<string> desc_arg_req = { "audio_obj", };
 	vector<string> desc_arg_opt = { "devID", "repeat", };
 	vector<CVar> default_arg = { CVar(0.), CVar(1.), };
-	set<uint16_t> allowedTypes1 = { ALL_AUDIO_TYPES };
+	set<uint16_t> allowedTypes1 = { 1, ALL_AUDIO_TYPES };
 	ft.allowed_arg_types.push_back(allowedTypes1);
 	set<uint16_t> allowedTypes2 = { 1, 2 };
 	ft.allowed_arg_types.push_back(allowedTypes2);
@@ -29,7 +29,7 @@ Cfunction set_builtin_function_play(fGate fp)
 	return ft;
 }
 
-Cfunction set_builtin_function_stop(fGate fp)
+Cfunction set_builtin_function_stop_pause(fGate fp)
 {
 	Cfunction ft;
 	set<uint16_t> allowedTypes;
@@ -62,6 +62,8 @@ public:
 	double timeblock; // in sec; determined in the constructor and constant
 	double currenttime; // in sec; constantly changing
 	int currentID; // constantly changing
+	int handle;
+	PaStream* stream;
 	// In the constructor, CVar object and the framebuffer size are specified by the user
 	// timeblock is derived.
 	playmod(const CVar& obj, int _lenblock) {
@@ -77,7 +79,7 @@ private:
 	int lenblock; // not changing after the constructor
 };
 
-static int patestCallback(const void* inputBuffer, void* outputBuffer, unsigned long framesPerBuffer, const PaStreamCallbackTimeInfo* timeInfo, PaStreamCallbackFlags statusFlags, void* userData)
+static int playCallback(const void* inputBuffer, void* outputBuffer, unsigned long framesPerBuffer, const PaStreamCallbackTimeInfo* timeInfo, PaStreamCallbackFlags statusFlags, void* userData)
 {
 	playmod* data = (playmod*)userData;
 	CVar* pobj = (CVar*)data->pvar;
@@ -102,6 +104,17 @@ static int patestCallback(const void* inputBuffer, void* outputBuffer, unsigned 
 }
 
 map<int, PaStream*> streams;
+
+void playfinishcb(void *p)
+{
+	playmod* data = (playmod*)p;
+	//12/27/2022 
+	//At this point, this callback is pretty useless for the implementation of pause() 
+	// as long as pause() uses Pa_StopStream and h.play calls Pa_StartStream again
+	// because Pa_StopStream() invokes this callback.
+//	streams.erase(data->handle);
+}
+
 void playthread(const CVar &obj, int id)
 {
 	PaStreamParameters outputParameters;
@@ -118,33 +131,66 @@ void playthread(const CVar &obj, int id)
 	outputParameters.suggestedLatency = Pa_GetDeviceInfo(outputParameters.device)->defaultLowOutputLatency;
 	outputParameters.hostApiSpecificStreamInfo = NULL;
 	playmod pm(obj, FRAMES_PER_BUFFER);
-	err = Pa_OpenStream(&stream, NULL /*no input*/, &outputParameters, obj.GetFs(), FRAMES_PER_BUFFER, paClipOff, patestCallback, &pm);
+	err = Pa_OpenStream(&stream, NULL /*no input*/, &outputParameters, obj.GetFs(), FRAMES_PER_BUFFER, paClipOff, playCallback, &pm);
+	pm.handle = id;
+	pm.stream = stream;
 	streams[id] = stream;
+	Pa_SetStreamFinishedCallback(stream, playfinishcb);
 	err = Pa_StartStream(stream);
 	Pa_Sleep(obj.alldur() + 500);
 	err = Pa_StopStream(stream);
 	err = Pa_CloseStream(stream);
 }
 
-void _play(skope* past, const AstNode* pnode, const vector<CVar>& args)
+static void cleanup_streams()
 {
-	string fname = pnode->str;
-	int id = rand();
-	thread t1(playthread, past->Sig, id);
-	t1.detach();
-	past->Sig.SetValue((auxtype)id);
+	for (auto it = streams.begin(); it != streams.end(); it++)
+	{
+		const PaStreamInfo* info = Pa_GetStreamInfo((*it).second);
+		if (!info)
+		{
+			streams.erase((*it).first);
+			return;
+		}
+	}
 }
 
-void _stop(skope* past, const AstNode* pnode, const vector<CVar>& args)
+void _play(skope* past, const AstNode* pnode, const vector<CVar>& args)
 {
-	auto res = (int)past->Sig.value();
-	auto st = streams[res];
-	const PaStreamInfo* info = Pa_GetStreamInfo(st);
+	cleanup_streams();
+	string fname = pnode->str;
+	if (ISSCALAR(past->Sig.type())) {
+		auto handle = (int)past->Sig.value();
+		auto stream = streams[handle];
+		const PaStreamInfo* info = Pa_GetStreamInfo(stream);
+		if (!info)
+			past->Sig.SetValue(0);
+		else {
+			PaError err = Pa_StartStream(stream);
+			past->Sig.SetValue(1.);
+		}
+	}
+	else {
+		int handle = rand();
+		thread t1(playthread, past->Sig, handle);
+		t1.detach();
+		past->Sig.SetValue((auxtype)handle);
+	}
+}
+
+void _stop_pause(skope* past, const AstNode* pnode, const vector<CVar>& args)
+{
+	cleanup_streams();
+	string fname = pnode->str;
+	auto handle = (int)past->Sig.value();
+	auto stream = streams[handle];
+	const PaStreamInfo* info = Pa_GetStreamInfo(stream);
 	if (!info)
 		past->Sig.SetValue(0);
 	else {
-		PaError err = Pa_StopStream(st);
-		err = Pa_CloseStream(st);
+		PaError err = Pa_StopStream(stream);
+		if (fname=="stop")
+			err = Pa_CloseStream(stream);
 		if (err != paNoError) {
 			printf("error stop()\n");
 		}
