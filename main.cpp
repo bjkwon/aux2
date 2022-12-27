@@ -4,6 +4,7 @@
 #include <iostream>
 #include <fstream>
 #include "aux_classes.h"
+#include "portaudio.h"
 #include "skope.h"
 #include "skope_exception.h"
 #include "echo.h"
@@ -112,6 +113,10 @@ CVar interpreter(skope& sc, int display_precision, const string& instr)
 
 int main()
 {
+	PaError err = Pa_Initialize();	
+	if (err != paNoError) {
+		printf("error play()\n");
+	}
 	int display_precision(PRECISION);
 	int fs0(DEFAULT_FS);
 	vector<string> auxpathfromenv;
@@ -193,6 +198,7 @@ int main()
 			cout << "Error: " << msg << endl;
 		}
 	}
+	Pa_Terminate();
 	save_auxenv(pglobalEnv, AUXENV_FILE);
 	delete pglobalEnv;
 	return 0;

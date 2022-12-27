@@ -64,18 +64,15 @@ static int patestCallback(const void* inputBuffer, void* outputBuffer, unsigned 
 	auto nomore = pobj->bufDataAt(data->currenttime, framesPerBuffer, out1, out2);
 	//for now just look at out1
 	for (unsigned long k = 0; k < framesPerBuffer; k++) {
-		if (data->currentID + k > out1.size()) {
-			*out++ = 0;
-			*out++ = 0;
-		}
-		else {
-			*out++ = (float)out1[k];  /* left */
-			*out++ = (float)out1[k];  /* right */
-		}
+		*out++ = (float)out1[k];  /* left */
+		*out++ = (float)out1[k];  /* right */
 	}
-	data->currentID += framesPerBuffer;
 	if (nomore)
 		return paComplete;
+	else {
+		data->currentID += out1.size();
+		data->currenttime = (double)data->currentID / pobj->GetFs();
+	}
 	return paContinue;
 }
 
@@ -91,11 +88,6 @@ void _play(skope* past, const AstNode* pnode, const vector<CVar>& args)
 	PaStream * stream;
 	PaError err;
 
-	err = Pa_Initialize();
-	if (err != paNoError) {
-		printf("error play()\n");
-		return;
-	}
 	outputParameters.device = Pa_GetDefaultOutputDevice();
 	if (outputParameters.device == paNoDevice) {
 		fprintf(stderr, "Error: No default output device.\n");
@@ -109,9 +101,8 @@ void _play(skope* past, const AstNode* pnode, const vector<CVar>& args)
 	err = Pa_OpenStream(&stream, NULL /*no input*/, &outputParameters, past->GetFs(), FRAMES_PER_BUFFER, paClipOff, patestCallback, &pm);
 	err = Pa_SetStreamFinishedCallback(stream, &StreamFinished);
 	err = Pa_StartStream(stream);
-	Pa_Sleep(past->Sig.alldur()*20);
+	Pa_Sleep(past->Sig.alldur()+500);
 //	err = Pa_StopStream(stream);
 	err = Pa_CloseStream(stream);
-	Pa_Terminate();
 
 }
