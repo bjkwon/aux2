@@ -1,5 +1,6 @@
 #include "functions_common.h"
 #include "portaudio.h"
+#include <thread>
 
 Cfunction set_builtin_function_play(fGate fp)
 {
@@ -100,20 +101,9 @@ static int patestCallback(const void* inputBuffer, void* outputBuffer, unsigned 
 	return paContinue;
 }
 
-//static void StreamFinished(void* userData)
-//{
-//	printf("Stream Completed.\n");
-//}
-
-typedef struct {
-	CVar obj;
-	int uniqueid;
-} ps;
-#include <thread>
 map<int, PaStream*> streams;
 void playthread(const CVar &obj, int id)
 {
-//	CVar* obj = &p->obj;
 	PaStreamParameters outputParameters;
 	PaStream* stream;
 	PaError err;
@@ -130,40 +120,34 @@ void playthread(const CVar &obj, int id)
 	playmod pm(obj, FRAMES_PER_BUFFER);
 	err = Pa_OpenStream(&stream, NULL /*no input*/, &outputParameters, obj.GetFs(), FRAMES_PER_BUFFER, paClipOff, patestCallback, &pm);
 	streams[id] = stream;
-//	err = Pa_SetStreamFinishedCallback(stream, &StreamFinished);
 	err = Pa_StartStream(stream);
 	Pa_Sleep(obj.alldur() + 500);
-	//	err = Pa_StopStream(stream);
+	err = Pa_StopStream(stream);
 	err = Pa_CloseStream(stream);
 }
 
-//vector<std::thread*> playingthreads;
-#include <iostream>
 void _play(skope* past, const AstNode* pnode, const vector<CVar>& args)
 {
 	string fname = pnode->str;
-	ps tt;
-	tt.obj = past->Sig;
-	tt.uniqueid = rand();
-	thread t1(playthread, past->Sig, tt.uniqueid);
-//	playingthreads.push_back(&t1);
-	std::thread::id playthreadID = t1.get_id();
-	bool b = t1.joinable();
-	//std::cout << "playingthreads counts: " << playingthreads.size() << endl;
-	//for (auto v : playingthreads) {
-	//	std::cout << "thread ID " << v->get_id() << ":" << v->joinable() << endl;
-	//}
+	int id = rand();
+	thread t1(playthread, past->Sig, id);
 	t1.detach();
-	past->Sig.SetValue(tt.uniqueid);
+	past->Sig.SetValue((auxtype)id);
 }
 
 void _stop(skope* past, const AstNode* pnode, const vector<CVar>& args)
 {
 	auto res = (int)past->Sig.value();
 	auto st = streams[res];
-	PaError err = Pa_StopStream(st);
-	err = Pa_CloseStream(st);
-	if (err != paNoError) {
-		printf("error stop()\n");
+	const PaStreamInfo* info = Pa_GetStreamInfo(st);
+	if (!info)
+		past->Sig.SetValue(0);
+	else {
+		PaError err = Pa_StopStream(st);
+		err = Pa_CloseStream(st);
+		if (err != paNoError) {
+			printf("error stop()\n");
+		}
+		past->Sig.SetValue(1.);
 	}
 }

@@ -113,7 +113,8 @@ CVar interpreter(skope& sc, int display_precision, const string& instr)
 
 int main()
 {
-	PaError err = Pa_Initialize();	
+	srand((unsigned)time(0));
+	PaError err = Pa_Initialize();
 	if (err != paNoError) {
 		printf("error play()\n");
 	}
