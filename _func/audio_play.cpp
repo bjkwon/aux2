@@ -28,37 +28,53 @@ Cfunction set_builtin_function_play(fGate fp)
 	return ft;
 }
 
-#define FRAMES_PER_BUFFER 2048
+#define FRAMES_PER_BUFFER 1000
 
 
-class playstr {
+class playmod {
 public:
 	const CVar* pvar;
-	int offset;
-	playstr(const CVar& obj = NULL) { pvar = &obj;  offset = 0; };
-	virtual ~playstr() {};
+	double timeblock; // in sec; determined in the constructor and constant
+	double currenttime; // in sec; constantly changing
+	int currentID; // constantly changing
+	// In the constructor, CVar object and the framebuffer size are specified by the user
+	// timeblock is derived.
+	playmod(const CVar& obj, int _lenblock) {
+		pvar = &obj;
+		lenblock = _lenblock;
+		timeblock = (double)lenblock / pvar->GetFs();
+		currenttime = 0;
+		currentID = 0;
+	};
+	virtual ~playmod() {};
+	int get_lenblock() { return lenblock; };
+private:
+	int lenblock; // not changing after the constructor
 };
 
 static int patestCallback(const void* inputBuffer, void* outputBuffer, unsigned long framesPerBuffer, const PaStreamCallbackTimeInfo* timeInfo, PaStreamCallbackFlags statusFlags, void* userData)
 {
-	playstr* data = (playstr*)userData;
+	playmod* data = (playmod*)userData;
 	CVar* pobj = (CVar*)data->pvar;
 	float* out = (float*)outputBuffer;
 	(void)timeInfo; /* Prevent unused variable warnings. */
 	(void)statusFlags;
 	(void)inputBuffer;
-	for (unsigned long i = 0; i < framesPerBuffer; i++) {
-		if (data->offset + i > pobj->nSamples) {
+	vector<auxtype> out1, out2;
+	auto nomore = pobj->bufDataAt(data->currenttime, framesPerBuffer, out1, out2);
+	//for now just look at out1
+	for (unsigned long k = 0; k < framesPerBuffer; k++) {
+		if (data->currentID + k > out1.size()) {
 			*out++ = 0;
 			*out++ = 0;
 		}
 		else {
-			*out++ = (float)pobj->buf[data->offset + i];  /* left */
-			*out++ = (float)pobj->buf[data->offset + i];  /* right */
+			*out++ = (float)out1[k];  /* left */
+			*out++ = (float)out1[k];  /* right */
 		}
 	}
-	data->offset += framesPerBuffer;
-	if (data->offset >= pobj->nSamples)
+	data->currentID += framesPerBuffer;
+	if (nomore)
 		return paComplete;
 	return paContinue;
 }
@@ -89,11 +105,11 @@ void _play(skope* past, const AstNode* pnode, const vector<CVar>& args)
 	outputParameters.sampleFormat = paFloat32; /* 32 bit floating point output */
 	outputParameters.suggestedLatency = Pa_GetDeviceInfo(outputParameters.device)->defaultLowOutputLatency;
 	outputParameters.hostApiSpecificStreamInfo = NULL;
-	playstr ps(past->Sig);
-	err = Pa_OpenStream(&stream, NULL /*no input*/, &outputParameters, past->GetFs(), FRAMES_PER_BUFFER, paClipOff, patestCallback, &ps);
+	playmod pm(past->Sig, FRAMES_PER_BUFFER);
+	err = Pa_OpenStream(&stream, NULL /*no input*/, &outputParameters, past->GetFs(), FRAMES_PER_BUFFER, paClipOff, patestCallback, &pm);
 	err = Pa_SetStreamFinishedCallback(stream, &StreamFinished);
 	err = Pa_StartStream(stream);
-	Pa_Sleep(past->Sig.alldur()*1.2);
+	Pa_Sleep(past->Sig.alldur()*20);
 //	err = Pa_StopStream(stream);
 	err = Pa_CloseStream(stream);
 	Pa_Terminate();

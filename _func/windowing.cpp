@@ -160,8 +160,22 @@ void _ramp(skope* past, const AstNode* pnode, const vector<CVar>& args)
 	past->Sig.evoke_modsig(dramp, &rampdur_fs);
 }
 
+using namespace std;
+#include <iostream>
+
 void _sam(skope* past, const AstNode* pnode, const vector<CVar>& args)
 {
+	vector<auxtype> out;
+	auto res = past->Sig.CTimeSeries::bufDataAt(args[0].value(), args[1].value(), out);
+	cout << "bufDataAt(" << args[0].value() << "," << args[1].value() << ")  ---> outsize=" << out.size() << endl;;
+	char buf[64];
+	for (int k = out.size() - 3; k < out.size(); k++)
+	{
+		sprintf(buf, "out[%d] %.4f ", k, out[k]);
+		cout << buf;
+	}
+	cout << " ... Returns " << res << endl;
 	auxtype samrate_depth_initphase_fs[4] = { args[0].value(), args[1].value(), args[2].value(), (auxtype)past->Sig.GetFs() };
 	past->Sig.evoke_modsig(__sam, &samrate_depth_initphase_fs);
+	int k = 2;
 }

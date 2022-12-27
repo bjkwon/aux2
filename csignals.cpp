@@ -1985,7 +1985,7 @@ pair<CTimeSeries*, int> CTimeSeries::FindChainAndID(double timept, bool begin)
 		auto ent = p->CSignal::endt();
 		if (timept >= p->tmark && timept < p->CSignal::endt()) {
 			body = p;
-			id = round((timept - p->tmark) / 1000. * fs - .5);
+			id = round((timept - p->tmark) / 1000. * fs);
 			if (!begin) id--;
 			break;
 		}
@@ -2458,40 +2458,75 @@ CSignals::CSignals(std::string str)
 	SetString(str.c_str());
 }
 
-vector<auxtype> CTimeSeries::bufDataAt(double tpoint_sec, int len)
+bool CTimeSeries::bufDataAt(double tpoint_sec, int len, vector<auxtype>& out)
 { // Make a data buffer at specified time_point in sec. len is leant to be small enough to make copying of the data buffer easy.
-	auto loc = FindChainAndID(tpoint_sec * 1000., true);
-	auto res = loc.second;
+	// finder is a pair of (CTimeSeries object that covers the time point, index at that time point)
+	// if first==NULL, that means, the object is not found (time point is beyond the time of the object)
+	auto finder = FindChainAndID(tpoint_sec * 1000., true);
+	if (finder.first == NULL) {
+		out.resize(len);
+		return false;
+	}
+	auto begin_id = finder.second;
+	if (len == 0) {
+		if (finder.first->nSamples - begin_id > 0)
+			return false;
+		else
+			return true;
+	}
+	bool nomoredata;
 	int k = 0;
-	if (res >= 0) {
-		vector<auxtype> out;
-		for (; k < min(len, loc.first->nSamples - res); k++)
-			out.push_back(loc.first->buf[res + k]);
-		if (loc.first->nSamples - res < len ) {
+	if (begin_id >= 0) {
+		for (; k < min(len, finder.first->nSamples - begin_id); k++)
+			out.push_back(finder.first->buf[begin_id + k]);
+		int left_in_buffer = finder.first->nSamples - begin_id - k;
+		if (left_in_buffer == 0) {
+			if (chain) {
+				if (len == k)
+					return false;
+				auto timeadvance = round(1000. * k / fs) / 1000.;
+				auto newtimepoint = tpoint_sec + timeadvance;
+				vector<auxtype> out2;
+				nomoredata = bufDataAt(tpoint_sec + timeadvance, len - k, out2);
+				for (auto v : out2)
+					out.push_back(v);
+			}
+			else {
+				int need_to_fill_more = len - k;
+				nomoredata = true;
+				for (k=0; k < need_to_fill_more; k++)
+					out.push_back(0.);
+			}
+		}
+		else {
+			if (len == k)
+				return false;
 			auto timeadvance = round(1000. * k / fs) / 1000.;
-			// out buffer filled up for 
-			auto out2 = bufDataAt(tpoint_sec + timeadvance, len - k);
+			auto newtimepoint = tpoint_sec + timeadvance;
+			vector<auxtype> out2;
+			nomoredata = bufDataAt(tpoint_sec + timeadvance, len - k, out2);
 			for (auto v : out2)
 				out.push_back(v);
 		}
-		return out;
+		return nomoredata;
 	}
 	else {
-		vector<auxtype> out(min(len, -res), 0);
-		if (len < -res) {
-			fill(out.begin(), out.begin() + len, 0);
-			return out;
+		out.resize(min(len, -begin_id));
+		fill(out.begin(), out.begin() + min(len, -begin_id), 0);
+		if (len < -begin_id) {
+			// zeros filled in and stopped before reaching the end of the next... Return true or false depending on it's done or more coming.
+			nomoredata = chain == NULL ? true : false; // wait.. chain shnouldn't be NULL... 
 		}
-		for (; k < min(len + res, loc.first->nSamples); k++)
-			out.push_back(loc.first->buf[k]);
-		if (loc.first->nSamples < len + res) {
-			auto timeadvance = round(1000. * (k-res) / fs) / 1000. + .0001;
+		else {
+			// zeros filled in, now about to hit the next one
+			auto timeadvance = round(1000. * -begin_id / fs) / 1000.;
 			auto newtimepoint = tpoint_sec + timeadvance;
-			auto out2 = bufDataAt(newtimepoint, len - out.size());
+			vector<auxtype> out2;
+			nomoredata = bufDataAt(newtimepoint, len - out.size(), out2);
 			for (auto v : out2)
 				out.push_back(v);
 		}
-		return out;
+		return nomoredata;
 	}
 }
 /* bufDataAt
@@ -2500,15 +2535,16 @@ vector<auxtype> CTimeSeries::bufDataAt(double tpoint_sec, int len)
 * The output :
         CTimeSeries::bufDataAt : vector 
 		CSignals::bufDataAt : pair of vectors (for mono, the first item is the buffer, the second is a vector of size zero
+* Return value: true if there's no further data after this buffer, false otherwise
 */
-pair<vector<auxtype>, vector<auxtype>> CSignals::bufDataAt(double tpoint_sec, int len)
+bool CSignals::bufDataAt(double tpoint_sec, int len, vector<auxtype>& out1, vector<auxtype>& out2)
 {
-	vector<auxtype> out1 = CTimeSeries::bufDataAt(tpoint_sec, len);
-	vector<auxtype> out2;
+	bool res1, res2 = true;
+	res1 = CTimeSeries::bufDataAt(tpoint_sec, len, out1);
 	if (next) 
-		out2 = next->CTimeSeries::bufDataAt(tpoint_sec, len);
+		 res2 = next->CTimeSeries::bufDataAt(tpoint_sec, len, out2);
 	auto out = make_pair(out1, out2);
-	return out;
+	return res1 & res2;
 }
 
 void CSignals::SetNextChan(const CSignals& second, bool need2makeghost)
