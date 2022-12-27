@@ -104,11 +104,16 @@ static int patestCallback(const void* inputBuffer, void* outputBuffer, unsigned 
 //{
 //	printf("Stream Completed.\n");
 //}
+
+typedef struct {
+	CVar obj;
+	int uniqueid;
+} ps;
 #include <thread>
-vector<PaStream*> streamvector;
-void playthread(void* p)
+map<int, PaStream*> streams;
+void playthread(const CVar &obj, int id)
 {
-	CVar* pobj = (CVar*)p;
+//	CVar* obj = &p->obj;
 	PaStreamParameters outputParameters;
 	PaStream* stream;
 	PaError err;
@@ -122,12 +127,12 @@ void playthread(void* p)
 	outputParameters.sampleFormat = paFloat32; /* 32 bit floating point output */
 	outputParameters.suggestedLatency = Pa_GetDeviceInfo(outputParameters.device)->defaultLowOutputLatency;
 	outputParameters.hostApiSpecificStreamInfo = NULL;
-	playmod pm(*pobj, FRAMES_PER_BUFFER);
-	err = Pa_OpenStream(&stream, NULL /*no input*/, &outputParameters, pobj->GetFs(), FRAMES_PER_BUFFER, paClipOff, patestCallback, &pm);
-	streamvector.push_back(stream);
+	playmod pm(obj, FRAMES_PER_BUFFER);
+	err = Pa_OpenStream(&stream, NULL /*no input*/, &outputParameters, obj.GetFs(), FRAMES_PER_BUFFER, paClipOff, patestCallback, &pm);
+	streams[id] = stream;
 //	err = Pa_SetStreamFinishedCallback(stream, &StreamFinished);
 	err = Pa_StartStream(stream);
-	Pa_Sleep(pobj->alldur() + 500);
+	Pa_Sleep(obj.alldur() + 500);
 	//	err = Pa_StopStream(stream);
 	err = Pa_CloseStream(stream);
 }
@@ -137,7 +142,10 @@ void playthread(void* p)
 void _play(skope* past, const AstNode* pnode, const vector<CVar>& args)
 {
 	string fname = pnode->str;
-	thread t1(playthread, &past->Sig);
+	ps tt;
+	tt.obj = past->Sig;
+	tt.uniqueid = rand();
+	thread t1(playthread, past->Sig, tt.uniqueid);
 //	playingthreads.push_back(&t1);
 	std::thread::id playthreadID = t1.get_id();
 	bool b = t1.joinable();
@@ -146,12 +154,13 @@ void _play(skope* past, const AstNode* pnode, const vector<CVar>& args)
 	//	std::cout << "thread ID " << v->get_id() << ":" << v->joinable() << endl;
 	//}
 	t1.detach();
-
+	past->Sig.SetValue(tt.uniqueid);
 }
 
 void _stop(skope* past, const AstNode* pnode, const vector<CVar>& args)
 {
-	auto st = streamvector.back();
+	auto res = (int)past->Sig.value();
+	auto st = streams[res];
 	PaError err = Pa_StopStream(st);
 	err = Pa_CloseStream(st);
 	if (err != paNoError) {
