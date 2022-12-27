@@ -216,6 +216,7 @@ void CAstSigEnv::InitBuiltInFunctions()
 	SET_BUILTIN_FUNC("squeeze", vector);
 
 	SET_BUILTIN_FUNC("play", play);
+	SET_BUILTIN_FUNC("stop", stop);
 
 	SET_BUILTIN_FUNC("error", error_warning);
 	SET_BUILTIN_FUNC("warning", error_warning);
