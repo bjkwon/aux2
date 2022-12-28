@@ -53,7 +53,7 @@ Cfunction set_builtin_function_stop_pause(fGate fp)
 	return ft;
 }
 
-#define FRAMES_PER_BUFFER 1000
+#define FRAMES_PER_BUFFER 256
 
 
 class playmod {

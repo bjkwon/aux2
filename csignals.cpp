@@ -2477,7 +2477,7 @@ bool CTimeSeries::bufDataAt(double tpoint_sec, int len, vector<auxtype>& out)
 	bool nomoredata;
 	int k = 0;
 	if (begin_id >= 0) {
-		for (; k < min(len, finder.first->nSamples - begin_id); k++)
+		for (; k < min(len, (int)(finder.first->nSamples - begin_id)); k++)
 			out.push_back(finder.first->buf[begin_id + k]);
 		int left_in_buffer = finder.first->nSamples - begin_id - k;
 		if (left_in_buffer == 0) {
