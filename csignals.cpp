@@ -2494,8 +2494,9 @@ bool CTimeSeries::bufDataAt(double tpoint_sec, int len, vector<auxtype>& out)
 			else {
 				int need_to_fill_more = len - k;
 				nomoredata = true;
-				for (k=0; k < need_to_fill_more; k++)
-					out.push_back(0.);
+				// Commenting out post-zero fillout, making the output less than len if zeros are there
+				// for (k=0; k < need_to_fill_more; k++)
+				//	out.push_back(0.);
 			}
 		}
 		else {
@@ -2511,8 +2512,9 @@ bool CTimeSeries::bufDataAt(double tpoint_sec, int len, vector<auxtype>& out)
 		return nomoredata;
 	}
 	else {
-		out.resize(min(len, -begin_id));
-		fill(out.begin(), out.begin() + min(len, -begin_id), 0);
+		// Commenting out post-zero fillout, making the output less than len if zeros are there
+		//out.resize(min(len, -begin_id));
+		//fill(out.begin(), out.begin() + min(len, -begin_id), 0);
 		if (len < -begin_id) {
 			// zeros filled in and stopped before reaching the end of the next... Return true or false depending on it's done or more coming.
 			nomoredata = chain == NULL ? true : false; // wait.. chain shnouldn't be NULL... 

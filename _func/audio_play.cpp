@@ -90,11 +90,11 @@ static int playCallback(const void* inputBuffer, void* outputBuffer, unsigned lo
 	vector<auxtype> out1, out2;
 	auto nomore = pobj->bufDataAt(data->currenttime, framesPerBuffer, out1, out2);
 	//for now just look at out1
-	for (unsigned long k = 0; k < framesPerBuffer; k++) {
+	for (unsigned long k = 0; k < min(out1.size(), framesPerBuffer); k++) {
 		*out++ = (float)out1[k];  /* left */
-		*out++ = (float)out1[k];  /* right */
+		*out++ = (float)out2[k];  /* right */
 	}
-	if (nomore)
+	if (nomore || out1.size() < framesPerBuffer)
 		return paComplete;
 	else {
 		data->currentID += out1.size();
