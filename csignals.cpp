@@ -2541,6 +2541,8 @@ bool CTimeSeries::bufDataAt(double tpoint_sec, int len, vector<auxtype>& out)
 */
 bool CSignals::bufDataAt(double tpoint_sec, int len, vector<auxtype>& out1, vector<auxtype>& out2)
 {
+	out1.clear();
+	out2.clear();
 	bool res1, res2 = true;
 	res1 = CTimeSeries::bufDataAt(tpoint_sec, len, out1);
 	if (next) 
