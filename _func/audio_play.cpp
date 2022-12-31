@@ -140,9 +140,6 @@ static int playCallback(const void* inputBuffer, void* outputBuffer, unsigned lo
 		*out++ = (float)out1[k];  /* left */
 		*out++ = (float)out2[k];  /* right */
 	}
-	std::cout << "currentID=" << data->currentID << " currenttime=" << data->currenttime << endl;
-	std::cout << "out1.size = " << out1.size() << " out1[0] = " << out1[0] << " out1[1] = " << out1[1] << " ";
-	std::cout << " out1[end-2] = " << out1[out1.size()-2] << " out1[end-1] = " << out1[out1.size()-1] << endl;
 	if (nomore) {
 		data->repeatCount--;
 		std::cout << "repeat down to " << data->repeatCount << endl;
@@ -151,9 +148,6 @@ static int playCallback(const void* inputBuffer, void* outputBuffer, unsigned lo
 			data->currenttime = (double)data->currentID / pobj->GetFs();
 			std::cout << "new call bufDataAt with 0, " << framesPerBuffer - out1.size() << endl;
 			nomore = pobj->bufDataAt(0, framesPerBuffer - out1.size(), out1, out2);
-			std::cout << "currentID=" << data->currentID << " currenttime=" << data->currenttime << endl;
-			std::cout << "out1.size = " << out1.size() << " out1[0] = " << out1[0] << " out1[1] = " << out1[1] << " ";
-			std::cout << " out1[end-2] = " << out1[out1.size() - 2] << " out1[end-1] = " << out1[out1.size() - 1] << endl;
 			auto endpt = out1.size();
 			for (unsigned long k = 0; k < endpt; k++) {
 				*out++ = (float)out1[k];  /* left */
@@ -162,7 +156,6 @@ static int playCallback(const void* inputBuffer, void* outputBuffer, unsigned lo
 			data->currentID += endpt;
 			data->currenttime = (double)data->currentID / pobj->GetFs();
 			phandle->strut["dur_prog"].SetValue(data->currenttime);
-			std::cout << "\tnomore=" << nomore << " (updated)currentID=" << data->currentID << " currenttime=" << data->currenttime << endl;
 			return paContinue;
 		}
 		else
@@ -175,7 +168,6 @@ static int playCallback(const void* inputBuffer, void* outputBuffer, unsigned lo
 		data->currentID += out1.size();
 		data->currenttime = (double)data->currentID / pobj->GetFs();
 		phandle->strut["dur_prog"].SetValue(data->currenttime);
-		std::cout << "\tnomore=" << nomore << " (updated)currentID = " << data->currentID << " currenttime = " << data->currenttime << endl;
 	}
 	return paContinue;
 }
@@ -201,6 +193,7 @@ void playthread(const CVar &obj, const CVar& handle, const PaStreamParameters& o
 	streams[pm.phandle] = stream;
 	Pa_SetStreamFinishedCallback(stream, playfinishcb);
 	err = Pa_StartStream(stream);
+	// sleep time: segment duration plus a margin of ~ 500 ms
 	Pa_Sleep(obj.alldur() + 500* (int)(*rep).second.value());
 	err = Pa_StopStream(stream);
 	err = Pa_CloseStream(stream);
