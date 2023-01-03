@@ -71,8 +71,16 @@ static void show_result(skope& sc, int precision, const string& display, int dis
 				for (AstNode* p2 = ((AstNode*)pp->str)->alt; !pp->suppress && p2; p2 = p2->next, dt++)
 					echo(precision, dt, sc, p2, NULL, display, display_count);
 			}
-			else
-				echo(precision, dt, sc, pp, sc.Sig.IsGO() ? sc.pgo : &sc.Sig, display, display_count);
+			else // to do... Currently, in block statement, only the last one a null object is echoed 1/3/2023
+			{
+				auto tp = sc.Sig.type();
+				CVar* psig;
+				if (sc.pgo != nullptr && ISSCALARG(tp) && ISSTRUT(tp) && sc.pgo.get()->value() == sc.Sig.value())
+					psig = sc.pgo.get();
+				else
+					psig = &sc.Sig;
+				echo(precision, dt, sc, pp, psig, display, display_count);
+			}
 		}
 	}
 	else if (sc.node->type == N_VECTOR)// && sc.node->alt && sc.node->alt->type!=N_STRUCT) // sc.node->alt is necessary to ensure that there's a vector on the LHS
@@ -85,9 +93,12 @@ static void show_result(skope& sc, int precision, const string& display, int dis
 	}
 	else // see if lhs makes more sense than xtree
 	{
+		auto tp = sc.Sig.type();
 		CVar* psig;
-		if (sc.Sig.IsGO() && sc.Sig.GetFs() != 3) psig = sc.pgo;
-		else psig = &sc.Sig;
+		if (sc.pgo != nullptr && ISSCALARG(tp) && ISSTRUT(tp) && sc.pgo.get()->value() == sc.Sig.value())
+			psig = sc.pgo.get();
+		else 
+			psig = &sc.Sig;
 		echo(precision, dt, sc, sc.node, psig, display, display_count);
 	}
 	if (sc.statusMsg.empty())

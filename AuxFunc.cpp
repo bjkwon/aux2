@@ -216,8 +216,10 @@ void CAstSigEnv::InitBuiltInFunctions()
 	SET_BUILTIN_FUNC("squeeze", vector);
 
 	SET_BUILTIN_FUNC("play", play);
-	SET_BUILTIN_FUNC("stop", stop_pause);
-	SET_BUILTIN_FUNC("pause", stop_pause);
+	SET_BUILTIN_FUNC("play", play2);
+	SET_BUILTIN_FUNC("stop", stop_pause_resume);
+	SET_BUILTIN_FUNC("pause", stop_pause_resume);
+	SET_BUILTIN_FUNC("resume", stop_pause_resume);
 
 	SET_BUILTIN_FUNC("error", error_warning);
 	SET_BUILTIN_FUNC("warning", error_warning);
@@ -711,7 +713,13 @@ void _clear(skope* past, const AstNode* pnode, const vector<CVar>& args)
 		past->ClearVar(past->pheadthisline->str);
 	else
 		throw exception_etc(*past, pnode, "Only variables can be cleared.").raise();
+	auto tp = past->Sig.type();
+	// Cleaning up pgo
+	if (past->pgo != nullptr && ISSCALARG(tp) && ISSTRUT(tp) && past->pgo.get()->value() == past->Sig.value())
+	{
+		past->pgo.reset();
+		past->pgo = nullptr;
+	}
 	past->Sig.Reset();
-
 }
 

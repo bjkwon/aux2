@@ -67,7 +67,9 @@ public:
 	static bool IsNULL(uint16_t tp) { return tp == TYPEBIT_NULL; };
 	static bool IsNULLG(uint16_t tp) { return !(tp & 3); };
 	static bool IsScalar(uint16_t tp) { return (tp & 0b1111) == 1; };
+	static bool IsNotScalar(uint16_t tp) { return (tp & 0b1111) != 1; };
 	static bool IsScalarG(uint16_t tp) { return (((tp & 0b1111) & 0xF003)) == 1; };
+	static bool IsNotScalarG(uint16_t tp) { return (((tp & 0b1111) & 0xF003)) != 1; };
 	static bool IsVector(uint16_t tp) { return (tp & 0b1111) == 2; };
 	static bool IsVectorG(uint16_t tp) { return (((tp & 0b1111) & 0xF003)) == 2; };
 	static bool Is2D(uint16_t tp) { return (tp & 0xFF0F) == 3; };
@@ -273,7 +275,7 @@ public:
 	CVar Sig; // placeholder for the output of Compute(); used in various ways
 	vector<unique_ptr<CVar>> SigExt; // placeholder for multiple output arguments
 	AstNode* node;
-	CVar* pgo; // pointer, not a copy, of the last computed object; used for graffy functions
+	unique_ptr<CVar> pgo; // pointer, not a copy, of the last computed object; used for audio or graphics handles
 	int level;
 	vector<int> baselevel;
 	map<string, CVar> Vars;

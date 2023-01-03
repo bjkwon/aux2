@@ -191,10 +191,10 @@ void skope::outputbinding(const AstNode *pnode, size_t nArgout)
 			//if (son->GOvars[varname].size() > 1) // need to make an CSIG_HDLARRAY object
 			//	pgo = MakeGOContainer(son->GOvars[varname]);
 			//else
-				pgo = son->GOvars[varname].front();
-			if (count++ == 0)
-				Sig = *pgo; //Ghost output to console
-			SetVar(pp->str, pgo);
+//				pgo = son->GOvars[varname].front();
+//			if (count++ == 0)
+//				Sig = *pgo; //Ghost output to console
+//			SetVar(pp->str, pgo);
 		}
 		if (count == nArgout) break;
 		pp = pp->next;
@@ -564,8 +564,8 @@ AstNode* skope::read_node(CVar** psigBase, AstNode* ptree)
 		// Need a case where both cell and strut are used?
 		// Right now it's not prohibited, but not properly processed either.
 		// Only cell is processed even if a strut has been defined 1/31/2021
-		if (pres->IsGO()) // the variable ptree->str is a GO
-			Sig = *(*psigBase = pgo = pres);
+		//if (pres->IsGO()) // the variable ptree->str is a GO
+		//	Sig = *(*psigBase = pgo = pres);
 		if (IsConditional(ptree)) return get_next_parsible_node(ptree);
 		if (ptree->alt && ptree->alt->type == N_CELL)
 			//either cellvar{2} or cellvar{2}(3). cellvar or cellvar(2) doesn't come here.
@@ -822,9 +822,9 @@ void skope::PrepareAndCallUDF(const AstNode* pCalling, CVar* pBase, CVar* pStati
 	for (; pa && pf; pa = pa->next, pf = pf->next)
 	{
 		CVar tsig = Compute(pa);
-		if (tsig.IsGO())
-			son->SetVar(pf->str, pgo); // variable pf->str is created in the context of son
-		else
+		//if (tsig.IsGO())
+		//	son->SetVar(pf->str, pgo); // variable pf->str is created in the context of son
+		//else
 			son->SetVar(pf->str, &tsig); // variable pf->str is created in the context of son
 		son->u.nargin++;
 	}
@@ -1405,12 +1405,12 @@ CVar* skope::NodeVector(const AstNode* pn)
 		auto type = psig->type();
 		if (!nCount) {
 			if (!p->next) return &(Sig = *psig); // if only single item, return here
-			if (psig->IsGO()) {
-				if (psig->GetFs() == 3)
-					for (unsigned int k = 0; k < psig->nSamples; k++) dbuf.push_back(psig->buf[k]);
-				else
-					dbuf.push_back((auxtype)(INT_PTR)pgo); // psig is the address of Sig, which is a copy; pgo is correct 9/28/2020
-			}
+			//if (psig->IsGO()) {
+			//	if (psig->GetFs() == 3)
+			//		for (unsigned int k = 0; k < psig->nSamples; k++) dbuf.push_back(psig->buf[k]);
+			//	else
+			//		dbuf.push_back((auxtype)(INT_PTR)pgo); // psig is the address of Sig, which is a copy; pgo is correct 9/28/2020
+			//}
 			else if (psig->IsBool())
 				for (unsigned int k = 0; k < psig->nSamples; k++) bbuf.push_back(psig->logbuf[k]);
 			else if (psig->IsComplex())
@@ -1435,13 +1435,14 @@ CVar* skope::NodeVector(const AstNode* pn)
 			}
 			else
 			{
-				if (psig->IsGO()) {
-					if (psig->GetFs() == 3)
-						for (unsigned int k = 0; k < psig->nSamples; k++) dbuf.push_back(psig->buf[k]);
-					else
-						dbuf.push_back((auxtype)(INT_PTR)pgo);
-				}
-				else if (psig->IsBool() && !psig->IsGO())
+				//if (psig->IsGO()) {
+				//	if (psig->GetFs() == 3)
+				//		for (unsigned int k = 0; k < psig->nSamples; k++) dbuf.push_back(psig->buf[k]);
+				//	else
+				//		dbuf.push_back((auxtype)(INT_PTR)pgo);
+				//}
+				//else 
+				if (psig->IsBool() && !psig->IsGO())
 					throw exception_etc(*this, pn, "Attempting to append a bool element to a non-bool array").raise();
 				else if (!cbuf.empty())
 				{
@@ -1580,8 +1581,9 @@ CVar* skope::Dot(AstNode* p, CVar* psig)
 	// therefore, lhs should not be updated here.
 	CVar* psigBase = psig;
 	read_nodes(&psigBase, p);
-	if (psigBase->IsGO() && psigBase->GetFs() != 3) return pgo;
-	else	return &Sig;
+	//if (psigBase->IsGO() && psigBase->GetFs() != 3) return pgo;
+	//else
+		return &Sig;
 }
 
 void skope::Transpose(const AstNode* pnode, AstNode* p)
@@ -1594,26 +1596,26 @@ void skope::Concatenate(const AstNode* pnode, AstNode* p)
 {
 	ostringstream oss;
 	CVar tsig = Compute(p->next);
-	if (pgo)
-	{ //special treatment needed to multiple GO's
-		vector<CVar*> tp;
-		tp.push_back(pgo);
-		Compute(p);
-		if (Sig.IsEmpty())
-		{
-			Sig = *pgo;
-			return;
-		}
-		//Now, Sig can be CSIG_HDLARRAY, then use it as is.
-		if (!pgo)
-			throw exception_etc(*this, p, "RHS is a graphic handle. LHS is not. Can't concatenate.").raise();
-		//if (Sig.GetType() == CSIG_HDLARRAY)
-		//{
-		//	Sig.UpdateBuffer(Sig.nSamples + 1);
-		//	Sig.buf[Sig.nSamples - 1] = (auxtype)(INT_PTR)tp.front();
-		//}
-		return;
-	}
+	//if (pgo)
+	//{ //special treatment needed to multiple GO's
+	//	vector<CVar*> tp;
+	//	tp.push_back(pgo);
+	//	Compute(p);
+	//	if (Sig.IsEmpty())
+	//	{
+	//		Sig = *pgo;
+	//		return;
+	//	}
+	//	//Now, Sig can be CSIG_HDLARRAY, then use it as is.
+	//	if (!pgo)
+	//		throw exception_etc(*this, p, "RHS is a graphic handle. LHS is not. Can't concatenate.").raise();
+	//	//if (Sig.GetType() == CSIG_HDLARRAY)
+	//	//{
+	//	//	Sig.UpdateBuffer(Sig.nSamples + 1);
+	//	//	Sig.buf[Sig.nSamples - 1] = (auxtype)(INT_PTR)tp.front();
+	//	//}
+	//	return;
+	//}
 	Compute(p);
 	uint16_t a = tsig.type();
 	uint16_t b = Sig.type();

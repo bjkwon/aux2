@@ -100,9 +100,6 @@ map<string, Cfunction> CAstSigEnv::pseudo_vars = dummy_pseudo_vars;
 
 DECL_GATE(_movespec)
 
-void _minmax(skope* past, const AstNode* pnode, const vector<CVar>& args);
-void _filt(skope* past, const AstNode* pnode, const vector<CVar>& args);
-void _iir(skope* past, const AstNode* pnode, const vector<CVar>& args);
 DECL_GATE(_tparamonly)
 DECL_GATE(_rand)
 DECL_GATE(_irand)
@@ -112,10 +109,6 @@ DECL_GATE(_andor2)
 DECL_GATE(_mostleast)
 DECL_GATE(_sort)
 void _sprintf(skope* past, const AstNode* pnode, const vector<CVar>& args);
-void _record(skope* past, const AstNode* pnode, const vector<CVar>& args);
-void _play(skope* past, const AstNode* pnode, const vector<CVar>& args);
-void _pause_resume(skope* past, const AstNode* pnode, const vector<CVar>& args);
-void _stop(skope* past, const AstNode* pnode, const vector<CVar>& args);
 void _inputdlg(skope* past, const AstNode* pnode, const vector<CVar>& args);
 void aux_input(skope* past, const AstNode* pnode, const vector<CVar>& args);
 void udf_error(skope* past, const AstNode* pnode, const vector<CVar>& args);
@@ -136,7 +129,8 @@ void _interp1(skope* past, const AstNode* pnode, const vector<CVar>& args);
 void _fdelete(skope* past, const AstNode* pnode, const vector<CVar>& args);
 void _isaudioat(skope* past, const AstNode* pnode, const vector<CVar>& args);
 DECL_GATE(_play)
-DECL_GATE(_stop_pause)
+DECL_GATE(_play2)
+DECL_GATE(_stop_pause_resume)
 DECL_GATE(_fft)
 DECL_GATE(_ifft)
 DECL_GATE(_tone)
@@ -148,11 +142,6 @@ DECL_GATE(_tseqget)
 DECL_GATE(_tseqset)
 DECL_GATE(_error_warning)
 void _fm(skope* past, const AstNode* pnode, const vector<CVar>& args);
-void _tsq_getvalues(skope* past, const AstNode* pnode, const vector<CVar>& args);
-void _tsq_setvalues(skope* past, const AstNode* pnode, const vector<CVar>& args);
-void _tsq_gettimes(skope* past, const AstNode* pnode, const vector<CVar>& args);
-void _tsq_settimes(skope* past, const AstNode* pnode, const vector<CVar>& args);
-void _tsq_isrel(skope* past, const AstNode* pnode, const vector<CVar>& args);
 void _str2num(skope* past, const AstNode* pnode, const vector<CVar>& args);
 void _esc(skope* past, const AstNode* pnode, const vector<CVar>& args);
 void _varcheck(skope* past, const AstNode* pnode, const vector<CVar>& args);
