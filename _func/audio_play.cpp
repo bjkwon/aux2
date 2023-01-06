@@ -153,7 +153,8 @@ static int playCallback(const void* inputBuffer, void* outputBuffer, unsigned lo
 	//for now just look at out1
 	for (unsigned long k = 0; k < min(out1.size(), framesPerBuffer); k++) {
 		*out++ = (float)out1[k];  /* left */
-		*out++ = (float)out2[k];  /* right */
+		if (out2.size()>0)
+			*out++ = (float)out2[k];  /* right */
 	}
 	if (nomore) {
 		data->repeatCount--;
@@ -163,7 +164,8 @@ static int playCallback(const void* inputBuffer, void* outputBuffer, unsigned lo
 			nomore = pobj->bufDataAt(0, framesPerBuffer - out1.size(), out1, out2);
 			for (unsigned long k = 0; k < out1.size(); k++) {
 				*out++ = (float)out1[k];  /* left */
-				*out++ = (float)out2[k];  /* right */
+				if (out2.size()>0)
+					*out++ = (float)out2[k];  /* right */
 			}
 			data->currentID += out1.size();
 			data->currenttime = (double)data->currentID / pobj->GetFs();
@@ -340,7 +342,7 @@ void _play(skope* past, const AstNode* pnode, const vector<CVar>& args)
 		fprintf(stderr, "Error: No default output device.\n");
 		return;
 	}
-	outputParameters.channelCount = 2;       /* stereo output */
+	outputParameters.channelCount = past->Sig.next ? 2 : 1;       /* stereo or mono */
 	outputParameters.sampleFormat = paFloat32; /* 32 bit floating point output */
 	outputParameters.suggestedLatency = Pa_GetDeviceInfo(outputParameters.device)->defaultLowOutputLatency;
 	outputParameters.hostApiSpecificStreamInfo = NULL;
