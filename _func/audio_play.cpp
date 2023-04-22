@@ -17,7 +17,7 @@
 *	active: bool (true, or false).
 */
 
-bool playdone = true;
+map<PaStream*, bool> playdone;
 
 Cfunction set_builtin_function_play(fGate fp)
 {
@@ -170,12 +170,14 @@ static int playCallback(const void* inputBuffer, void* outputBuffer, unsigned lo
 			data->currentID += out1.size();
 			data->currenttime = (double)data->currentID / pobj->GetFs();
 			*pdur_prog = data->currenttime;
+			cout << "playCallback returns with paContinue(nomore). time=" << data->currenttime << ", playmod " << data << " stream " << data->stream << endl;
 			return paContinue;
 		}
 		else
 		{
 			*pactive = (auxtype)0.;
-			playdone = true;
+			playdone[data->stream] = true;
+			cout << "playCallback returns with paComplete" << ", playmod " << data << " stream " << data->stream << endl;
 			return paComplete;
 		}
 	}
@@ -184,6 +186,7 @@ static int playCallback(const void* inputBuffer, void* outputBuffer, unsigned lo
 		data->currenttime = (double)data->currentID / pobj->GetFs();
 		*pdur_prog = data->currenttime;
 		*pactive = (auxtype)1.;
+		cout << "playCallback returns with paContinue. time=" << data->currenttime << ", playmod " << data << " stream " << data->stream << endl;
 	}
 	return paContinue;
 }
@@ -220,16 +223,18 @@ void playthread2(const CVar& obj, uintptr_t handle, int rep, auxtype* pdur_prog,
 	//Hold here
 //	unique_lock<mutex> lock2(mtx);
 	err = Pa_OpenStream(&stream, NULL /*no input*/, &outputParameters, obj.GetFs(), FRAMES_PER_BUFFER, paClipOff, playCallback, &pm);
+	cout << "Pa_OpenStream returns stream " << stream << ", &pm=" << &pm << endl;
 	pm.stream = stream;
 	streams[handle] = stream;
 	Pa_SetStreamFinishedCallback(stream, playfinishcb);
 	err = Pa_StartStream(stream);
-	playdone = false;
-	while (!playdone) {
+	playdone[stream] = false;
+	while (!playdone[stream]) {
 		Pa_Sleep(100);
 	};
 	err = Pa_StopStream(stream);
 	err = Pa_CloseStream(stream);
+	cout << "Ending playthread2." << endl;
 }
 
 void playthread(const CVar &obj, uintptr_t handle, int rep, auxtype* pdur_prog, auxtype* pactive, void* petc, const PaStreamParameters& outputParameters)
@@ -237,15 +242,17 @@ void playthread(const CVar &obj, uintptr_t handle, int rep, auxtype* pdur_prog, 
 	PaStream* stream;
 	PaError err;
 	playmod pm(obj, FRAMES_PER_BUFFER, rep, pdur_prog, pactive);
-	playdone = false;
 	mutex p;
 //	unique_lock<mutex> lock1(mtx);
 	err = Pa_OpenStream(&stream, NULL /*no input*/, &outputParameters, obj.GetFs(), FRAMES_PER_BUFFER, paClipOff, playCallback, &pm);
 	if (err == paNoError) {
 		streams[handle] = stream;
+		playdone[stream] = false;
+		pm.stream = stream;
 		Pa_SetStreamFinishedCallback(stream, playfinishcb);
+		cout << "Pa_OpenStream " << stream << " success " << endl;
 		err = Pa_StartStream(stream);
-		while (!playdone) {
+		while (!playdone[stream]) {
 			Pa_Sleep(100);
 		};
 		err = Pa_StopStream(stream);
@@ -254,6 +261,7 @@ void playthread(const CVar &obj, uintptr_t handle, int rep, auxtype* pdur_prog, 
 	else {
 		strcpy((char*)petc, "error");
 	}
+	cout << "Ending playthread." << endl;
 }
 
 static void cleanup_streams()
@@ -377,7 +385,7 @@ void _stop_pause_resume(skope* past, const AstNode* pnode, const vector<CVar>& a
 		if (fname == "resume") {
 			PaError err = Pa_StartStream(stream);
 			if (err == paNoError) {
-				playdone = false;
+				playdone[stream] = false;
 				past->Sig.SetValue(1.);
 			}
 			else {
@@ -394,7 +402,7 @@ void _stop_pause_resume(skope* past, const AstNode* pnode, const vector<CVar>& a
 					PaError err = Pa_CloseStream(stream);
 					cout << "Pa_CloseStream(" << stream << ")" << " returns " << err << endl;
 					if (err == paNoError) {
-						playdone = true;
+						playdone[stream] = true;
 						// If not the same, find the pgo that corresponds to past->Sig
 						if (past->pgo != nullptr && ISSCALARG(tp) && ISSTRUT(tp) && past->pgo.get()->value() == past->Sig.value())
 						{
