@@ -2,6 +2,7 @@
 #include "portaudio.h"
 #include <thread>
 #include <mutex>
+#include <iostream>
 
 /* An audio handle has the following members:
 *	fs: sampling rate
@@ -17,7 +18,6 @@
 */
 
 bool playdone = true;
-mutex m;
 
 Cfunction set_builtin_function_play(fGate fp)
 {
@@ -218,7 +218,7 @@ void playthread2(const CVar& obj, uintptr_t handle, int rep, auxtype* pdur_prog,
 
 	/* Do not open a new stream until the previous has completed playing*/
 	//Hold here
-	unique_lock<mutex> lock2(m);
+//	unique_lock<mutex> lock2(mtx);
 	err = Pa_OpenStream(&stream, NULL /*no input*/, &outputParameters, obj.GetFs(), FRAMES_PER_BUFFER, paClipOff, playCallback, &pm);
 	pm.stream = stream;
 	streams[handle] = stream;
@@ -238,7 +238,8 @@ void playthread(const CVar &obj, uintptr_t handle, int rep, auxtype* pdur_prog, 
 	PaError err;
 	playmod pm(obj, FRAMES_PER_BUFFER, rep, pdur_prog, pactive);
 	playdone = false;
-	unique_lock<mutex> lock1(m);
+	mutex p;
+//	unique_lock<mutex> lock1(mtx);
 	err = Pa_OpenStream(&stream, NULL /*no input*/, &outputParameters, obj.GetFs(), FRAMES_PER_BUFFER, paClipOff, playCallback, &pm);
 	if (err == paNoError) {
 		streams[handle] = stream;
@@ -356,14 +357,17 @@ void _play(skope* past, const AstNode* pnode, const vector<CVar>& args)
 	thread t1(playthread, past->Sig, (uintptr_t)phandle->value(), (int)repeat, pdur_prog, pactive, etc, outputParameters);
 	t1.detach();
 	past->Sig = *(past->pgo = move(phandle));
+	cout << "playing " << (uintptr_t)past->Sig.value() << endl;
+
 }
 
 void _stop_pause_resume(skope* past, const AstNode* pnode, const vector<CVar>& args)
 {
 	cleanup_streams();
 	string fname = pnode->str;
+	cout << "stopping " << (uintptr_t)past->Sig.value() << endl;
 	auto stream = streams[(uintptr_t)past->Sig.value()];
-	auto tp = past->Sig.type();
+	cout << "stopping stream " << stream << endl;
 	past->Sig.Reset();
 	const PaStreamInfo* info = Pa_GetStreamInfo(stream);
 	if (!info) {
@@ -377,15 +381,18 @@ void _stop_pause_resume(skope* past, const AstNode* pnode, const vector<CVar>& a
 				past->Sig.SetValue(1.);
 			}
 			else {
-				printf("Can't resume; PortAuio error: Pa_StartStream()\n");
+				printf("Can't resume; PortAudio error: Pa_StartStream()\n");
 				past->Sig.SetValue(0.);
 			}
 		}
 		else {
+			auto tp = past->Sig.type();
 			PaError err = Pa_StopStream(stream);
+			cout << "Pa_StopStream(" << stream << ")" << " returns " << err << endl;
 			if (err == paNoError) {
 				if (fname == "stop") {
-					err = Pa_CloseStream(stream);
+					PaError err = Pa_CloseStream(stream);
+					cout << "Pa_CloseStream(" << stream << ")" << " returns " << err << endl;
 					if (err == paNoError) {
 						playdone = true;
 						// If not the same, find the pgo that corresponds to past->Sig
@@ -397,13 +404,16 @@ void _stop_pause_resume(skope* past, const AstNode* pnode, const vector<CVar>& a
 						}
 					}
 					else {
-						printf("Can't Stop/Pause; PortAuio error: Pa_CloseStream()\n");
+						printf("Can't Stop/Pause; PortAudio error: Pa_CloseStream()\n");
 						past->Sig.SetValue(0.);
 					}
 				}
+				else {
+					cout << "Paused" << endl;
+				}
 			}
 			else {
-				printf("Can't Stop/Pause; PortAuio error: Pa_StopStream()\n");
+				printf("Can't Stop/Pause; PortAudio error: Pa_StopStream()\n");
 				past->Sig.SetValue(0.);
 			}
 		}
