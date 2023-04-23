@@ -170,14 +170,12 @@ static int playCallback(const void* inputBuffer, void* outputBuffer, unsigned lo
 			data->currentID += out1.size();
 			data->currenttime = (double)data->currentID / pobj->GetFs();
 			*pdur_prog = data->currenttime;
-			cout << "playCallback returns with paContinue(nomore). time=" << data->currenttime << ", playmod " << data << " stream " << data->stream << endl;
 			return paContinue;
 		}
 		else
 		{
 			*pactive = (auxtype)0.;
 			playdone[data->stream] = true;
-			cout << "playCallback returns with paComplete" << ", playmod " << data << " stream " << data->stream << endl;
 			return paComplete;
 		}
 	}
@@ -186,7 +184,6 @@ static int playCallback(const void* inputBuffer, void* outputBuffer, unsigned lo
 		data->currenttime = (double)data->currentID / pobj->GetFs();
 		*pdur_prog = data->currenttime;
 		*pactive = (auxtype)1.;
-		cout << "playCallback returns with paContinue. time=" << data->currenttime << ", playmod " << data << " stream " << data->stream << endl;
 	}
 	return paContinue;
 }
@@ -223,7 +220,6 @@ void playthread2(const CVar& obj, uintptr_t handle, int rep, auxtype* pdur_prog,
 	//Hold here
 //	unique_lock<mutex> lock2(mtx);
 	err = Pa_OpenStream(&stream, NULL /*no input*/, &outputParameters, obj.GetFs(), FRAMES_PER_BUFFER, paClipOff, playCallback, &pm);
-	cout << "Pa_OpenStream returns stream " << stream << ", &pm=" << &pm << endl;
 	pm.stream = stream;
 	streams[handle] = stream;
 	Pa_SetStreamFinishedCallback(stream, playfinishcb);
@@ -234,7 +230,6 @@ void playthread2(const CVar& obj, uintptr_t handle, int rep, auxtype* pdur_prog,
 	};
 	err = Pa_StopStream(stream);
 	err = Pa_CloseStream(stream);
-	cout << "Ending playthread2." << endl;
 }
 
 void playthread(const CVar &obj, uintptr_t handle, int rep, auxtype* pdur_prog, auxtype* pactive, void* petc, const PaStreamParameters& outputParameters)
@@ -250,7 +245,6 @@ void playthread(const CVar &obj, uintptr_t handle, int rep, auxtype* pdur_prog, 
 		playdone[stream] = false;
 		pm.stream = stream;
 		Pa_SetStreamFinishedCallback(stream, playfinishcb);
-		cout << "Pa_OpenStream " << stream << " success " << endl;
 		err = Pa_StartStream(stream);
 		while (!playdone[stream]) {
 			Pa_Sleep(100);
@@ -261,7 +255,6 @@ void playthread(const CVar &obj, uintptr_t handle, int rep, auxtype* pdur_prog, 
 	else {
 		strcpy((char*)petc, "error");
 	}
-	cout << "Ending playthread." << endl;
 }
 
 static void cleanup_streams()
@@ -396,11 +389,9 @@ void _stop_pause_resume(skope* past, const AstNode* pnode, const vector<CVar>& a
 		else {
 			auto tp = past->Sig.type();
 			PaError err = Pa_StopStream(stream);
-			cout << "Pa_StopStream(" << stream << ")" << " returns " << err << endl;
 			if (err == paNoError) {
 				if (fname == "stop") {
 					PaError err = Pa_CloseStream(stream);
-					cout << "Pa_CloseStream(" << stream << ")" << " returns " << err << endl;
 					if (err == paNoError) {
 						playdone[stream] = true;
 						// If not the same, find the pgo that corresponds to past->Sig
