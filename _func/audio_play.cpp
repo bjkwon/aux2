@@ -105,7 +105,7 @@ Cfunction set_builtin_function_stop_pause_resume(fGate fp)
 	return ft;
 }
 
-#define FRAMES_PER_BUFFER 4096
+#define FRAMES_PER_BUFFER 256 // With fs=44100 Hz, tone(500,1000).ramp(100) sounds OK with this value. If this was 4096, it sounds choppy at the end
 
 
 class playmod {
