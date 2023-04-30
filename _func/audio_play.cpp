@@ -362,6 +362,18 @@ void _play(skope* past, const AstNode* pnode, const vector<CVar>& args)
 
 }
 
+
+/* Todo--4/28/2023
+this works (functionallty)-- 
+h = x.play then h.stop
+h = x.play then h.pause then h.resume 
+h = x.play then h.pause then h.resume then h.stop
+h = x.play then h.stop then h.resume--what happens?
+h = x.play after h is complete, h.stop or h.resume--what happens?
+
+Also do some code clean up, especially this function _stop_pause_resume()
+
+*/
 void _stop_pause_resume(skope* past, const AstNode* pnode, const vector<CVar>& args)
 {
 	cleanup_streams();
@@ -369,7 +381,6 @@ void _stop_pause_resume(skope* past, const AstNode* pnode, const vector<CVar>& a
 	cout << "stopping " << (uintptr_t)past->Sig.value() << endl;
 	auto stream = streams[(uintptr_t)past->Sig.value()];
 	cout << "stopping stream " << stream << endl;
-	past->Sig.Reset();
 	const PaStreamInfo* info = Pa_GetStreamInfo(stream);
 	if (!info) {
 		past->Sig.SetValue(0);
@@ -388,8 +399,38 @@ void _stop_pause_resume(skope* past, const AstNode* pnode, const vector<CVar>& a
 		}
 		else {
 			auto tp = past->Sig.type();
-			PaError err = Pa_StopStream(stream);
-			if (err == paNoError) {
+			if (Pa_IsStreamActive(stream)) {
+				PaError err = Pa_StopStream(stream);
+				if (err == paNoError) {
+					if (fname == "stop") {
+						PaError err = Pa_CloseStream(stream);
+						if (err == paNoError) {
+							playdone[stream] = true;
+							// If not the same, find the pgo that corresponds to past->Sig
+							if (past->pgo != nullptr && ISSCALARG(tp) && ISSTRUT(tp) && past->pgo.get()->value() == past->Sig.value())
+							{
+								auto p = past->pgo.get();
+								*(p->strut["active"].buf) = 0;
+								past->Sig.SetValue(0.);
+							}
+						}
+						else {
+							printf("Can't Stop; PortAudio error: Pa_CloseStream()\n");
+							printf("Error: %s\n", Pa_GetErrorText(err));
+							past->Sig.SetValue(0.);
+						}
+					}
+					else {
+						cout << "Paused" << endl;
+					}
+				}
+				else {
+					printf("Can't Stop/Pause; PortAudio error: Pa_StopStream()\n");
+					printf("Error: %s\n", Pa_GetErrorText(err));
+					past->Sig.SetValue(0.);
+				}
+			}
+			else {
 				if (fname == "stop") {
 					PaError err = Pa_CloseStream(stream);
 					if (err == paNoError) {
@@ -403,17 +444,15 @@ void _stop_pause_resume(skope* past, const AstNode* pnode, const vector<CVar>& a
 						}
 					}
 					else {
-						printf("Can't Stop/Pause; PortAudio error: Pa_CloseStream()\n");
+						printf("Can't Stop; PortAudio error: Pa_CloseStream()\n");
+						printf("Error: %s\n", Pa_GetErrorText(err));
 						past->Sig.SetValue(0.);
 					}
 				}
-				else {
-					cout << "Paused" << endl;
+				else { // pause
+					printf("Can't Pause; stream had been stopped.\n");
+					past->Sig.SetValue(0.);
 				}
-			}
-			else {
-				printf("Can't Stop/Pause; PortAudio error: Pa_StopStream()\n");
-				past->Sig.SetValue(0.);
 			}
 		}
 	}
