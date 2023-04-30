@@ -18,6 +18,7 @@
 */
 
 map<PaStream*, bool> playdone;
+mutex mtx;
 
 Cfunction set_builtin_function_play(fGate fp)
 {
@@ -218,7 +219,7 @@ void playthread2(const CVar& obj, uintptr_t handle, int rep, auxtype* pdur_prog,
 
 	/* Do not open a new stream until the previous has completed playing*/
 	//Hold here
-//	unique_lock<mutex> lock2(mtx);
+	unique_lock<mutex> lock2(mtx);
 	err = Pa_OpenStream(&stream, NULL /*no input*/, &outputParameters, obj.GetFs(), FRAMES_PER_BUFFER, paClipOff, playCallback, &pm);
 	pm.stream = stream;
 	streams[handle] = stream;
@@ -238,7 +239,7 @@ void playthread(const CVar &obj, uintptr_t handle, int rep, auxtype* pdur_prog, 
 	PaError err;
 	playmod pm(obj, FRAMES_PER_BUFFER, rep, pdur_prog, pactive);
 	mutex p;
-//	unique_lock<mutex> lock1(mtx);
+	unique_lock<mutex> lock1(mtx);
 	err = Pa_OpenStream(&stream, NULL /*no input*/, &outputParameters, obj.GetFs(), FRAMES_PER_BUFFER, paClipOff, playCallback, &pm);
 	if (err == paNoError) {
 		streams[handle] = stream;
@@ -313,7 +314,7 @@ void _play2(skope* past, const AstNode* pnode, const vector<CVar>& args)
 				fprintf(stderr, "Error: No default output device.\n");
 				return;
 			}
-			outputParameters.channelCount = 2;       /* stereo output */
+			outputParameters.channelCount = past->Sig.next ? 2 : 1;       /* stereo or mono */
 			outputParameters.sampleFormat = paFloat32; /* 32 bit floating point output */
 			outputParameters.suggestedLatency = Pa_GetDeviceInfo(outputParameters.device)->defaultLowOutputLatency;
 			outputParameters.hostApiSpecificStreamInfo = NULL;
@@ -348,7 +349,6 @@ void _play(skope* past, const AstNode* pnode, const vector<CVar>& args)
 	outputParameters.sampleFormat = paFloat32; /* 32 bit floating point output */
 	outputParameters.suggestedLatency = Pa_GetDeviceInfo(outputParameters.device)->defaultLowOutputLatency;
 	outputParameters.hostApiSpecificStreamInfo = NULL;
-
 	auto repeat = args[0].value();
 	auto devid = args[1].value();
 	auto phandle = make_audio_handle(past->Sig.GetFs(), past->Sig.alldur(), repeat, outputParameters);
@@ -372,6 +372,18 @@ h = x.play then h.stop then h.resume--what happens?
 h = x.play after h is complete, h.stop or h.resume--what happens?
 
 Also do some code clean up, especially this function _stop_pause_resume()
+
+Todo 4/30
+h = x.play, then while x is played
+h.play(y) will put y on the queue and y will start playing as soon as playing x is complete.
+This is done with mutex mtx (a global variable).
+Revise the code to do the same without using a global variable mtx.
+
+A mutex variable, tmutex, is created when a play is called inside _play(), and is bound with the stream.
+When h.play(y) is called, a new playthread is opening with tmutex and with unique_lock<mutex> hold(tmutex),
+it waits for x.play to end, then starts h.play(y)
+Note that it is necessary to keep tmutex from getting out of scope (i.e., block it from ending the function _play() while h.play(y) is complete.
+It should be doable with another mutex or something else like condition variable.
 
 */
 void _stop_pause_resume(skope* past, const AstNode* pnode, const vector<CVar>& args)
