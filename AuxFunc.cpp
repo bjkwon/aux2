@@ -549,7 +549,7 @@ static bool check_more(const AstNode* pnode, bool struct_call, skope& smallskope
 	return true;
 }
 
-vector<CVar> skope::make_check_args(const AstNode* pnode, Cfunction& func)
+vector<CVar> skope::make_check_args(const AstNode* pnode, multimap<string, Cfunction>::iterator& ftlist)
 { // Goal: make args vector for the function gate
   // the first arg is always Sig. The second arg is the first output vector.
   // check the arg types; if a type of a given arg is not one of allowed ones, throw.
@@ -561,13 +561,12 @@ vector<CVar> skope::make_check_args(const AstNode* pnode, Cfunction& func)
 	string fname = pnode->str;
 	// if a ftlist item has multiple gate functions, the first one should be the one with Sig and no other args.
 	// and it is taken care of here with an empty out.
-	auto ftlist = pEnv->builtin.find(fname); // we may assume that ftlist is not end
 	// if any of Cfunction in ftlist allows empty and pnode->alt and pnode->child are NULL, return immediately
 	for (; ftlist != pEnv->builtin.end() && (*ftlist).first == fname; ftlist++)
 		if ((*ftlist).second.allowed_arg_types.empty() && !pnode->alt && !pnode->child) 
 			return out;
 	ftlist = pEnv->builtin.find(fname);
-	func = (*ftlist).second;
+	Cfunction func = (*ftlist).second;
 	if (func.alwaysstatic && struct_call)
 	{
 		ostr << "function " << fname << " does not allow . (dot) notation call.";
@@ -651,14 +650,13 @@ void skope::HandleAuxFunction(const AstNode *pnode)
 	}
 	if ((*ftlist).second.func)
 	{
-		Cfunction builtinFunCarrier = (*ftlist).second;
-		vector<CVar> args = make_check_args(pnode, builtinFunCarrier);
+		vector<CVar> args = make_check_args(pnode, ftlist);
 		/* IMPORTANT--
 		* When the gate function is called, Sig is always the first argument (this is to avoid going through a copy constructor when used inside a gate function)
 		* Just make sure to avoid calling Compute() inside the gate function before Sig is used for actual builtin function operation
 		* If you still need to call Compute(); make a copy of Sig and do so and accept that a tiny performance degradation may occur
 		*/
-
+		Cfunction builtinFunCarrier = (*ftlist).second;
 		// if arg0 is the only arg and is null, bypass everything and the output is null
 		if (args.size()!=0 || 
 			Sig.type()!=TYPEBIT_NULL ||

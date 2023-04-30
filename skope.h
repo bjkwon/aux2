@@ -301,7 +301,7 @@ public:
 private:
 	bool done;
 	bool nodeAllocated;
-	vector<CVar> make_check_args(const AstNode* pnode, Cfunction& func);
+	vector<CVar> make_check_args(const AstNode* pnode, multimap<string, Cfunction>::iterator& ftlist);
 	void make_check_args_math(const AstNode* pnode);
 	void eval_lhs(const AstNode* plhs, const AstNode* prhs, CVar& lhs_index, CVar& RHS, uint16_t& typelhs, bool& contig, bool isreplica, const CVar* cell_item = NULL);
 	void mod_sig(CVar& lvar, const CVar& lhs_index, const CVar& robj, bool contig, const AstNode* plhs, const AstNode* prhs);
