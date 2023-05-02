@@ -2547,7 +2547,6 @@ bool CSignals::bufDataAt(double tpoint_sec, int len, vector<auxtype>& out1, vect
 	res1 = CTimeSeries::bufDataAt(tpoint_sec, len, out1);
 	if (next) 
 		 res2 = next->CTimeSeries::bufDataAt(tpoint_sec, len, out2);
-	auto out = make_pair(out1, out2);
 	return res1 & res2;
 }
 

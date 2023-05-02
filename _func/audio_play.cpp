@@ -2,7 +2,9 @@
 #include "portaudio.h"
 #include <thread>
 #include <mutex>
+#include <condition_variable>
 #include <iostream>
+#include <deque>
 
 /* An audio handle has the following members:
 *	fs: sampling rate
@@ -108,11 +110,10 @@ Cfunction set_builtin_function_stop_pause_resume(fGate fp)
 
 #define FRAMES_PER_BUFFER 256 // With fs=44100 Hz, tone(500,1000).ramp(100) sounds OK with this value. If this was 4096, it sounds choppy at the end
 
-
 class playmod {
 public:
-	const CVar* pvar;
-	const CVar* pvarNext;
+	CVar var;
+	deque<unique_ptr<playmod>> ondeck;
 	double timeblock; // in sec; determined in the constructor and constant
 	double currenttime; // in sec; constantly changing
 	int currentID; // constantly changing
@@ -120,18 +121,19 @@ public:
 	auxtype* pdur_prog;
 	auxtype* pactive;
 	PaStream* stream;
+	int deckID;
 	// In the constructor, CVar object and the framebuffer size are specified by the user
 	// timeblock is derived.
 	playmod(const CVar& obj, int _lenblock, int _repCount, auxtype* _pdur_prog, auxtype* _pactive) {
-		pvar = &obj;
+		var = obj;
 		lenblock = _lenblock;
-		timeblock = (double)lenblock / pvar->GetFs();
+		timeblock = (double)lenblock / var.GetFs();
 		currenttime = 0;
 		currentID = 0;
 		repeatCount = _repCount;
 		pdur_prog = _pdur_prog;
 		pactive = _pactive;
-		pvarNext = NULL;
+		deckID = 0;
 	};
 	virtual ~playmod() {};
 	int get_lenblock() { return lenblock; };
@@ -139,50 +141,71 @@ private:
 	int lenblock; // not changing after the constructor
 };
 
+map<PaStream*, playmod*> pmods; // playmodules
+
+
+// Filling playBuffer with two auxtype vectors, chan1 and chan2
+static void fill_buffer(unsigned long bufSize, float* playBuffer, const vector<auxtype> &chan1, const vector<auxtype> &chan2 )
+{
+	for (unsigned long k = 0; k < min(chan1.size(), bufSize); k++) {
+		*playBuffer++ = (float)chan1[k];  /* left */
+		if (chan2.size() > 0)
+			*playBuffer++ = (float)chan2[k];  /* right */
+	}
+}
+
 static int playCallback(const void* inputBuffer, void* outputBuffer, unsigned long framesPerBuffer, const PaStreamCallbackTimeInfo* timeInfo, PaStreamCallbackFlags statusFlags, void* userData)
 {
 	playmod* data = (playmod*)userData;
-	CVar* pobj = (CVar*)data->pvar;
+	auto deckID = data->deckID;
+	if (deckID > 0)
+		data = data->ondeck.front().get();
+
 	auxtype* pdur_prog = data->pdur_prog;
 	auxtype* pactive = data->pactive;
+	pmods[data->stream] = data;
+
 	float* out = (float*)outputBuffer;
-	(void)timeInfo; /* Prevent unused variable warnings. */
-	(void)statusFlags;
-	(void)inputBuffer;
 	vector<auxtype> out1, out2;
-	auto nomore = pobj->bufDataAt(data->currenttime, framesPerBuffer, out1, out2);
-	//for now just look at out1
-	for (unsigned long k = 0; k < min(out1.size(), framesPerBuffer); k++) {
-		*out++ = (float)out1[k];  /* left */
-		if (out2.size()>0)
-			*out++ = (float)out2[k];  /* right */
-	}
+	auto nomore = ((CVar)data->var).bufDataAt(data->currenttime, framesPerBuffer, out1, out2);
+	fill_buffer(framesPerBuffer, (float*)outputBuffer, out1, out2);
+	auto fs = ((CVar)data->var).GetFs();
 	if (nomore) {
 		data->repeatCount--;
 		if (data->repeatCount > 0) {
 			data->currentID = 0;
-			data->currenttime = (double)data->currentID / pobj->GetFs();
-			nomore = pobj->bufDataAt(0, framesPerBuffer - out1.size(), out1, out2);
-			for (unsigned long k = 0; k < out1.size(); k++) {
-				*out++ = (float)out1[k];  /* left */
-				if (out2.size()>0)
-					*out++ = (float)out2[k];  /* right */
-			}
+			data->currenttime = (double)data->currentID / fs;
+			nomore = ((CVar)data->var).bufDataAt(0, framesPerBuffer - out1.size(), out1, out2);
+			fill_buffer(framesPerBuffer - out1.size(), (float*)outputBuffer, out1, out2);
 			data->currentID += out1.size();
-			data->currenttime = (double)data->currentID / pobj->GetFs();
+			data->currenttime = (double)data->currentID / fs;
 			*pdur_prog = data->currenttime;
 			return paContinue;
 		}
 		else
 		{
-			*pactive = (auxtype)0.;
-			playdone[data->stream] = true;
-			return paComplete;
+			if (deckID > 0)
+			{
+				((playmod*)userData)->ondeck.pop_front();
+				((playmod*)userData)->deckID--;
+			}
+			if (((playmod*)userData)->deckID < ((playmod*)userData)->ondeck.size()) {
+				((playmod*)userData)->deckID++;
+				return paContinue;
+			}
+			else {
+				*pactive = (auxtype)0.;
+				playdone[data->stream] = true;
+				auto it = pmods.find(data);
+				if (it != pmods.end())
+					pmods.erase(it);
+				return paComplete;
+			};
 		}
 	}
 	else {
 		data->currentID += out1.size();
-		data->currenttime = (double)data->currentID / pobj->GetFs();
+		data->currenttime = (double)data->currentID / fs;
 		*pdur_prog = data->currenttime;
 		*pactive = (auxtype)1.;
 	}
@@ -211,34 +234,13 @@ void playfinishcb(void *p)
 * h=a.play; j=0, for k=1:100000, j+=k.sqrt; end, h.play(b)
 */
 
-void playthread2(const CVar& obj, uintptr_t handle, int rep, auxtype* pdur_prog, auxtype* pactive, const PaStreamParameters& outputParameters)
-{
-	PaStream* stream;
-	PaError err;
-	playmod pm(obj, FRAMES_PER_BUFFER, rep, pdur_prog, pactive);
-
-	/* Do not open a new stream until the previous has completed playing*/
-	//Hold here
-	unique_lock<mutex> lock2(mtx);
-	err = Pa_OpenStream(&stream, NULL /*no input*/, &outputParameters, obj.GetFs(), FRAMES_PER_BUFFER, paClipOff, playCallback, &pm);
-	pm.stream = stream;
-	streams[handle] = stream;
-	Pa_SetStreamFinishedCallback(stream, playfinishcb);
-	err = Pa_StartStream(stream);
-	playdone[stream] = false;
-	while (!playdone[stream]) {
-		Pa_Sleep(100);
-	};
-	err = Pa_StopStream(stream);
-	err = Pa_CloseStream(stream);
-}
-
 void playthread(const CVar &obj, uintptr_t handle, int rep, auxtype* pdur_prog, auxtype* pactive, void* petc, const PaStreamParameters& outputParameters)
 {
 	PaStream* stream;
 	PaError err;
 	playmod pm(obj, FRAMES_PER_BUFFER, rep, pdur_prog, pactive);
 	mutex p;
+	mutex mtx;
 	unique_lock<mutex> lock1(mtx);
 	err = Pa_OpenStream(&stream, NULL /*no input*/, &outputParameters, obj.GetFs(), FRAMES_PER_BUFFER, paClipOff, playCallback, &pm);
 	if (err == paNoError) {
@@ -324,8 +326,11 @@ void _play2(skope* past, const AstNode* pnode, const vector<CVar>& args)
 			*phandle->strut["dur"].buf = args[0].alldur();
 			auxtype* pdur_prog = phandle->strut["dur_prog"].buf;
 			auxtype* pactive = phandle->strut["active"].buf;
-			thread playingthread(playthread2, *pres, (uintptr_t)phandle->value(), (int)repeat, pdur_prog, pactive, outputParameters);
-			playingthread.detach();
+			//auto uniquepm = ;
+			//uniquepm->varcopy = args[0];
+			pmods[stream]->ondeck.emplace_back(make_unique<playmod>(args[0], FRAMES_PER_BUFFER, repeat, pdur_prog, pactive));
+			auto vv = pmods[stream];
+			//cout << "next->varcopy=" << &ss->next->varcopy << " next len=" << ss->next->varcopy.nSamples << endl;
 			past->Sig = *(past->pgo = move(phandle));
 		}
 		else {
@@ -358,8 +363,7 @@ void _play(skope* past, const AstNode* pnode, const vector<CVar>& args)
 	thread t1(playthread, past->Sig, (uintptr_t)phandle->value(), (int)repeat, pdur_prog, pactive, etc, outputParameters);
 	t1.detach();
 	past->Sig = *(past->pgo = move(phandle));
-	cout << "playing " << (uintptr_t)past->Sig.value() << endl;
-
+//	cout << "playing " << (uintptr_t)past->Sig.value() << endl;
 }
 
 
@@ -385,6 +389,15 @@ it waits for x.play to end, then starts h.play(y)
 Note that it is necessary to keep tmutex from getting out of scope (i.e., block it from ending the function _play() while h.play(y) is complete.
 It should be doable with another mutex or something else like condition variable.
 
+Todo 5/1
+a=wave("c:\temp\sample1.wav"); b=[tone([300 1000],4000); tone([1000 300],4000)] @-10;
+c=wave("\temp\leave_message.wav"); c=[c; c>>10]
+h=a.play;
+h.play(b);
+h.play(c);
+Everything is OK (playing them in sequence), except for the crash at the end of c
+Why? because the duration is different between channels in c.
+When calling play(), turn null portions into silence (so that both channels are always the same duration)
 */
 void _stop_pause_resume(skope* past, const AstNode* pnode, const vector<CVar>& args)
 {
@@ -399,6 +412,7 @@ void _stop_pause_resume(skope* past, const AstNode* pnode, const vector<CVar>& a
 	}
 	else {
 		if (fname == "resume") {
+			past->Sig.Reset();
 			PaError err = Pa_StartStream(stream);
 			if (err == paNoError) {
 				playdone[stream] = false;
@@ -423,12 +437,14 @@ void _stop_pause_resume(skope* past, const AstNode* pnode, const vector<CVar>& a
 							{
 								auto p = past->pgo.get();
 								*(p->strut["active"].buf) = 0;
-								past->Sig.SetValue(0.);
+								past->Sig.Reset();
+								past->Sig.SetValue(1.);
 							}
 						}
 						else {
 							printf("Can't Stop; PortAudio error: Pa_CloseStream()\n");
 							printf("Error: %s\n", Pa_GetErrorText(err));
+							past->Sig.Reset();
 							past->Sig.SetValue(0.);
 						}
 					}
@@ -439,6 +455,7 @@ void _stop_pause_resume(skope* past, const AstNode* pnode, const vector<CVar>& a
 				else {
 					printf("Can't Stop/Pause; PortAudio error: Pa_StopStream()\n");
 					printf("Error: %s\n", Pa_GetErrorText(err));
+					past->Sig.Reset();
 					past->Sig.SetValue(0.);
 				}
 			}
@@ -452,17 +469,20 @@ void _stop_pause_resume(skope* past, const AstNode* pnode, const vector<CVar>& a
 						{
 							auto p = past->pgo.get();
 							*(p->strut["active"].buf) = 0;
+							past->Sig.Reset();
 							past->Sig.SetValue(0.);
 						}
 					}
 					else {
 						printf("Can't Stop; PortAudio error: Pa_CloseStream()\n");
 						printf("Error: %s\n", Pa_GetErrorText(err));
+						past->Sig.Reset();
 						past->Sig.SetValue(0.);
 					}
 				}
 				else { // pause
 					printf("Can't Pause; stream had been stopped.\n");
+					past->Sig.Reset();
 					past->Sig.SetValue(0.);
 				}
 			}
