@@ -201,6 +201,7 @@
     <ClCompile Include="_func\specialmath.cpp" />
     <ClCompile Include="_func\movespec.cpp" />
     <ClCompile Include="_func\sums.cpp" />
+    <ClCompile Include="_func\test.cpp" />
     <ClCompile Include="_func\tone_fm.cpp" />
     <ClCompile Include="_func\tsq.cpp" />
     <ClCompile Include="_func\windowing.cpp" />

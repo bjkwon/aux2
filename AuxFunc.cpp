@@ -236,6 +236,8 @@ void CAstSigEnv::InitBuiltInFunctions()
 
 	SET_BUILTIN_FUNC("setnextchan", setnextchan);
 
+	SET_BUILTIN_FUNC("test", test);
+
 	SET_BUILTIN_FUNC("tsq_isrel", tseqget);
 	SET_BUILTIN_FUNC("tsq_getvalues", tseqget);
 	SET_BUILTIN_FUNC("tsq_gettimes", tseqget);

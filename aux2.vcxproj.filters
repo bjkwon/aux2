@@ -228,6 +228,9 @@
     <ClCompile Include="_func\audio_play.cpp">
       <Filter>Source Files\_functions</Filter>
     </ClCompile>
+    <ClCompile Include="_func\test.cpp">
+      <Filter>Source Files\_functions</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="skope.h">
