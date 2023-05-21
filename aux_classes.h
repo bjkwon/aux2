@@ -435,7 +435,7 @@ public:
 	CTimeSeries & transpose1();
 
 	double MakeChainless();
-	bool bufDataAt(double tpoint_sec, int len, vector<auxtype>& out);
+	bool fill_short_buffer(double tpoint_sec, int len, vector<auxtype>& out);
  	CTimeSeries * AtTimePoint(double timept);
 	pair<CTimeSeries*, int> FindChainAndID(double timept, bool begin);
 
@@ -550,7 +550,7 @@ public:
 	CSignals & each(auxtype (*fn)(complex<auxtype>));
 	CSignals & each(complex<auxtype> (*fn)(complex<auxtype>));
 	CSignals & transpose1();
-	bool bufDataAt(double tpoint_sec, int len, vector<auxtype>& out1, vector<auxtype>& out2);
+	bool fill_short_buffer(double tpoint_sec, int len, vector<auxtype>& out1, vector<auxtype>& out2);
 	int getBufferLength(double & lasttp, double& lasttp_with_silence, double blockDur) const;
 	void nextCSignals(double lasttp, double lasttp_with_silence, CSignals &ghcopy);
 	template<typename T>

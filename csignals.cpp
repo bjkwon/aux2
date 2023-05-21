@@ -1983,7 +1983,7 @@ pair<CTimeSeries*, int> CTimeSeries::FindChainAndID(double timept, bool begin)
 	for (; p; p = p->chain)
 	{
 		auto ent = p->CSignal::endt();
-		if (timept >= p->tmark && timept < p->CSignal::endt()) {
+		if (timept >= p->tmark &&  (ent- timept) > 1./fs) {
 			body = p;
 			id = round((timept - p->tmark) / 1000. * fs);
 			if (!begin) id--;
@@ -2406,7 +2406,7 @@ CSignals::CSignals(bool *b, unsigned int len)
 	bufBlockSize = 1; // logical array
 	UpdateBuffer(len);
 	bool bv = *b;
-	for_each(logbuf, logbuf + len, [bv](bool v) { v = bv; });
+	for_each(logbuf, logbuf + len, [bv](bool &v) { v = bv; });
 }
 
 CSignals::CSignals(int sampleRate)
@@ -2458,14 +2458,15 @@ CSignals::CSignals(std::string str)
 	SetString(str.c_str());
 }
 
-bool CTimeSeries::bufDataAt(double tpoint_sec, int len, vector<auxtype>& out)
-{ // Make a data buffer at specified time_point in sec. len is leant to be small enough to make copying of the data buffer easy.
+bool CTimeSeries::fill_short_buffer(double tpoint_sec, int len, vector<auxtype>& out)
+{ // Make a data buffer at specified time_point in sec. 
 	// finder is a pair of (CTimeSeries object that covers the time point, index at that time point)
-	// if first==NULL, that means, the object is not found (time point is beyond the time of the object)
+	auto ent = alldur();
 	auto finder = FindChainAndID(tpoint_sec * 1000., true);
-	if (finder.first == NULL) {
+	if (finder.first == NULL && (ent/1000. - tpoint_sec) <= 1. / fs) {
+		// the object is not found(time point is beyond the time of the object)
 		out.resize(len);
-		return false;
+		return true;
 	}
 	auto begin_id = finder.second;
 	if (len == 0) {
@@ -2487,16 +2488,15 @@ bool CTimeSeries::bufDataAt(double tpoint_sec, int len, vector<auxtype>& out)
 				auto timeadvance = round(1000. * k / fs) / 1000.;
 				auto newtimepoint = tpoint_sec + timeadvance;
 				vector<auxtype> out2;
-				nomoredata = bufDataAt(tpoint_sec + timeadvance, len - k, out2);
+				nomoredata = fill_short_buffer(tpoint_sec + timeadvance, len - k, out2);
 				for (auto v : out2)
 					out.push_back(v);
 			}
 			else {
 				int need_to_fill_more = len - k;
 				nomoredata = true;
-				// Commenting out post-zero fillout, making the output less than len if zeros are there
-				// for (k=0; k < need_to_fill_more; k++)
-				//	out.push_back(0.);
+				 for (k=0; k < need_to_fill_more; k++)
+					out.push_back(0.);
 			}
 		}
 		else {
@@ -2505,18 +2505,18 @@ bool CTimeSeries::bufDataAt(double tpoint_sec, int len, vector<auxtype>& out)
 			auto timeadvance = round(1000. * k / fs) / 1000.;
 			auto newtimepoint = tpoint_sec + timeadvance;
 			vector<auxtype> out2;
-			nomoredata = bufDataAt(tpoint_sec + timeadvance, len - k, out2);
+			nomoredata = fill_short_buffer(tpoint_sec + timeadvance, len - k, out2);
 			for (auto v : out2)
 				out.push_back(v);
 		}
 		return nomoredata;
 	}
 	else {
-		// Commenting out post-zero fillout, making the output less than len if zeros are there
-		//out.resize(min(len, -begin_id));
-		//fill(out.begin(), out.begin() + min(len, -begin_id), 0);
+		// zeros filled in and stopped before reaching the end of the next... 
+		out.resize(min(len, -begin_id));
+		fill(out.begin(), out.begin() + min(len, -begin_id), 0);
 		if (len < -begin_id) {
-			// zeros filled in and stopped before reaching the end of the next... Return true or false depending on it's done or more coming.
+			// Return true or false depending on it's done or more coming.
 			nomoredata = chain == NULL ? true : false; // wait.. chain shnouldn't be NULL... 
 		}
 		else {
@@ -2524,29 +2524,31 @@ bool CTimeSeries::bufDataAt(double tpoint_sec, int len, vector<auxtype>& out)
 			auto timeadvance = round(1000. * -begin_id / fs) / 1000.;
 			auto newtimepoint = tpoint_sec + timeadvance;
 			vector<auxtype> out2;
-			nomoredata = bufDataAt(newtimepoint, len - out.size(), out2);
+			nomoredata = fill_short_buffer(newtimepoint, len - out.size(), out2);
 			for (auto v : out2)
 				out.push_back(v);
 		}
 		return nomoredata;
 	}
 }
-/* bufDataAt
+/* fill_short_buffer
 * Make a copy of the buf data at the specified time point and the length.
+* len is meant to be small enough to make copying of the data buffer easy.
+* Used playCallback in audio_play.cpp
 * If null at the time point, the data is zero buffer until a non-null portion is available.
 * The output :
-        CTimeSeries::bufDataAt : vector 
-		CSignals::bufDataAt : pair of vectors (for mono, the first item is the buffer, the second is a vector of size zero
+        CTimeSeries::fill_short_buffer : vector 
+		CSignals::fill_short_buffer : pair of vectors (for mono, the first item is the buffer, the second is a vector of size zero
 * Return value: true if there's no further data after this buffer, false otherwise
 */
-bool CSignals::bufDataAt(double tpoint_sec, int len, vector<auxtype>& out1, vector<auxtype>& out2)
+bool CSignals::fill_short_buffer(double tpoint_sec, int len, vector<auxtype>& out1, vector<auxtype>& out2)
 {
 	out1.clear();
 	out2.clear();
 	bool res1, res2 = true;
-	res1 = CTimeSeries::bufDataAt(tpoint_sec, len, out1);
+	res1 = CTimeSeries::fill_short_buffer(tpoint_sec, len, out1);
 	if (next) 
-		 res2 = next->CTimeSeries::bufDataAt(tpoint_sec, len, out2);
+		 res2 = next->CTimeSeries::fill_short_buffer(tpoint_sec, len, out2);
 	return res1 & res2;
 }
 

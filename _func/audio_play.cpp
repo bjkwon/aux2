@@ -108,7 +108,7 @@ Cfunction set_builtin_function_stop_pause_resume(fGate fp)
 	return ft;
 }
 
-#define FRAMES_PER_BUFFER 256 // With fs=44100 Hz, tone(500,1000).ramp(100) sounds OK with this value. If this was 4096, it sounds choppy at the end
+#define FRAMES_PER_BUFFER 256 // With fs=44100 Hz, tone(500,1000).ramp(100) sounds OK with 256. If this was 4096, it sounds choppy at the end
 
 class playmod {
 public:
@@ -165,9 +165,8 @@ static int playCallback(const void* inputBuffer, void* outputBuffer, unsigned lo
 	auxtype* pactive = data->pactive;
 	pmods[data->stream] = data;
 
-	float* out = (float*)outputBuffer;
 	vector<auxtype> out1, out2;
-	auto nomore = ((CVar)data->var).bufDataAt(data->currenttime, framesPerBuffer, out1, out2);
+	auto nomore = ((CVar)data->var).fill_short_buffer(data->currenttime, framesPerBuffer, out1, out2);
 	fill_buffer(framesPerBuffer, (float*)outputBuffer, out1, out2);
 	auto fs = ((CVar)data->var).GetFs();
 	if (nomore) {
@@ -175,7 +174,7 @@ static int playCallback(const void* inputBuffer, void* outputBuffer, unsigned lo
 		if (data->repeatCount > 0) {
 			data->currentID = 0;
 			data->currenttime = (double)data->currentID / fs;
-			nomore = ((CVar)data->var).bufDataAt(0, framesPerBuffer - out1.size(), out1, out2);
+			nomore = ((CVar)data->var).fill_short_buffer(0, framesPerBuffer - out1.size(), out1, out2);
 			fill_buffer(framesPerBuffer - out1.size(), (float*)outputBuffer, out1, out2);
 			data->currentID += out1.size();
 			data->currenttime = (double)data->currentID / fs;
