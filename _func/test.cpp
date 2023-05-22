@@ -35,8 +35,6 @@ void _test(skope* past, const AstNode* pnode, const vector<CVar>& args)
 	auto arg2 = *(args.begin()+1);
 	vector<auxtype> buf1;
 	vector<auxtype> buf2;
-	// Todo 5/19/2023
-	// Make output from buf1 and buf2 ---- two output arguments?
 	int nOutVars = get_output_count(past->node, pnode);
 	if (nOutVars > 1) {
 		CVar* extraOut = new CVar;

@@ -1,0 +1,34 @@
+11:20 PM 5/21/2023
+If you wrote/modified a function of CVar, CSignals, CTimeSeries, CSignal, or body and want to do a unit test, don't settle with haphard, situational testing in the debugger with the function. Instead, utilize _test() in test.cpp
+
+What to do----
+
+1) Modify Cfunction set_builtin_function_test() to accommodate with arguments used in the function
+2) Modify void _test() to test the function.
+   For example, to test fill_short_buffer, call the following:
+   past->Sig.fill_short_buffer(arg1.value(), arg2.value(), buf1, buf2);
+
+Bonus (to use multiple output arguments):
+Use this block:
+
+	int nOutVars = get_output_count(past->node, pnode);
+	if (nOutVars > 1) {
+		auto nomore = past->Sig.fill_short_buffer(arg1.value(), arg2.value(), buf1, buf2);
+		past->SigExt.push_back(move(make_unique<CVar>(past->Sig)));
+		unique_ptr<CVar> pt1 = make_unique<CVar>(CSignals(&nomore, 1));
+		past->SigExt.push_back(move(pt1));
+		unique_ptr<CVar> pt2 = make_unique<CVar>(CSignals(CSignal(buf1)));
+		past->SigExt.push_back(move(pt2));
+		unique_ptr<CVar> pt3 = make_unique<CVar>(CSignals(CSignal(buf2)));
+		past->SigExt.push_back(move(pt3));
+	}
+	else {
+	...
+	}
+		
+To use multiple output argument, push_back each output argument to past->SigExt.
+In the above example of fill_short_buffer, past->Sig does not change after the call, so
+making the first output arg as past->Sig is not necessary, but keeping this template this way
+for the case where past->Sig is modified in the call and it is the first output arg.
+
+
