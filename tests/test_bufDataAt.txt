@@ -1,0 +1,20 @@
+set fs at 1000
+x=tone([30 60],20).sam(5)@-10 + tone([60 30],40).sam(5)@-10 >> 50
+[z,p,q,r]=x.test(.02,31)
+q.max
+
+[z,p,q1,r]=x.test(.08,10)
+[z,p,q2,r]=x.test(.08,11)
+q1.abs.min
+q2.abs.min
+
+x=[x;]
+[z,p,q,r]=x.test(0,21)
+
+x=tone(500,300); y=[x;x>>5]
+y.play // it should not crash
+
+
+bufDataAt(data->currenttime, framesPerBuffer, out1, out2) inside playCallback() should always 
+produce buffers out1 and out2 with the length of framesPerBuffer
+(if null, it should fill with zeros to avoid crash)

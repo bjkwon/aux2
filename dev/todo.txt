@@ -1,0 +1,3 @@
+1:13 AM 12/5/2022
+1. Completely get rid of CNodeProbe
+2. Make unit tests for stereo signal X indexing on RHS, LHS, conditional 
