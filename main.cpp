@@ -107,7 +107,7 @@ static void show_result(skope& sc, int precision, const string& display, int dis
 		cout << sc.statusMsg << endl;
 }
 
-CVar interpreter(skope& sc, int display_precision, const string& instr)
+CVar interpreter(skope& sc, int display_precision, const string& instr, bool show)
 {
 	sc.statusMsg.clear();
 	auto nodes = sc.makenodes(instr);
@@ -115,20 +115,18 @@ CVar interpreter(skope& sc, int display_precision, const string& instr)
 		throw sc.emsg.c_str();
 	sc.node = nodes;
 	sc.Compute();
-	if (nodes->tail && nodes->tail->str)
-		show_result(sc, display_precision, nodes->tail->str, (int)nodes->tail->dval);
-	else
-		show_result(sc, display_precision, "", -1);
+	if (show) {
+		if (nodes->tail && nodes->tail->str)
+			show_result(sc, display_precision, nodes->tail->str, (int)nodes->tail->dval);
+		else
+			show_result(sc, display_precision, "", -1);
+	}
 	return sc.Sig;
 }
 
-int main()
+int main(int argc, char** argv)
 {
 	srand((unsigned)time(0));
-	PaError err = Pa_Initialize();
-	if (err != paNoError) {
-		printf("error play()\n");
-	}
 	int display_precision(PRECISION);
 	int fs0(DEFAULT_FS);
 	vector<string> auxpathfromenv;
@@ -140,78 +138,108 @@ int main()
 	pglobalEnv->InitBuiltInFunctions();
 	skope sc(pglobalEnv);
 	xscope.push_back(&sc);
-	string input, line;
-	CVar paths;
+	string input;
 
-	bool programExit = false;
+	if (argc == 1) {
+		PaError err = Pa_Initialize();
+		if (err != paNoError) {
+			printf("error play()\n");
+		}
+		string line;
+		bool programExit = false;
 #ifndef _WIN32
-	ifstream historyfstream("aux2.history", istream::in);
-	while(getline(historyfstream, line))
-	{
-		add_history(line.c_str());
-	}
-	historyfstream.close();
+		ifstream historyfstream("aux2.history", istream::in);
+		while (getline(historyfstream, line))
+		{
+			add_history(line.c_str());
+		}
+		historyfstream.close();
 #endif
-	int commandid = 0;
-	while (1)
-	{
-		try {
+		int commandid = 0;
+		while (1)
+		{
+			try {
 #ifdef _WIN32
-			printf("AUX> ");
-			getline(cin, input);
+				printf("AUX> ");
+				getline(cin, input);
 #else
-			input.clear();
-			char* readbuf = programExit ? readline("") : readline("AUX> ");
-			if (readbuf == NULL)
-			{
-				cout << "Internal Error: readline; Program will exit.\n";
-				break;
-			}
-			if (strlen(readbuf) > 0) 
-			{
-				add_history(readbuf);
-				ofstream historyfstream2("aux2.history", ostream::out | ios::app);
-				historyfstream2 << readbuf << endl;
-				historyfstream2.close();
-				input = readbuf;
-				free(readbuf);
-			}
+				input.clear();
+				char* readbuf = programExit ? readline("") : readline("AUX> ");
+				if (readbuf == NULL)
+				{
+					cout << "Internal Error: readline; Program will exit.\n";
+					break;
+				}
+				if (strlen(readbuf) > 0)
+				{
+					add_history(readbuf);
+					ofstream historyfstream2("aux2.history", ostream::out | ios::app);
+					historyfstream2 << readbuf << endl;
+					historyfstream2.close();
+					input = readbuf;
+					free(readbuf);
+				}
 #endif
-			if (!input.empty())
-			{
-				//if the line begins with #, it bypasses the usual parsing
-				if (input.front() == '#') {
-					if (input.substr(1).front() == '#') {
-						auxenv(pglobalEnv, input.substr(2).c_str());
-					}
-					else {
-						if (input.substr(1, 3) == "cd ") {
-							auxenv_cd(pglobalEnv, input);
+				if (!input.empty())
+				{
+					//if the line begins with #, it bypasses the usual parsing
+					if (input.front() == '#') {
+						if (input.substr(1).front() == '#') {
+							auxenv(pglobalEnv, input.substr(2).c_str());
 						}
-						else 
-							int status = system(input.substr(1).c_str());
+						else {
+							if (input.substr(1, 3) == "cd ") {
+								auxenv_cd(pglobalEnv, input);
+							}
+							else
+								int status = system(input.substr(1).c_str());
+						}
 					}
+					else
+						interpreter(sc, pglobalEnv->display_precision, input, true);
+					programExit = false;
 				}
 				else
-					interpreter(sc, pglobalEnv->display_precision, input);
-				programExit = false;
+				{
+					if (programExit) break;
+					programExit = true;
+					cout << "Press [ENTER] to quit" << endl;
+				}
 			}
-			else
-			{
-				if (programExit) break;
-				programExit = true;
-				cout << "Press [ENTER] to quit" << endl;
+
+			catch (skope_exception e) {
+				cout << "Error: " << e.getErrMsg() << endl;
 			}
-		}
-		catch (skope_exception e) {
-			cout << "Error: " << e.getErrMsg() << endl;
-		}
-		catch (const char* msg)	{
-			cout << "Error: " << msg << endl;
+			catch (const char* msg) {
+				cout << "Error: " << msg << endl;
+			}
+			Pa_Terminate();
+			save_auxenv(pglobalEnv, AUXENV_FILE);
 		}
 	}
-	Pa_Terminate();
-	save_auxenv(pglobalEnv, AUXENV_FILE);
+		else {
+			input = argv[1];
+			auto pos = input.find(".aux");
+			input += "(";
+			if (pos!= string::npos)
+				input.replace(pos, strlen(".aux"), "");
+			for (int k = 2; k < argc; k++) {
+				input += "\"";
+				input += argv[k];
+				input += "\"";
+				if (k < argc - 1) input += ", ";
+			}
+			input += ")";
+			try {
+				interpreter(sc, pglobalEnv->display_precision, input, false);
+			}
+			catch (skope_exception e) {
+				cout << "Error: " << e.getErrMsg() << endl;
+			}
+			catch (const char* msg) {
+				cout << "Error: " << msg << endl;
+			}
+		}
 	delete pglobalEnv;
 	return 0;
 }

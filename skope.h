@@ -64,6 +64,7 @@ public:
 	static bool IsSTRINGG(uint16_t tp);
 	static bool IsAUDIO(uint16_t tp);
 	static bool IsAUDIOG(uint16_t tp);
+	static bool IsCellG(uint16_t tp);
 	static bool IsNULL(uint16_t tp) { return tp == TYPEBIT_NULL; };
 	static bool IsNULLG(uint16_t tp) { return !(tp & 3); };
 	static bool IsScalar(uint16_t tp) { return (tp & 0b1111) == 1; };
@@ -97,6 +98,7 @@ public:
 
 	static vector<uint16_t> audiotype_real;
 	static vector<uint16_t> stringtype;
+	static vector<uint16_t> celltype;
 	vector<uint16_t> audiotype_complex;
 	vector<uint16_t> audiotype_bool;
 	Cfunction();

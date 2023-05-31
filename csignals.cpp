@@ -2690,14 +2690,14 @@ const CSignals& CSignals::operator+=(CSignals *yy)
 	return *this;
 }
 
-CVar& CVar::initcell(CVar &sec)
+CVar& CVar::initcell(const CVar &sec)
 {
 	Reset();
 	cell.push_back(sec);
 	return *this;
 }
 
-CVar& CVar::appendcell(CVar &sec)
+CVar& CVar::appendcell(const CVar &sec)
 {
 	auto tp = type();
 	auto mask2noncell = tp & !TYPEBIT_CELL;
@@ -2707,7 +2707,7 @@ CVar& CVar::appendcell(CVar &sec)
 	return *this;
 }
 
-CVar& CVar::setcell(unsigned int id, CVar &sec)
+CVar& CVar::setcell(unsigned int id, const CVar &sec)
 { // id one-based index
 	if (!(type() & TYPEBIT_CELL))
 		throw "cannot add a cell member to a non-cell variable.";

@@ -21,8 +21,6 @@
 #include "sndfile.h"
 //#include "utils.h"
 int str2vector(vector<string>& out, const string& in, const string& delim_chars);
-
-
 int GetFileText(const char* fname, const char* mod, string& strOut); // utils.cpp
 int countDeliminators(const char* buf, const char* deliminators);
 size_t str2vect(vector<string>& _out, const char* input, const char* delim, int maxSize_x);
@@ -740,7 +738,7 @@ static int filetype(const string& fname, string& errstr)
 	if (!fp) { errstr = "File not found or cannot be opened.";  return 0; }
 	char buffer[16];
 	auto res = fread(buffer, 1, sizeof(buffer), fp);
-	if (res < sizeof(buffer)) { errstr = "File type header is corrupt or cannot be read.";  fclose(fp); return 0; }
+	if (res < sizeof(buffer)) { errstr = "File type header is corrupt or cannot be read.";  fclose(fp); return 4; } // treat it as a text file
 	errstr = "";
 	auto ret = buffer[0] == (char)0xFF;
 	auto ret2 = buffer[1] >= (char)0xE0;
@@ -840,23 +838,29 @@ void _file(skope* past, const AstNode* pnode, const vector<CVar>& args)
 			nLines = str2vector(line, content, "\r\n");
 			for (size_t k = 0; k < nLines; k++)
 			{
-				vector<string> datavect;
-				res = str2vector(datavect, line[k], " \t");
-				auxtype* data = new auxtype[res];
-				k = 0;
-				for (auto str : datavect)
-				{
-#ifdef FLOAT
-					if (sscanf(str.c_str(), "%f", data + k++) == EOF)
-#else
-					if (sscanf(str.c_str(), "%lf", data + k++) == EOF)
-#endif						
-						throw exception_func(*past, pnode, "Error in reading and converting to auxtype data").raise();
+				//if there's at least one non-numeric character except for space and tab, treat the whole line as a string.
+				if (!isnumeric(line[k].c_str())) {
+					past->Sig.appendcell((CVar)line[k]);
 				}
-				CSignals tp(data, res);
-				if (nLines == 1)
-					past->Sig = tp;
-				delete[] data;
+				else {
+					vector<string> datavect;
+					res = str2vector(datavect, line[k], " \t");
+					auxtype* data = new auxtype[res];
+					k = 0;
+					for (auto str : datavect)
+					{
+#ifdef FLOAT
+						if (sscanf(str.c_str(), "%f", data + k++) == EOF)
+#else
+						if (sscanf(str.c_str(), "%lf", data + k++) == EOF)
+#endif						
+							throw exception_func(*past, pnode, "Error in reading and converting to auxtype data").raise();
+					}
+					CSignals tp(data, res);
+					if (nLines == 1)
+						past->Sig = tp;
+					delete[] data;
+				}
 			}
 		}
 		else

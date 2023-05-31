@@ -656,9 +656,9 @@ public:
 	bool operator==(string rhstr);
 	bool operator==(auxtype val);
 
-	CVar & initcell(CVar &sec);
-	CVar & appendcell(CVar &sec);
-	CVar & setcell(unsigned int id, CVar &sec);
+	CVar & initcell(const CVar &sec);
+	CVar & appendcell(const CVar &sec);
+	CVar & setcell(unsigned int id, const CVar &sec);
 	CVar & length();
 	void set_class_head(const CSignals& rhs);
 
