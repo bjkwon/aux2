@@ -1876,7 +1876,7 @@ CVar* skope::InitCell(const AstNode* pnode, AstNode* p)
 		Sig.Reset(1);
 		Sig.cell.reserve(count);
 		for (; p; p = p->next)
-			Sig.appendcell(*temp.Compute(p));
+			Sig.appendcell(temp.Compute(p));
 		if (pnode->str)
 			SetVar(pnode->str, &Sig);
 		return &Sig;

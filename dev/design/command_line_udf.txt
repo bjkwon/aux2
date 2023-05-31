@@ -1,0 +1,10 @@
+aux2 myudf.aux arg1 arg2 ...
+
+Will directly run myudf.aux with arguments specified (each of these arg1, arg2,... are string). 
+For example,
+
+aux2 wavconcat.aux 3files.txt out2.wav
+
+The input to be processed is
+
+wavconcat("3files.txt", "out2.wav")

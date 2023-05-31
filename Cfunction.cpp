@@ -2,6 +2,7 @@
 
 vector<uint16_t> Cfunction::audiotype_real = {};
 vector<uint16_t> Cfunction::stringtype = {};
+vector<uint16_t> Cfunction::celltype = { TYPEBIT_CELL, };
 
 Cfunction::Cfunction() {
 	funcsignature = "";
@@ -41,6 +42,13 @@ bool Cfunction::IsSTRINGG(uint16_t tp)
 {
 	auto items = Cfunction::stringtype;
 	uint16_t masked = tp & 0x00F0;
+	return find(items.begin(), items.end(), masked) != items.end();
+}
+
+bool Cfunction::IsCellG(uint16_t tp)
+{
+	auto items = Cfunction::celltype;
+	uint16_t masked = tp & 0x1000;
 	return find(items.begin(), items.end(), masked) != items.end();
 }
 

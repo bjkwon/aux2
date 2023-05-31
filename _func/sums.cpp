@@ -45,8 +45,8 @@ Cfunction set_builtin_function_lens(fGate fp)
 	    TYPEBIT_CELL };
 	ft.allowed_arg_types.push_back(allowedTypes1);
 	// Sig
-	set<pfunc_typecheck> allowedCheckFunc = { Cfunction::IsAUDIOG, Cfunction::IsSTRINGG, Cfunction::IsScalarG, Cfunction::IsVectorG };
-	ft.qualify.push_back(allowedCheckFunc); 
+	set<pfunc_typecheck> allowedCheckFunc = { Cfunction::IsAUDIOG, Cfunction::IsSTRINGG, Cfunction::IsScalarG, Cfunction::IsVectorG, Cfunction::IsCellG };
+	ft.qualify.push_back(allowedCheckFunc);
 	set<pfunc_typecheck> prohibitFunc = { Cfunction::AllFalse, }; // prohibit false (none)
 	ft.reject.push_back(prohibitFunc);
 	// No args
