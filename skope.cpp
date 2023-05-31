@@ -1646,6 +1646,10 @@ void skope::Concatenate(const AstNode* pnode, AstNode* p)
 		else
 		{ // Sig and tsig have both row and column counts, concatenation is done here... at the end of row--making more rows withthe same column counts (not row-wise concatenating)
 			if (Sig.nGroups > 1) Sig.nGroups += tsig.nGroups;
+			if (Sig.type() == 0 && tsig.next) {
+				CSignals temp;
+				Sig.SetNextChan(temp);
+			}
 			Sig += &tsig;
 			Sig.MergeChains();
 		}

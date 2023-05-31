@@ -498,8 +498,8 @@ void skope::sanitize_cell_node(const AstNode* p)
 		if (!ISSCALARG(Sig.type()))
 			throw exception_etc(*this, p, "Cell index must be a scalar").raise();
 		p->alt->dval = Sig.value();
-		yydeleteAstNode(p->alt->child, 0);
-		p->alt->child = NULL;
+		//yydeleteAstNode(p->alt->child, 0);
+		//p->alt->child = NULL;
 	}
 }
 
