@@ -554,7 +554,7 @@ public:
 	int getBufferLength(double & lasttp, double& lasttp_with_silence, double blockDur) const;
 	void nextCSignals(double lasttp, double lasttp_with_silence, CSignals &ghcopy);
 	template<typename T>
-	int makebuffer(T * outbuffer, int length, double lasttp, double lasttp_with_silence, CSignals &ghcopy)
+	int interleave_buffers(T * outbuffer, int length, double lasttp, double lasttp_with_silence, CSignals &ghcopy)
 	{
 		int nChan = next == nullptr ? 1 : 2;
 		memset(outbuffer, 0, sizeof(T) * length * nChan);
@@ -581,7 +581,7 @@ public:
 					if (is_same<T, short>::value)
 						for (unsigned int m = 0; m < q->nSamples; m++)
 							outbuffer[offset + m * nChan + ch] = (short)(_float_to_24bit(q->buf[m]) >> 8);
-					else if (is_same<T, float>::value)
+					else if (is_same<T, float>::value || is_same<T, double>::value)
 						for (unsigned int m = 0; m < q->nSamples; m++)
 							outbuffer[offset + m * nChan + ch] = (T)q->buf[m];
 				}
