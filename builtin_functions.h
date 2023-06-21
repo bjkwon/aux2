@@ -142,6 +142,7 @@ DECL_GATE(_tseqget)
 DECL_GATE(_tseqset)
 DECL_GATE(_error_warning)
 DECL_GATE(_test)
+DECL_GATE(_str2num)
 
 void _fm(skope* past, const AstNode* pnode, const vector<CVar>& args);
 void _str2num(skope* past, const AstNode* pnode, const vector<CVar>& args);
