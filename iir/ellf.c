@@ -113,7 +113,7 @@ extern void cdiv ( cmplx *a, cmplx *b, cmplx *c );
 extern void cmov ( void *a, void *b );
 extern void cmul ( cmplx *a, cmplx *b, cmplx *c );
 extern void cneg ( cmplx *a );
-extern void csqrt ( cmplx *z, cmplx *w );
+extern void csquart ( cmplx *z, cmplx *w );
 extern void csub ( cmplx *a, cmplx *b, cmplx *c );
 extern double ellie ( double phi, double m );
 extern double ellik ( double phi, double m );
@@ -777,7 +777,7 @@ do
 		cb.i = 0.0;
 		cmul( &cb, &cb, &cnum );     /* b^2 */
 		csub( &b4ac, &cnum, &b4ac ); /* b^2 - 4 ac */
-		csqrt( &b4ac, &b4ac );
+		csquart( &b4ac, &b4ac );
 		cb.r = -cb.r;  /* -b */
 		cb.i = -cb.i;
 		ca.r *= 2.0; /* 2a */
