@@ -1,5 +1,5 @@
 #include "functions_common.h"
-#include "..\psycon.tab.h"
+#include "psycon.tab.h"
 
 Cfunction set_builtin_function_str2num(fGate fp)
 {

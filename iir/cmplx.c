@@ -339,7 +339,7 @@ if( ey < MINEXP )
 b = ldexp( b, e );
 return( b );
 }
-/*							csqrt()
+/*							csquart()
  *
  *	Complex square root
  *
@@ -347,10 +347,10 @@ return( b );
  *
  * SYNOPSIS:
  *
- * void csqrt();
+ * void csquart();
  * cmplx z, w;
  *
- * csqrt( &z, &w );
+ * csquart( &z, &w );
  *
  *
  *
@@ -382,12 +382,12 @@ return( b );
  *    IEEE      -10,+10    100000       3.2e-16     7.7e-17
  *
  *                        2
- * Also tested by csqrt( z ) = z, and tested by arguments
+ * Also tested by csquart( z ) = z, and tested by arguments
  * close to the real axis.
  */
 
 
-void csqrt( z, w )
+void csquart( z, w )
 cmplx *z, *w;
 {
 cmplx q, s;
