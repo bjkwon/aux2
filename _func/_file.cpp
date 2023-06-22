@@ -928,7 +928,7 @@ int CSignals::Wavwrite(const char* wavname, char* errstr, std::string wavformat)
 				lengthAllocated = length;
 			}
 			buffer = dbuffer;
-			if (!nextblock.makebuffer<auxtype>(dbuffer, length, tp1, tp2, nextblock2)) // sig is empty
+			if (!nextblock.interleave_buffers<auxtype>(dbuffer, length, tp1, tp2, nextblock2)) // sig is empty
 				return 0;
 		}
 		else
