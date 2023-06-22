@@ -934,7 +934,7 @@ void skope::CallUDF(const AstNode* pnode4UDFcalled, CVar* pBase, size_t nargout_
 //			hold_at_break_point(p);
 		process_statement(p);
 		//		pgo = NULL; // without this, go lingers on the next line
-		//		Sig.Reset(1); // without this, fs=3 lingers on the next line
+		Sig.Reset(1); // without this, fs=3 lingers on the next line; if Sig is a cell or struct, it lingers on the next line and may cause an error
 		if (fExit) break;
 		p = p->next;
 	}

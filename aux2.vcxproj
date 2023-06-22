@@ -118,6 +118,7 @@
       <ConformanceMode>true</ConformanceMode>
       <DisableSpecificWarnings>4996; 4244; 4267</DisableSpecificWarnings>
       <AdditionalIncludeDirectories>$(ProjectDir); $(ProjectDir)\include\;$(ProjectDir)..\include\</AdditionalIncludeDirectories>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
