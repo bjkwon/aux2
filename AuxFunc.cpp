@@ -180,6 +180,7 @@ void CAstSigEnv::InitBuiltInFunctions()
 	SET_BUILTIN_FUNC("fopen", fopen);
 	SET_BUILTIN_FUNC("fclose", fclose);
 	SET_BUILTIN_FUNC("printf", printf);
+	SET_BUILTIN_FUNC("sprintf", printf);
 	SET_BUILTIN_FUNC("fprintf", fprintf);
 	SET_BUILTIN_FUNC("fread", fread);
 	SET_BUILTIN_FUNC("fwrite", fwrite);
