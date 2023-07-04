@@ -22,6 +22,12 @@
     <Filter Include="Source Files\iir">
       <UniqueIdentifier>{e623a66d-7166-41df-b316-77739d5af0c7}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\modules">
+      <UniqueIdentifier>{626aba75-31aa-4bbf-bfee-18fb8b865e92}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\modules\sys">
+      <UniqueIdentifier>{c62199a4-2598-4eb6-a2da-d8285fce9c25}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -233,6 +239,9 @@
     </ClCompile>
     <ClCompile Include="_func\_str2num.cpp">
       <Filter>Source Files\_functions</Filter>
+    </ClCompile>
+    <ClCompile Include="modules\sys\run.cpp">
+      <Filter>Source Files\modules\sys</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

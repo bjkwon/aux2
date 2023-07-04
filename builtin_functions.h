@@ -98,6 +98,9 @@ map<string, Cfunction> CAstSigEnv::pseudo_vars = dummy_pseudo_vars;
 //#endif
 
 
+DECL_GATE(_run)
+
+
 DECL_GATE(_movespec)
 
 DECL_GATE(_tparamonly)

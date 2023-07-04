@@ -121,6 +121,8 @@ void CAstSigEnv::InitBuiltInFunctions()
 	set<uint16_t> allowedTypes;
 	vector<string> arg_desc;
 
+	SET_BUILTIN_FUNC("run", run);
+
 	SET_BUILTIN_FUNC("tone", tone);
 	SET_BUILTIN_FUNC("noise", tparamonly);
 	SET_BUILTIN_FUNC("gnoise", tparamonly);
