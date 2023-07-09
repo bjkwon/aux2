@@ -865,6 +865,24 @@ void skope::PrepareAndCallUDF(const AstNode* pCalling, CVar* pBase, CVar* pStati
 	son.reset();
 }
 
+const AstNode* skope::linebyline(const AstNode* p)
+{
+	while (p)
+	{
+		pLast = p;
+		// T_IF, T_WHILE, T_FOR are checked here to break right at the beginning of the loop
+		u.currentLine = p->line;
+		if (p->type == T_ID || p->type == T_FOR || p->type == T_IF || p->type == T_WHILE || p->type == N_IDLIST || p->type == N_VECTOR)
+			hold_at_break_point(p);
+		process_statement(p);
+		//		pgo = NULL; // without this, go lingers on the next line
+		Sig.Reset(1); // without this, fs=3 lingers on the next line; if Sig is a cell or struct, it lingers on the next line and may cause an error
+		if (fExit) return p;
+		p = p->next;
+	}
+	return NULL;
+}
+
 void skope::CallUDF(const AstNode* pnode4UDFcalled, CVar* pBase, size_t nargout_requested)
 {
 	// Returns the number of output arguments requested in the call
@@ -924,20 +942,7 @@ void skope::CallUDF(const AstNode* pnode4UDFcalled, CVar* pBase, size_t nargout_
 			}
 		}
 	}
-	p = pFirst;
-	while (p)
-	{
-		pLast = p;
-		// T_IF, T_WHILE, T_FOR are checked here to break right at the beginning of the loop
-		u.currentLine = p->line;
-//		if (p->type == T_ID || p->type == T_FOR || p->type == T_IF || p->type == T_WHILE || p->type == N_IDLIST || p->type == N_VECTOR)
-//			hold_at_break_point(p);
-		process_statement(p);
-		//		pgo = NULL; // without this, go lingers on the next line
-		Sig.Reset(1); // without this, fs=3 lingers on the next line; if Sig is a cell or struct, it lingers on the next line and may cause an error
-		if (fExit) break;
-		p = p->next;
-	}
+	linebyline(pFirst);
 	if (u.debug.status != null)
 	{
 		//		currentLine = -1; // to be used in CDebugDlg::ProcessCustomDraw() (re-drawing with default background color)... not necessary for u.debug.status==stepping (because currentLine has been updated stepping) but won't hurt

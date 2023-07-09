@@ -213,6 +213,7 @@
     <ClCompile Include="_func\_file.cpp" />
     <ClCompile Include="_func\_matrix.cpp" />
     <ClCompile Include="_func\_minmax.cpp" />
+    <ClCompile Include="_func\_setdebug.cpp" />
     <ClCompile Include="_func\_setnextchan.cpp" />
     <ClCompile Include="_func\_str2num.cpp" />
     <ClCompile Include="_func\_tparamonly.cpp" />

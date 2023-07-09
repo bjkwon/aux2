@@ -242,6 +242,7 @@ public:
 	CVar* GetVariable(const char* varname, const AstNode* pnode, CVar* pvar = NULL);
 	void PrepareAndCallUDF(const AstNode* pCalling, CVar* pBase, CVar* pStaticVars = NULL);
 	void CallUDF(const AstNode* pnode4UDFcalled, CVar* pBase, size_t nargout_requested);
+	const AstNode* linebyline(const AstNode* p);
 	FILE* fopen_from_path(const string& fname, const string& ext, string& fullfilename);
 	void HandleAuxFunction(const AstNode* pnode);
 	CVar* TSeq(const AstNode* pnode, AstNode* p);

@@ -123,6 +123,8 @@ void CAstSigEnv::InitBuiltInFunctions()
 
 	SET_BUILTIN_FUNC("run", run);
 
+	SET_BUILTIN_FUNC("setdebug", setdebug);
+
 	SET_BUILTIN_FUNC("tone", tone);
 	SET_BUILTIN_FUNC("noise", tparamonly);
 	SET_BUILTIN_FUNC("gnoise", tparamonly);
