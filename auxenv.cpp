@@ -126,7 +126,14 @@ void auxenv_cd(CAstSigEnv * pEnv, string &destdir)
 #endif
 }
 
-void auxenv(CAstSigEnv* pEnv, const string& cmd)
+static void display_vars(CAstSigEnv* pEnv, const vector<string>& cmd, skope* psk)
+{
+	for (auto it : psk->Vars) {
+		cout << it.first << ' ' << "0x" << setw(4) << setfill('0') << hex << it.second.type() << ' ' << endl;
+	}
+}
+
+void auxenv(CAstSigEnv* pEnv, const string& cmd, skope *psk)
 {
 	size_t nItems, k(0);
 	vector<string> cmdl; // command delimitered with space
@@ -152,6 +159,9 @@ void auxenv(CAstSigEnv* pEnv, const string& cmd)
 		else if (cmdl[0] == "save") {
 			cmdl.erase(cmdl.begin());
 			auxenv_save(pEnv, cmdl);
+		}
+		else if (cmdl[0] == "vars") {
+			display_vars(pEnv, cmdl, psk);
 		}
 		else if (cmdl[0] == "cd") {
 			cmdl.erase(cmdl.begin());

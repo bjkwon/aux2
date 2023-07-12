@@ -170,6 +170,7 @@
     <ClCompile Include="lame\parse.c" />
     <ClCompile Include="lame\timestatus.c" />
     <ClCompile Include="modules\sys\run.cpp" />
+    <ClCompile Include="shell.cpp" />
     <ClCompile Include="skope_flow.cpp" />
     <ClCompile Include="skope_process.cpp" />
     <ClCompile Include="AuxFunc.cpp" />

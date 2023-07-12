@@ -28,12 +28,12 @@ enum DEBUG_STATUS
 	null = -1,
 	entering,
 	progress,
-	stepping,
-	stepping_in,
-	continuing,
-	exiting,
+	step,
+	step_in,
+	step_out,
+	continu,
+	abort2base,
 	cleanup,
-	aborting,
 	purgatory,
 	refresh,
 	typed_line,
@@ -46,6 +46,7 @@ public:
 	string fullname;
 	string content;
 	vector<int> DebugBreaks;
+	vector<string> source;
 	map<string, UDF> local;
 	bool newrecruit;
 	UDF& operator=(const UDF& rhs);
@@ -241,8 +242,9 @@ public:
 	CVar* GetGlobalVariable(const AstNode* pnode, const char* varname);
 	CVar* GetVariable(const char* varname, const AstNode* pnode, CVar* pvar = NULL);
 	void PrepareAndCallUDF(const AstNode* pCalling, CVar* pBase, CVar* pStaticVars = NULL);
-	void CallUDF(const AstNode* pnode4UDFcalled, CVar* pBase, size_t nargout_requested);
+	int CallUDF(const AstNode* pnode4UDFcalled, CVar* pBase, size_t nargout_requested);
 	const AstNode* linebyline(const AstNode* p);
+	void hold_at_break_point(const AstNode* pnode);
 	FILE* fopen_from_path(const string& fname, const string& ext, string& fullfilename);
 	void HandleAuxFunction(const AstNode* pnode);
 	CVar* TSeq(const AstNode* pnode, AstNode* p);
@@ -270,6 +272,7 @@ public:
 	string makefullfile(const string& fname, string extension = "");
 	string ComputeString(const AstNode* p);
 	vector<string> ClearVar(const char* var, CVar* psigBase=NULL);
+	void command_shell(const string& prompt, const AstNode* p);
 
 	AstNode* pheadthisline;
 

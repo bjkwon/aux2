@@ -19,7 +19,7 @@
 #define DEFAULT_FS 22050
 #define PRECISION 6 // the default precision tested in Windows11, Visual Studio 2019
 
-void auxenv(CAstSigEnv* pEnv, const string& cmd); // auxenv.cpp
+void auxenv(CAstSigEnv* pEnv, const string& cmd, skope* psk=NULL); // auxenv.cpp
 void auxenv_cd(CAstSigEnv* pEnv, string& targetdir); // auxenv.cpp
 void read_auxenv(int& fs0, int& precision, vector<string>& auxpathfromenv, const string& envfilename);
 void save_auxenv(CAstSigEnv* pEnv, const string& envfilename); // auxenv.cpp
@@ -59,7 +59,7 @@ void echo(int precision, int depth, skope& ctx, const AstNode* pn, CVar* pvar, c
 }
 
 //[ 5  3 2 -1 9 83 7 62 9 7 6 8 9 7 3 2 -1]
-static void show_result(skope& sc, int precision, const string& display, int display_count)
+void show_result(skope& sc, int precision, const string& display, int display_count)
 {
 	int dt = 1;
 	if (sc.node->type == N_BLOCK)
@@ -185,7 +185,7 @@ int main(int argc, char** argv)
 					//if the line begins with #, it bypasses the usual parsing
 					if (input.front() == '#') {
 						if (input.substr(1).front() == '#') {
-							auxenv(pglobalEnv, input.substr(2).c_str());
+							auxenv(pglobalEnv, input.substr(2).c_str(), &sc);
 						}
 						else {
 							if (input.substr(1, 3) == "cd ") {
@@ -206,7 +206,14 @@ int main(int argc, char** argv)
 					cout << "Press [ENTER] to quit" << endl;
 				}
 			}
-
+			catch (skope* ast) {
+				if (ast->u.debug.status == abort2base)
+				{
+					ast->baselevel.pop_back();
+				}
+				sc.baselevel.pop_back();
+				sc.son.reset();
+			}
 			catch (skope_exception e) {
 				cout << "Error: " << e.getErrMsg() << endl;
 			}
@@ -239,6 +246,7 @@ int main(int argc, char** argv)
 			catch (const char* msg) {
 				cout << "Error: " << msg << endl;
 			}
+
 		}
 	delete pglobalEnv;
 	return 0;
