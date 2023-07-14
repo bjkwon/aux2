@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <fstream>
+#include <cassert>
 #include "aux_classes.h"
 #include "portaudio.h"
 #include "skope.h"
@@ -207,11 +208,8 @@ int main(int argc, char** argv)
 				}
 			}
 			catch (skope* ast) {
-				if (ast->u.debug.status == abort2base)
-				{
-					ast->baselevel.pop_back();
-				}
-				sc.baselevel.pop_back();
+				// When aborting from udf. 
+				assert(ast->u.debugstatus == abort2base);
 				sc.son.reset();
 			}
 			catch (skope_exception e) {
@@ -220,7 +218,6 @@ int main(int argc, char** argv)
 			catch (const char* msg) {
 				cout << "Error: " << msg << endl;
 			}
-			Pa_Terminate();
 			save_auxenv(pglobalEnv, AUXENV_FILE);
 		}
 	}
@@ -248,6 +245,7 @@ int main(int argc, char** argv)
 			}
 
 		}
+	Pa_Terminate();
 	delete pglobalEnv;
 	return 0;
 }

@@ -47,6 +47,7 @@ public:
 	string content;
 	vector<int> DebugBreaks;
 	vector<string> source;
+	map<int, string> lines;
 	map<string, UDF> local;
 	bool newrecruit;
 	UDF& operator=(const UDF& rhs);
@@ -178,16 +179,6 @@ public:
 	CVar* BREAK(skope* psk, const AstNode* pnode);
 	CVar* RETURN(skope* psk, const AstNode* pnode);
 };
-class CDebugStatus
-{
-public:
-	DEBUG_STATUS status;
-	bool GUI_running;
-	bool inPurgatory;
-	bool local;
-	CDebugStatus() { status = null;  GUI_running = inPurgatory = local = false; };
-	virtual ~CDebugStatus() {};
-};
 
 class CUDF
 {
@@ -200,11 +191,8 @@ public:
 	int nextBreakPoint;
 	int currentLine;
 	int nargin;
-	map<string, CVar*> static_vars;
-	CDebugStatus debug;
-	string application;
-	bool repaint;
-	CUDF() { nextBreakPoint = currentLine = -1; pLastRead = NULL; repaint = false; };
+	DEBUG_STATUS debugstatus;
+	CUDF() { nextBreakPoint = currentLine = -1; pLastRead = NULL; };
 	virtual ~CUDF() {};
 	AstNode* pLastRead; //used for isthisUDFscope only, to mark the last pnode processed in 
 
@@ -242,7 +230,7 @@ public:
 	CVar* GetGlobalVariable(const AstNode* pnode, const char* varname);
 	CVar* GetVariable(const char* varname, const AstNode* pnode, CVar* pvar = NULL);
 	void PrepareAndCallUDF(const AstNode* pCalling, CVar* pBase, CVar* pStaticVars = NULL);
-	int CallUDF(const AstNode* pnode4UDFcalled, CVar* pBase, size_t nargout_requested);
+	void CallUDF(const AstNode* pnode4UDFcalled, CVar* pBase, size_t nargout_requested);
 	const AstNode* linebyline(const AstNode* p);
 	void hold_at_break_point(const AstNode* pnode);
 	FILE* fopen_from_path(const string& fname, const string& ext, string& fullfilename);

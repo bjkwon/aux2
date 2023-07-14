@@ -285,7 +285,7 @@ vector<CVar*> skope::Compute()
 		return res;
 	}
 	fBreak = false;
-	if (node->type == N_BLOCK && (u.application == "xcom" || u.application == "auxlib")) {
+	if (node->type == N_BLOCK) {
 		AstNode* p = node->next;
 		while (p)
 		{
@@ -751,7 +751,7 @@ void skope::PrepareAndCallUDF(const AstNode* pCalling, CVar* pBase, CVar* pStati
 	son.reset(new skope(&tempEnv));
 	son->u = u;
 	son->u.title = pCalling->str;
-	son->u.debug.status = null;
+	son->u.debugstatus = null;
 	son->lhs = lhs;
 	son->level = level + 1;
 	son->baselevel.front() = baselevel.back();
@@ -842,34 +842,36 @@ void skope::PrepareAndCallUDF(const AstNode* pCalling, CVar* pBase, CVar* pStati
 		throw exception_etc(*this, pCalling, oss.str()).raise();
 	}
 	//son->u.nargin is the number of args specified in udf
-	if (u.debug.status == step_in) son->u.debug.status = step;
+	if (u.debugstatus == step_in) son->u.debugstatus = step;
 	xscope.push_back(son.get());
+	// duplicating debug breakpoints in the son object
+	// why? To use skope::hold_at_break_point()
+	// this is only temporary, to be cleaned at the end of this function; or else??
+	if (level > 1)
+		son->pEnv->udf[pCalling->str].DebugBreaks = pEnv->udf[u.title].DebugBreaks;
 	//son->SetVar("_________",pStaticVars); // how can I add static variables here???
-	if (!son->CallUDF(pCalling, pBase, nargout))
-	{
-		if (son->u.argout.empty())
-			Sig.Reset();
-		else if (son->u.argout.size() >= 1) {
-			Sig = son->Vars[son->u.argout.front()];
-			for (auto it = son->u.argout.begin(); it != son->u.argout.end(); it++) {
-				unique_ptr<CVar> pt = make_unique<CVar>(son->Vars[*it]);
-				SigExt.push_back(move(pt));
-			}
+	son->CallUDF(pCalling, pBase, nargout);
+	if (son->u.argout.empty())
+		Sig.Reset();
+	else if (son->u.argout.size() >= 1) {
+		Sig = son->Vars[son->u.argout.front()];
+		for (auto it = son->u.argout.begin(); it != son->u.argout.end(); it++) {
+			unique_ptr<CVar> pt = make_unique<CVar>(son->Vars[*it]);
+			SigExt.push_back(move(pt));
 		}
-		if ((son->u.debug.status == step || son->u.debug.status == continu) && u.debug.status == null)
-		{ // no b.p set in the main udf, but in these conditions, as the local udf is finishing, the step should continue in the main udf, or debug.status should be set progress, so that the debugger would be properly exiting as it finishes up in CallUDF()
-			u.debug.GUI_running = true;
-			if (son->u.debug.status == step) // b.p. set in a local udf
-				u.debug.status = step;
-			else // b.p. set in other udf
-				u.debug.status = progress;
-		}
-		if (son->GOvars.find("?foc") != son->GOvars.end()) GOvars["?foc"] = son->GOvars["?foc"];
-		if (son->GOvars.find("gcf") != son->GOvars.end()) GOvars["gcf"] = son->GOvars["gcf"];
-		u.pLastRead = NULL;
-		if (pgo) pgo->functionEvalRes = true;
-		Sig.functionEvalRes = true;
 	}
+	if ((son->u.debugstatus == step || son->u.debugstatus == continu) && u.debugstatus == null)
+	{ // no b.p set in the main udf, but in these conditions, as the local udf is finishing, the step should continue in the main udf, or debugstatus should be set progress, so that the debugger would be properly exiting as it finishes up in CallUDF()
+		if (son->u.debugstatus == step) // b.p. set in a local udf
+			u.debugstatus = step;
+		else // b.p. set in other udf
+			u.debugstatus = progress;
+	}
+	if (son->GOvars.find("?foc") != son->GOvars.end()) GOvars["?foc"] = son->GOvars["?foc"];
+	if (son->GOvars.find("gcf") != son->GOvars.end()) GOvars["gcf"] = son->GOvars["gcf"];
+	u.pLastRead = NULL;
+	if (pgo) pgo->functionEvalRes = true;
+	Sig.functionEvalRes = true;
 	xscope.pop_back(); // move here????? to make purgatory work...
 	son.reset();
 }

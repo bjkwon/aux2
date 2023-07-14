@@ -34,6 +34,26 @@ static CVar interpreter(skope& sc, int display_precision, const string& instr, b
 	return sc.Sig;
 }
 
+static map <int, string> stringSplit(const string& in, const string& delim)
+{
+	map <int, string> out;
+	size_t pos0 = 0;
+	size_t pos = in.find_first_of(delim);
+	string next = in;
+	int line = 2;
+	auto extract = next.substr(pos0, pos);
+	while (pos != string::npos) {
+		pos0 = pos + delim.size() - 1;
+		next = next.substr(pos0);
+		pos = next.find_first_of(delim);
+		extract = next.substr(0, pos);
+		if (!extract.empty())
+			out[line] = extract;
+		line++;
+	}
+	return out;
+}
+
 void skope::command_shell(const string& prompt, const AstNode* p)
 {
 	string input;
@@ -58,39 +78,41 @@ void skope::command_shell(const string& prompt, const AstNode* p)
 			}
 			else if (input.front() == '?') {
 				auto linecommand = input.substr(1);
+				if (linecommand.empty()) break;
 				char c = linecommand.front();
 				switch (c) {
 				case 's':
 				case 'S':
-					u.debug.status = step;
+					u.debugstatus = step;
 					loop = false;
 					break;
 				case 'i':
 				case 'I':
-					u.debug.status = step_in;
+					u.debugstatus = step_in;
 					loop = false;
 					break;
 				case 'o':
 				case 'O':
-					u.debug.status = step_out;
+					u.debugstatus = step_out;
 					loop = false;
 					break;
 				case 'c':
 				case 'C':
-					u.debug.status = continu;
+					u.debugstatus = continu;
 					loop = false;
 					break;
 				case 'x':
 				case 'X':
-					u.debug.status = abort2base;
+					u.debugstatus = abort2base;
 					loop = false;
 					break;
 				case 'v':
 				case 'V':
 				{
 					// Break into each line and fill up u.source
-					vector <string> lines;
-					int res = str2vector(lines, pEnv->udf[u.title].content, "\n\r");
+					auto lines = stringSplit(pEnv->udf[u.base].content, "\n\r");
+					// u.title should be the udf file name
+					// Todo: lines[p->line] is incorrect if there are empty lines in the file
 					cout << "* " << lines[p->line] << endl;
 					break;
 				}
@@ -121,8 +143,11 @@ void skope::hold_at_break_point(const AstNode* pnode)
 	// if the current line is one of breakpoints
 	// if currently stepping
 	if (isItBreakPoint(pEnv->udf[u.title].DebugBreaks, pnode->line) ||
-		u.debug.status == step)
+		u.debugstatus == step ||
+		u.debugstatus == step_in
+		)
 	{
+		if (u.debugstatus == step_in)  u.debugstatus = progress;
 		thread thd(shell, this, pnode);
 		thd.join();
 	}
@@ -147,7 +172,7 @@ const AstNode* skope::linebyline(const AstNode* p)
 	return NULL;
 }
 
-int skope::CallUDF(const AstNode* pnode4UDFcalled, CVar* pBase, size_t nargout_requested)
+void skope::CallUDF(const AstNode* pnode4UDFcalled, CVar* pBase, size_t nargout_requested)
 {
 	// Returns the number of output arguments requested in the call
 	// 
@@ -155,8 +180,8 @@ int skope::CallUDF(const AstNode* pnode4UDFcalled, CVar* pBase, size_t nargout_r
 	// pOutParam: AstNode for formal output variable (or LHS), just used inside of this function.
 	// Output parameter dispatching (sending the output back to the calling worksapce) is done with pOutParam and lhs at the bottom.
 
-	// u.debug.status is set when debug key is pressed (F5, F10, F11), prior to this call.
-	// For an initial entry UDF, u.debug.status should be null
+	// u.debugstatus is set when debug key is pressed (F5, F10, F11), prior to this call.
+	// For an initial entry UDF, u.debugstatus should be null
 	CVar nargin((auxtype)u.nargin);
 	CVar nargout((auxtype)nargout_requested);
 	SetVar("nargin", &nargin);
@@ -167,75 +192,11 @@ int skope::CallUDF(const AstNode* pnode4UDFcalled, CVar* pBase, size_t nargout_r
 	if (pFirst->type == N_BLOCK)	pFirst = pFirst->next;
 	//Get the range of lines for the current udf
 	u.currentLine = pFirst->line;
-	AstNode* p;
-	int line2;
-	for (p = pFirst; p; p = p->next)
-	{
-		line2 = p->line;
-		if (!p->next) // if the node is T_FOR, T_WHILE or T_IF, p-next is NULL is it should continue through p->child
-		{
-			if (p->type == T_FOR || p->type == T_WHILE)
-				p = p->alt;
-			else if (p->type == T_IF)
-			{
-				if (p->alt)
-					p = p->alt;
-				else
-					p = p->child;
-			}
-		}
-	}
-	//probably needed to enter a new, external udf (if not, may skip)
-//	if (pEnv->udf[u.base].newrecruit)
-//		fpmsg.UpdateDebuggerGUI(this, refresh, -1); // shouldn't this be entering instead of refresh? It seems that way at least to F11 an not-yet-opened udf 10/16/2018. But.. it crashes. It must not have been worked on thoroughly...
-														//if this is auxconscript front astsig, enter call fpmsg.UpdateDebuggerGUI()
-//	if (u.debug.status == stepping)
-//		/*u.debug.GUI_running = true, */ fpmsg.UpdateDebuggerGUI(this, entering, -1);
-//	else
-	{ // probably entrance udf... First, check if current udfname (i.e., Script) is found in DebugBreaks
-		// if so, mark u.debug.status as progress and set next breakpoint
-		// and call debug_GUI
-		vector<int> breakpoint = pEnv->udf[u.base].DebugBreaks;
-		for (vector<int>::iterator it = breakpoint.begin(); it != breakpoint.end(); it++)
-		{
-			if (*it < u.currentLine) continue;
-			if (*it <= line2) {
-				u.debug.status = progress; u.nextBreakPoint = *it;
-				//u.debug.GUI_running = true, fpmsg.UpdateDebuggerGUI(this, entering, -1);
-				break;
-			}
-		}
-	}
 	linebyline(pFirst);
-	if (u.debug.status == abort2base)
+	if (u.debugstatus == abort2base)
 	{
 		u.currentLine = -1;
 		throw this;
-		return 1;
 	}
-
-	if (u.debug.status != null)
-	{
-		//		currentLine = -1; // to be used in CDebugDlg::ProcessCustomDraw() (re-drawing with default background color)... not necessary for u.debug.status==stepping (because currentLine has been updated stepping) but won't hurt
-		if (u.debug.GUI_running == true)
-		{
-			// send to purgatory and standby for another debugging key action, if dad is the base scope
-			//if (dad == xscope.front() && u.debug.status == stepping)
-			//{
-			//	fpmsg.UpdateDebuggerGUI(this, purgatory, -1);
-			//	fpmsg.HoldAtBreakPoint(this, pLast);
-			//}
-			u.currentLine = -1;
-			u.debug.inPurgatory = false; // necessary to reset the color of debug window listview.
-			//when exiting from a inside udf (whether local or not) to a calling udf with F10 or F11, the calling udf now should have stepping.
-//			fpmsg.UpdateDebuggerGUI(this, exiting, -1);
-		}
-		if (xscope.size() > 2) // pvevast hasn't popped yet... This means son is secondary udf (either a local udf or other udf called by the primary udf)
-		{//why is this necessary? 10/19/2018----yes this is...2/16/2019
-//			if (u.debug.status == stepping && fpmsg.IsCurrentUDFOnDebuggerDeck && !fpmsg.IsCurrentUDFOnDebuggerDeck(Script.c_str()))
-//				fpmsg.UpdateDebuggerGUI(dad, entering, -1);
-		}
-	}
-	return 0;
 }
 
