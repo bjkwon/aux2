@@ -978,6 +978,26 @@ AstNode* skope::ReadUDF(string& emsg, const char* udf_filename)
 	return pout;
 }
 
+static map <int, string> stringSplit(const string& in, const string& delim)
+{
+	map <int, string> out;
+	size_t pos0 = 0;
+	size_t pos = in.find_first_of(delim);
+	string next = in;
+	int line = 2;
+	auto extract = next.substr(pos0, pos);
+	while (pos != string::npos) {
+		pos0 = pos + delim.size() - 1;
+		next = next.substr(pos0);
+		pos = next.find_first_of(delim);
+		extract = next.substr(0, pos);
+		if (!extract.empty())
+			out[line] = extract;
+		line++;
+	}
+	return out;
+}
+
 AstNode* skope::RegisterUDF(const AstNode* p, const char* fullfilename, const string& filecontent)
 {
 	//Deregistering takes place during cleaning out of pEnv i.e., ~CAstSigEnv()
@@ -1011,6 +1031,7 @@ AstNode* skope::RegisterUDF(const AstNode* p, const char* fullfilename, const st
 		loc.content = "see base function for content";
 		pEnv->udf[udf_filename].local[namefrompnode] = loc;
 	}
+	pEnv->udf[udf_filename].lines = stringSplit(pEnv->udf[udf_filename].content, "\n\r");
 	return pnode4Func;
 }
 

@@ -34,35 +34,22 @@ static CVar interpreter(skope& sc, int display_precision, const string& instr, b
 	return sc.Sig;
 }
 
-static map <int, string> stringSplit(const string& in, const string& delim)
-{
-	map <int, string> out;
-	size_t pos0 = 0;
-	size_t pos = in.find_first_of(delim);
-	string next = in;
-	int line = 2;
-	auto extract = next.substr(pos0, pos);
-	while (pos != string::npos) {
-		pos0 = pos + delim.size() - 1;
-		next = next.substr(pos0);
-		pos = next.find_first_of(delim);
-		extract = next.substr(0, pos);
-		if (!extract.empty())
-			out[line] = extract;
-		line++;
-	}
-	return out;
-}
 
 void skope::command_shell(const string& prompt, const AstNode* p)
 {
 	string input;
 	bool loop = true;
+	bool lineprinted = false;
 	while (loop) {
-		cout << prompt;
+		if (!lineprinted) {
+			cout << p->line << pEnv->udf[u.base].lines[p->line] << endl;
+			lineprinted = true;
+		}
+		cout << "(trace)" << prompt;
 		getline(cin, input);
 		if (!input.empty())
 		{
+			lineprinted = false;
 			//if the line begins with #, it bypasses the usual parsing
 			if (input.front() == '#') {
 				if (input.substr(1).front() == '#') {
@@ -106,16 +93,6 @@ void skope::command_shell(const string& prompt, const AstNode* p)
 					u.debugstatus = abort2base;
 					loop = false;
 					break;
-				case 'v':
-				case 'V':
-				{
-					// Break into each line and fill up u.source
-					auto lines = stringSplit(pEnv->udf[u.base].content, "\n\r");
-					// u.title should be the udf file name
-					// Todo: lines[p->line] is incorrect if there are empty lines in the file
-					cout << "* " << lines[p->line] << endl;
-					break;
-				}
 				}
 			}
 			else {
@@ -123,13 +100,12 @@ void skope::command_shell(const string& prompt, const AstNode* p)
 			}
 		}
 	}
-
 }
 
 static void shell(skope* ths, const AstNode* p)
 {
 	char buf[256];
-	string prompt = ths->u.title + ":" + itoa(p->line, buf, 10) + "> ";
+	string prompt = ths->u.title + "> ";
 	ths->command_shell(prompt, p);
 }
 
