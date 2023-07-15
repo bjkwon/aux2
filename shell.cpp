@@ -160,12 +160,17 @@ const AstNode* skope::linebyline(const AstNode* p)
 		pLast = p;
 		// T_IF, T_WHILE, T_FOR are checked here to break right at the beginning of the loop
 		u.currentLine = p->line;
-	//	u.debug.
 		if (p->type == T_ID || p->type == T_FOR || p->type == T_IF || p->type == T_WHILE || p->type == N_IDLIST || p->type == N_VECTOR)
 			hold_at_break_point(p);
+		if (u.debugstatus == abort2base)
+		{
+			u.currentLine = -1;
+			throw this;
+		}
 		process_statement(p);
-		//		pgo = NULL; // without this, go lingers on the next line
 		Sig.Reset(1); // without this, fs=3 lingers on the next line; if Sig is a cell or struct, it lingers on the next line and may cause an error
+		if (pEnv->inTryCatch)
+			pTryLast = p;
 		if (fExit) return p;
 		p = p->next;
 	}
@@ -193,10 +198,6 @@ void skope::CallUDF(const AstNode* pnode4UDFcalled, CVar* pBase, size_t nargout_
 	//Get the range of lines for the current udf
 	u.currentLine = pFirst->line;
 	linebyline(pFirst);
-	if (u.debugstatus == abort2base)
-	{
-		u.currentLine = -1;
-		throw this;
-	}
+
 }
 
