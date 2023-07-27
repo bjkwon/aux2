@@ -10,30 +10,12 @@
 using namespace std;
 
 void show_result(skope& sc, int precision, const string& display, int display_count); // main.cpp
-void auxenv(CAstSigEnv* pEnv, const string& cmd, skope* psk = NULL); // auxenv.cpp
+void auxenv(CAstSigEnv* pEnv, const AstNode* pnode, skope* psk); // auxenv.cpp
 void auxenv_cd(CAstSigEnv* pEnv, string& targetdir); // auxenv.cpp
+bool interpreter(skope& sc, int display_precision, const string& instr, bool show, bool debug); // main.cpp
 
 //Application-wide global variables
 extern vector<skope*> xscope;
-
-
-static CVar interpreter(skope& sc, int display_precision, const string& instr, bool show)
-{
-	sc.statusMsg.clear();
-	auto nodes = sc.makenodes(instr);
-	if (!nodes)
-		throw sc.emsg.c_str();
-	sc.node = nodes;
-	sc.Compute();
-	if (show) {
-		if (nodes->tail && nodes->tail->str)
-			show_result(sc, display_precision, nodes->tail->str, (int)nodes->tail->dval);
-		else
-			show_result(sc, display_precision, "", -1);
-	}
-	return sc.Sig;
-}
-
 
 void skope::command_shell(const string& prompt, const AstNode* p)
 {
@@ -41,70 +23,29 @@ void skope::command_shell(const string& prompt, const AstNode* p)
 	bool loop = true;
 	bool lineprinted = false;
 	while (loop) {
-		if (!lineprinted) {
-			cout << p->line << pEnv->udf[u.base].lines[p->line] << endl;
+		try {
+			if (!lineprinted) {
+			cout << p->line << " " << pEnv->udf[u.base].lines[p->line] << endl;
 			lineprinted = true;
 		}
 		cout << "(trace)" << prompt;
 		getline(cin, input);
 		if (!input.empty())
 		{
-			lineprinted = false;
-			//if the line begins with #, it bypasses the usual parsing
-			if (input.front() == '#') {
-				if (input.substr(1).front() == '#') {
-					auxenv(pEnv, input.substr(2).c_str(), this);
-				}
-				else {
-					if (input.substr(1, 3) == "cd ") {
-						auxenv_cd(pEnv, input);
-					}
-					else
-						int status = system(input.substr(1).c_str());
-				}
-			}
-			else if (input.front() == '?') {
-				auto linecommand = input.substr(1);
-				if (linecommand.empty()) break;
-				char c = linecommand.front();
-				switch (c) {
-				case 's':
-				case 'S':
-					u.debugstatus = step;
-					loop = false;
-					break;
-				case 'i':
-				case 'I':
-					u.debugstatus = step_in;
-					loop = false;
-					break;
-				case 'o':
-				case 'O':
-					u.debugstatus = step_out;
-					loop = false;
-					break;
-				case 'c':
-				case 'C':
-					u.debugstatus = continu;
-					loop = false;
-					break;
-				case 'x':
-				case 'X':
-					u.debugstatus = abort2base;
-					loop = false;
-					break;
-				}
-			}
-			else {
-				interpreter(*this, pEnv->display_precision, input, true);
-			}
+			loop = interpreter(*this, pEnv->display_precision, input, true, true);
 		}
+	}
+	catch (skope_exception e) {
+		cout << "Error: " << e.getErrMsg() << endl;
+	}
+	catch (const char* msg) {
+		cout << "Error: " << msg << endl;
+	} 
 	}
 }
 
 static void shell(skope* ths, const AstNode* p)
 {
-	char buf[256];
 	string prompt = ths->u.title + "> ";
 	ths->command_shell(prompt, p);
 }
@@ -136,6 +77,7 @@ const AstNode* skope::linebyline(const AstNode* p)
 		pLast = p;
 		// T_IF, T_WHILE, T_FOR are checked here to break right at the beginning of the loop
 		u.currentLine = p->line;
+		// N_IDLIST here is probably outdated. 7/26/2023
 		if (p->type == T_ID || p->type == T_FOR || p->type == T_IF || p->type == T_WHILE || p->type == N_IDLIST || p->type == N_VECTOR)
 			hold_at_break_point(p);
 		if (u.debugstatus == abort2base)
@@ -174,6 +116,5 @@ void skope::CallUDF(const AstNode* pnode4UDFcalled, CVar* pBase, size_t nargout_
 	//Get the range of lines for the current udf
 	u.currentLine = pFirst->line;
 	linebyline(pFirst);
-
 }
 

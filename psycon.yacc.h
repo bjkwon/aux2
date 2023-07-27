@@ -15,7 +15,9 @@ extern "C" {
 #define N_IDLIST		10006
 #define N_TIME_EXTRACT	10007
 #define N_CELLASSIGN	10008
-#define N_IXASSIGN	10009
+#define N_SHELL	10009
+#define N_AUXSYS	10010
+#define N_DEBUG	100011
 #define N_INITCELL	10012
 #define N_CELL		10015
 #define N_HOOK		10016
@@ -24,7 +26,7 @@ extern "C" {
 typedef struct AstNode_t {
 	int line, type;
 	unsigned col;
-	float dval;
+	double dval;
 	char *str;
 	int suppress;
 	struct AstNode_t* child;

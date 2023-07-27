@@ -243,9 +243,6 @@
     <ClCompile Include="modules\sys\run.cpp">
       <Filter>Source Files\modules\sys</Filter>
     </ClCompile>
-    <ClCompile Include="_func\_setdebug.cpp">
-      <Filter>Source Files\_functions</Filter>
-    </ClCompile>
     <ClCompile Include="shell.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>

@@ -20,7 +20,8 @@
 #define DEFAULT_FS 22050
 #define PRECISION 6 // the default precision tested in Windows11, Visual Studio 2019
 
-void auxenv(CAstSigEnv* pEnv, const string& cmd, skope* psk=NULL); // auxenv.cpp
+void auxenv(CAstSigEnv* pEnv, const AstNode* pnode, skope* psk); // auxenv.cpp
+void auxdebug(skope& sc, const AstNode* pnode); // auxenv.cpp
 void auxenv_cd(CAstSigEnv* pEnv, string& targetdir); // auxenv.cpp
 void read_auxenv(int& fs0, int& precision, vector<string>& auxpathfromenv, const string& envfilename);
 void save_auxenv(CAstSigEnv* pEnv, const string& envfilename); // auxenv.cpp
@@ -108,21 +109,84 @@ void show_result(skope& sc, int precision, const string& display, int display_co
 		cout << sc.statusMsg << endl;
 }
 
-CVar interpreter(skope& sc, int display_precision, const string& instr, bool show)
+static bool handle_debug_key(skope& sc, const string& instr)
+{
+	size_t first = instr.find_first_not_of(" \t\n\r");
+	size_t last = instr.find_last_not_of(" \t\n\r");
+	if (first == string::npos || last == string::npos)
+		throw exception_etc(sc, sc.node, "Invalid debugger contol key.").raise();
+	if (first != last)
+		throw exception_etc(sc, sc.node, "Invalid Debugger contol key.").raise();
+	string msg;
+	switch (instr.substr(first).front()) {
+	case 's':
+	case 'S':
+		sc.u.debugstatus = step;
+		break;
+	case 'i':
+	case 'I':
+		sc.u.debugstatus = step_in;
+		break;
+	case 'o':
+	case 'O':
+		sc.u.debugstatus = step_out;
+		break;
+	case 'c':
+	case 'C':
+		sc.u.debugstatus = continu;
+		break;
+	case 'x':
+	case 'X':
+		sc.u.debugstatus = abort2base;
+		break;
+	case 'v':
+	case 'V':
+		for (auto v : sc.pEnv->udf[sc.u.base].DebugBreaks)
+			cout << v << ' ';
+		cout << endl;		
+		return true;
+	default:
+		msg = "Invalid debugger contol key";
+	}
+	if (!msg.empty())
+		throw exception_etc(sc, sc.node, msg).raise();
+	return false;
+}
+
+bool interpreter(skope& sc, int display_precision, const string& instr, bool show, bool debug)
 {
 	sc.statusMsg.clear();
 	auto nodes = sc.makenodes(instr);
 	if (!nodes)
 		throw sc.emsg.c_str();
-	sc.node = nodes;
-	sc.Compute();
-	if (show) {
-		if (nodes->tail && nodes->tail->str)
-			show_result(sc, display_precision, nodes->tail->str, (int)nodes->tail->dval);
-		else
-			show_result(sc, display_precision, "", -1);
+	size_t pos;
+	sc.node = nodes; 
+	switch (nodes->type)
+	{
+	case N_SHELL:
+		pos = instr.find_first_of('#');
+		system(instr.substr(pos + 1).c_str());
+		break;
+	case N_AUXSYS:
+		auxenv(sc.pEnv, nodes->child, &sc);
+		break;
+	case N_DEBUG:
+		pos = instr.find_first_of('/');
+		if (sc.level<2)
+			throw exception_etc(sc, nodes, "Only during debugging /(debugging_control_key) can be used.").raise();
+		assert(debug);
+		return handle_debug_key(sc, instr.substr(pos + 1));
+	default:
+		sc.Compute();
+		if (show) {
+			if (nodes->tail && nodes->tail->str)
+				show_result(sc, display_precision, nodes->tail->str, (int)nodes->tail->dval);
+			else
+				show_result(sc, display_precision, "", -1);
+		}
+		break;
 	}
-	return sc.Sig;
+	return true;
 }
 
 int main(int argc, char** argv)
@@ -183,21 +247,7 @@ int main(int argc, char** argv)
 #endif
 				if (!input.empty())
 				{
-					//if the line begins with #, it bypasses the usual parsing
-					if (input.front() == '#') {
-						if (input.substr(1).front() == '#') {
-							auxenv(pglobalEnv, input.substr(2).c_str(), &sc);
-						}
-						else {
-							if (input.substr(1, 3) == "cd ") {
-								auxenv_cd(pglobalEnv, input);
-							}
-							else
-								int status = system(input.substr(1).c_str());
-						}
-					}
-					else
-						interpreter(sc, pglobalEnv->display_precision, input, true);
+					interpreter(sc, pglobalEnv->display_precision, input, true, false);
 					programExit = false;
 				}
 				else
@@ -218,7 +268,7 @@ int main(int argc, char** argv)
 			catch (const char* msg) {
 				cout << "Error: " << msg << endl;
 			}
-			save_auxenv(pglobalEnv, AUXENV_FILE);
+			save_auxenv(pglobalEnv, AUXENV_FILE); // check!!!!!
 		}
 	}
 		else {
@@ -235,7 +285,7 @@ int main(int argc, char** argv)
 			}
 			input += ")";
 			try {
-				interpreter(sc, pglobalEnv->display_precision, input, false);
+				interpreter(sc, pglobalEnv->display_precision, input, false, false);
 			}
 			catch (skope_exception e) {
 				cout << "Error: " << e.getErrMsg() << endl;

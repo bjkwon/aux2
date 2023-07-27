@@ -546,6 +546,7 @@ static void replace(CVar& lobj, const CVar& indsig, const CVar& robj, const skop
 		replace(*(CVar*)(lobj.next), *indsig.next, *robj.next, ths, plhs);
 }
 
+// N_IDLIST here is probably outdated. 7/26/2023
 void skope::insertreplace(const AstNode* plhs, const CVar& robj, const CVar& indsig, CVar *lobj, bool isreplica)
 {
 	const AstNode* p = plhs;
