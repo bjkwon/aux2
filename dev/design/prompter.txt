@@ -1,0 +1,23 @@
+# shell command prompter
+/ debugging prompter, only valid during debugging
+> aux system prompter
+
+Examples:
+#ls
+#path
+
+/v -- display breakpoints
+/s -- step
+/x -- abort
+/i -- step in
+/o -- step out
+/c -- continue
+
+>cd -- change directory for aux operation relying on the directory structure
+>precision -- set/view number display precision
+>load -- to do
+>save -- to do
+>vars -- display variables in the workspace
+>debug my_udf 5 8 10 -- set debugger breakpoints on lines 5, 8, and 10
+>debug my_udf -5 -8 -- clear debugger breakpoints on lines 5 and 8 (if there was no breakpoints on those lines, ignore)
+>debug my_udf 0 -- clear all breakpoints

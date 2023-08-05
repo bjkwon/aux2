@@ -1,9 +1,13 @@
+#include <iostream>
 #include <algorithm>
 #include "skope.h"
 #include "skope_exception.h"
 #include "typecheck.h"
 #include "utils.h"
 #include <assert.h>
+#include <thread>
+
+using namespace std;
 
 #ifndef _WINDOWS
 #include <libgen.h>
@@ -11,6 +15,9 @@
 #endif
 
 int GetFileText(FILE* fp, string& strOut); // utils.cpp
+void show_result(skope& sc, int precision, const string& display, int display_count); // main.cpp
+void auxenv(CAstSigEnv* pEnv, const string& cmd, skope* psk = NULL); // auxenv.cpp
+void auxenv_cd(CAstSigEnv* pEnv, string& targetdir); // auxenv.cpp
 
 //Application-wide global variables
 vector<skope*> xscope;
@@ -278,7 +285,7 @@ vector<CVar*> skope::Compute()
 		return res;
 	}
 	fBreak = false;
-	if (node->type == N_BLOCK && (u.application == "xcom" || u.application == "auxlib")) {
+	if (node->type == N_BLOCK) {
 		AstNode* p = node->next;
 		while (p)
 		{
@@ -744,11 +751,11 @@ void skope::PrepareAndCallUDF(const AstNode* pCalling, CVar* pBase, CVar* pStati
 	son.reset(new skope(&tempEnv));
 	son->u = u;
 	son->u.title = pCalling->str;
-	son->u.debug.status = null;
+	son->u.debugstatus = null;
 	son->lhs = lhs;
 	son->level = level + 1;
 	son->baselevel.front() = baselevel.back();
-	son->dad = this; // necessary when debugging exists with stepping (F10), the stepping can continue in tbe calling skope without breakpoints. --=>check 7/25
+	son->dad = this; // necessary when debugging exists with step (F10), the step can continue in tbe calling skope without breakpoints. --=>check 7/25
 //	son->fpmsg = fpmsg;
 	if (GOvars.find("?foc") != GOvars.end()) son->GOvars["?foc"] = GOvars["?foc"];
 	if (GOvars.find("gcf") != GOvars.end())	son->GOvars["gcf"] = GOvars["gcf"];
@@ -835,8 +842,13 @@ void skope::PrepareAndCallUDF(const AstNode* pCalling, CVar* pBase, CVar* pStati
 		throw exception_etc(*this, pCalling, oss.str()).raise();
 	}
 	//son->u.nargin is the number of args specified in udf
-	if (u.debug.status == stepping_in) son->u.debug.status = stepping;
+	if (u.debugstatus == step_in) son->u.debugstatus = step;
 	xscope.push_back(son.get());
+	// duplicating debug breakpoints in the son object
+	// why? To use skope::hold_at_break_point()
+	// this is only temporary, to be cleaned at the end of this function; or else??
+	if (level > 1)
+		son->pEnv->udf[pCalling->str].DebugBreaks = pEnv->udf[u.title].DebugBreaks;
 	//son->SetVar("_________",pStaticVars); // how can I add static variables here???
 	son->CallUDF(pCalling, pBase, nargout);
 	if (son->u.argout.empty())
@@ -848,13 +860,12 @@ void skope::PrepareAndCallUDF(const AstNode* pCalling, CVar* pBase, CVar* pStati
 			SigExt.push_back(move(pt));
 		}
 	}
-	if ((son->u.debug.status == stepping || son->u.debug.status == continuing) && u.debug.status == null)
-	{ // no b.p set in the main udf, but in these conditions, as the local udf is finishing, the stepping should continue in the main udf, or debug.status should be set progress, so that the debugger would be properly exiting as it finishes up in CallUDF()
-		u.debug.GUI_running = true;
-		if (son->u.debug.status == stepping) // b.p. set in a local udf
-			u.debug.status = stepping;
+	if ((son->u.debugstatus == step || son->u.debugstatus == continu) && u.debugstatus == null)
+	{ // no b.p set in the main udf, but in these conditions, as the local udf is finishing, the step should continue in the main udf, or debugstatus should be set progress, so that the debugger would be properly exiting as it finishes up in CallUDF()
+		if (son->u.debugstatus == step) // b.p. set in a local udf
+			u.debugstatus = step;
 		else // b.p. set in other udf
-			u.debug.status = progress;
+			u.debugstatus = progress;
 	}
 	if (son->GOvars.find("?foc") != son->GOvars.end()) GOvars["?foc"] = son->GOvars["?foc"];
 	if (son->GOvars.find("gcf") != son->GOvars.end()) GOvars["gcf"] = son->GOvars["gcf"];
@@ -863,103 +874,6 @@ void skope::PrepareAndCallUDF(const AstNode* pCalling, CVar* pBase, CVar* pStati
 	Sig.functionEvalRes = true;
 	xscope.pop_back(); // move here????? to make purgatory work...
 	son.reset();
-}
-
-void skope::CallUDF(const AstNode* pnode4UDFcalled, CVar* pBase, size_t nargout_requested)
-{
-	// Returns the number of output arguments requested in the call
-	// 
-	// t_func: the T_FUNCTION node pointer for the current UDF call, created after ReadUDF ("formal" context--i.e., how the udf file was read with variables used in the file)
-	// pOutParam: AstNode for formal output variable (or LHS), just used inside of this function.
-	// Output parameter dispatching (sending the output back to the calling worksapce) is done with pOutParam and lhs at the bottom.
-
-	// u.debug.status is set when debug key is pressed (F5, F10, F11), prior to this call.
-	// For an initial entry UDF, u.debug.status should be null
-	CVar nargin((auxtype)u.nargin);
-	CVar nargout((auxtype)nargout_requested);
-	SetVar("nargin", &nargin);
-	SetVar("nargout", &nargout);
-	// If the udf has multiple statements, p->type is N_BLOCK), then go deeper
-	// If it has a single statement, take it from there.
-	AstNode* pFirst = u.t_func->child->next;
-	if (pFirst->type == N_BLOCK)	pFirst = pFirst->next;
-	//Get the range of lines for the current udf
-	u.currentLine = pFirst->line;
-	AstNode* p;
-	int line2;
-	for (p = pFirst; p; p = p->next)
-	{
-		line2 = p->line;
-		if (!p->next) // if the node is T_FOR, T_WHILE or T_IF, p-next is NULL is it should continue through p->child
-		{
-			if (p->type == T_FOR || p->type == T_WHILE)
-				p = p->alt;
-			else if (p->type == T_IF)
-			{
-				if (p->alt)
-					p = p->alt;
-				else
-					p = p->child;
-			}
-		}
-	}
-	//probably needed to enter a new, external udf (if not, may skip)
-//	if (pEnv->udf[u.base].newrecruit)
-//		fpmsg.UpdateDebuggerGUI(this, refresh, -1); // shouldn't this be entering instead of refresh? It seems that way at least to F11 an not-yet-opened udf 10/16/2018. But.. it crashes. It must not have been worked on thoroughly...
-														//if this is auxconscript front astsig, enter call fpmsg.UpdateDebuggerGUI()
-//	if (u.debug.status == stepping)
-//		/*u.debug.GUI_running = true, */ fpmsg.UpdateDebuggerGUI(this, entering, -1);
-//	else
-	{ // probably entrance udf... First, check if current udfname (i.e., Script) is found in DebugBreaks
-		// if so, mark u.debug.status as progress and set next breakpoint
-		// and call debug_GUI
-		vector<int> breakpoint = pEnv->udf[u.base].DebugBreaks;
-		for (vector<int>::iterator it = breakpoint.begin(); it != breakpoint.end(); it++)
-		{
-			if (*it < u.currentLine) continue;
-			if (*it <= line2) {
-				u.debug.status = progress; u.nextBreakPoint = *it;
-				//u.debug.GUI_running = true, fpmsg.UpdateDebuggerGUI(this, entering, -1);
-				break;
-			}
-		}
-	}
-	p = pFirst;
-	while (p)
-	{
-		pLast = p;
-		// T_IF, T_WHILE, T_FOR are checked here to break right at the beginning of the loop
-		u.currentLine = p->line;
-//		if (p->type == T_ID || p->type == T_FOR || p->type == T_IF || p->type == T_WHILE || p->type == N_IDLIST || p->type == N_VECTOR)
-//			hold_at_break_point(p);
-		process_statement(p);
-		//		pgo = NULL; // without this, go lingers on the next line
-		Sig.Reset(1); // without this, fs=3 lingers on the next line; if Sig is a cell or struct, it lingers on the next line and may cause an error
-		if (fExit) break;
-		p = p->next;
-	}
-	if (u.debug.status != null)
-	{
-		//		currentLine = -1; // to be used in CDebugDlg::ProcessCustomDraw() (re-drawing with default background color)... not necessary for u.debug.status==stepping (because currentLine has been updated stepping) but won't hurt
-		if (u.debug.GUI_running == true)
-		{
-			// send to purgatory and standby for another debugging key action, if dad is the base scope
-			//if (dad == xscope.front() && u.debug.status == stepping)
-			//{
-			//	fpmsg.UpdateDebuggerGUI(this, purgatory, -1);
-			//	fpmsg.HoldAtBreakPoint(this, pLast);
-			//}
-			u.currentLine = -1;
-			u.debug.inPurgatory = false; // necessary to reset the color of debug window listview.
-			//when exiting from a inside udf (whether local or not) to a calling udf with F10 or F11, the calling udf now should have stepping.
-//			fpmsg.UpdateDebuggerGUI(this, exiting, -1);
-		}
-		if (xscope.size() > 2) // pvevast hasn't popped yet... This means son is secondary udf (either a local udf or other udf called by the primary udf)
-		{//why is this necessary? 10/19/2018----yes this is...2/16/2019
-//			if (u.debug.status == stepping && fpmsg.IsCurrentUDFOnDebuggerDeck && !fpmsg.IsCurrentUDFOnDebuggerDeck(Script.c_str()))
-//				fpmsg.UpdateDebuggerGUI(dad, entering, -1);
-		}
-	}
 }
 
 multimap<CVar, AstNode*> skope::register_switch_cvars(const AstNode* pnode, vector<int>& undefined)
@@ -1064,6 +978,26 @@ AstNode* skope::ReadUDF(string& emsg, const char* udf_filename)
 	return pout;
 }
 
+static map <int, string> stringSplit(const string& in, const string& delim)
+{
+	map <int, string> out;
+	size_t pos0 = 0;
+	size_t pos = in.find_first_of(delim);
+	string next = in;
+	int line = 2;
+	auto extract = next.substr(pos0, pos);
+	while (pos != string::npos) {
+		pos0 = pos + delim.size() - 1;
+		next = next.substr(pos0);
+		pos = next.find_first_of(delim);
+		extract = next.substr(0, pos);
+		if (!extract.empty())
+			out[line] = extract;
+		line++;
+	}
+	return out;
+}
+
 AstNode* skope::RegisterUDF(const AstNode* p, const char* fullfilename, const string& filecontent)
 {
 	//Deregistering takes place during cleaning out of pEnv i.e., ~CAstSigEnv()
@@ -1097,6 +1031,7 @@ AstNode* skope::RegisterUDF(const AstNode* p, const char* fullfilename, const st
 		loc.content = "see base function for content";
 		pEnv->udf[udf_filename].local[namefrompnode] = loc;
 	}
+	pEnv->udf[udf_filename].lines = stringSplit(pEnv->udf[udf_filename].content, "\n\r");
 	return pnode4Func;
 }
 

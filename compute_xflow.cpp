@@ -7,16 +7,7 @@
 
 CVar* CAstSigEnv::BLOCK(skope* psk, const AstNode* pnode)
 {
-	for (AstNode* p = pnode->next; p && !psk->fExit && !psk->fBreak; p = p->next)
-	{
-		psk->pLast = p;
-		//				hold_at_break_point(p);
-		psk->process_statement(p);
-		//			pgo = NULL; // without this, go lingers on the next line 2/9/2019
-		psk->Sig.Reset(1); // without this, fs=3 lingers on the next line 2/9/2019
-		if (inTryCatch)
-			psk->pTryLast = p;
-	}
+	psk->linebyline(pnode->next);
 	return &psk->Sig;
 }
 
@@ -38,12 +29,7 @@ CVar* CAstSigEnv::FOR(skope* psk, const AstNode* pnode)
 		// Now, not going through N_BLOCK 1/4/2020
 		// 1) When running in a debugger, it must go through N_BLOCK
 		// 2) check if looping through pa->next is bullet-proof
-		for (AstNode* pa = pnode->alt->next; pa; pa = pa->next)
-		{
-			psk->pLast = pa;
-			//					hold_at_break_point(pa);
-			psk->process_statement(pa);
-		}
+		psk->linebyline(pnode->alt->next);
 	}
 	psk->fBreak = false;
 	return &psk->Sig;

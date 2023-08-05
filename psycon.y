@@ -71,7 +71,7 @@ void yyerror (AstNode **pproot, char **errmsg, char const *s);
 %token <str> T_STRING "string"	T_ID "identifier"
 %token T_ENDPOINT T_FULLRANGE
 
-%type <pnode> block block_func line line_func stmt funcdef elseif_list condition conditional case_list id_list arg arg_list vector matrix range exp_range assign exp expcondition initcell compop assign2this tid csig varblock func_decl
+%type <pnode> block block_func line line_func stmt shell shellarg auxsys debug funcdef elseif_list condition conditional case_list id_list arg arg_list vector matrix range exp_range assign exp expcondition initcell compop assign2this tid csig varblock func_decl
 
 %right '='
 %right '\''
@@ -204,6 +204,18 @@ line:	T_NEWLINE
 		$$ = NULL;
 		yyerrok;
 	}
+	| '#' shell eol
+	{
+		$$ = $2;
+	}
+	| '/' debug eol
+	{
+		$$ = $2;
+	}
+	| '>' auxsys eol
+	{
+		$$ = $2;
+	}
 	| stmt eol
 	| stmt eol2
 	{
@@ -218,6 +230,73 @@ line:	T_NEWLINE
 		$$->tail->dval = $4;
 	}
 ;
+
+shellarg: T_ID
+	{
+		$$ = newAstNode(T_ID, @$);
+		$$->str = $1;
+	}
+	| tid 
+	|
+	T_NUMBER
+	{
+		$$ = newAstNode(T_NUMBER, @$);
+		$$->dval = $1;
+	}
+	| '-' T_NUMBER
+	{
+		$$ = newAstNode(T_NEGATIVE, @$);
+		AstNode *p = newAstNode(T_NUMBER, @$);
+		p->dval = $2;
+		$$->child = p;
+	}	
+	|
+	T_STRING
+	{
+		$$ = newAstNode(T_STRING, @$);
+		$$->str = $1;
+	}
+;
+/* The syntax of shell and debug are actually not analyzed further. 
+Instead, they are manually interpreted in the cpp code.
+Don't worry about $1 and $2. 07/26/2023*/
+shell: shellarg
+	{
+		$$ = newAstNode(N_SHELL, @$);
+		$$->tail = $$->child = $1;
+	}
+	| shell shellarg
+	{
+		$$ = $1;
+		if ($$->tail)
+			$$->tail = $$->tail->next = $2;
+		else
+			$$->tail = $$->next = $2;
+	}	
+;
+
+debug: shellarg
+	{
+		$$ = newAstNode(N_DEBUG, @$);
+		$$->str = $1;
+	}
+;
+
+auxsys: shellarg
+	{
+		$$ = newAstNode(N_AUXSYS, @$);
+		$$->tail = $$->child = $1;
+	}
+	| auxsys shellarg
+	{
+		$$ = $1;
+		if ($$->tail)
+			$$->tail = $$->tail->next = $2;
+		else
+			$$->tail = $$->next = $2;
+	}	
+;
+
 
 line_func: line
 	| funcdef
@@ -1123,8 +1202,8 @@ char *getAstNodeName(AstNode *p)
   case N_CELLASSIGN:
     sprintf(buf, "INITCELL");
     break;
-  case N_IXASSIGN:
-    sprintf(buf, "ASSIGN1");
+  case N_SHELL:
+    sprintf(buf, "SHELL");
     break;
   default:
     if (YYTRANSLATE(p->type) == 2)

@@ -1206,7 +1206,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 3:
 YY_RULE_SETUP
-#line 57 "psycon.l"
+#line 58 "psycon.l"
 {		/* opening bracket */
 	yylloc.last_column += yyleng;
 	yy_push_state(BRACKET);
@@ -1215,7 +1215,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
-#line 62 "psycon.l"
+#line 63 "psycon.l"
 {
 	++yylloc.last_line;
 	yylloc.last_column = 1;
@@ -1223,7 +1223,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 5:
 YY_RULE_SETUP
-#line 66 "psycon.l"
+#line 67 "psycon.l"
 {
 	yylloc.last_column += yyleng;
 	yylval.dval = strtod(yytext, NULL);
@@ -1232,7 +1232,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
-#line 71 "psycon.l"
+#line 72 "psycon.l"
 {
 	++yylloc.last_line;
 	yylloc.last_column = 1;
@@ -1242,7 +1242,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 7:
 YY_RULE_SETUP
-#line 77 "psycon.l"
+#line 78 "psycon.l"
 {	/* closing bracket */
 	yylloc.last_column += yyleng;
 	yy_pop_state();
@@ -1251,7 +1251,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 8:
 YY_RULE_SETUP
-#line 82 "psycon.l"
+#line 83 "psycon.l"
 {	/* opening parenthesis 8 */
 	yylloc.last_column += yyleng;
 	yy_push_state(PARENTH);
@@ -1261,7 +1261,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 9:
 YY_RULE_SETUP
-#line 88 "psycon.l"
+#line 89 "psycon.l"
 {
 	yylloc.last_column += yyleng;
 	return T_ENDPOINT;
@@ -1269,7 +1269,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 10:
 YY_RULE_SETUP
-#line 92 "psycon.l"
+#line 93 "psycon.l"
 { /* Auto-complete parenthesis*/
 	yylloc.last_column += yyleng;
     if (yy_top_state()==PARENTH)
@@ -1282,7 +1282,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
-#line 101 "psycon.l"
+#line 102 "psycon.l"
 {	/* closing parenthesis 11 */
 	yylloc.last_column += yyleng;
     if (str_mirror) strcat(str_mirror, ")");
@@ -1294,7 +1294,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 12:
 YY_RULE_SETUP
-#line 109 "psycon.l"
+#line 110 "psycon.l"
 {	/* opening brace */
 	yylloc.last_column += yyleng;
 	yy_push_state(BRACE);
@@ -1303,7 +1303,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 13:
 YY_RULE_SETUP
-#line 114 "psycon.l"
+#line 115 "psycon.l"
 { /* Auto-complete brace*/
 	yylloc.last_column += yyleng;
 	yy_pop_state();
@@ -1312,7 +1312,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 14:
 YY_RULE_SETUP
-#line 119 "psycon.l"
+#line 120 "psycon.l"
 {	/* closing brace */
 	yylloc.last_column += yyleng;
 	yy_pop_state();
@@ -1321,7 +1321,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 15:
 YY_RULE_SETUP
-#line 124 "psycon.l"
+#line 125 "psycon.l"
 {	/* opening tseq */
 	yylloc.last_column += yyleng;
 	yy_push_state(TSEQ);
@@ -1330,7 +1330,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 16:
 YY_RULE_SETUP
-#line 129 "psycon.l"
+#line 130 "psycon.l"
 {	/* closing tseq 16 */
 	yylloc.last_column += yyleng;
 	yy_pop_state();
@@ -1339,7 +1339,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 17:
 YY_RULE_SETUP
-#line 134 "psycon.l"
+#line 135 "psycon.l"
 {
 	yylloc.last_column += yyleng;
     if (str_mirror) strcat(str_mirror, yytext);
@@ -1348,7 +1348,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 18:
 YY_RULE_SETUP
-#line 139 "psycon.l"
+#line 140 "psycon.l"
 {
 	yylloc.last_column += yyleng;
 	yylval.str = (char*)calloc(strlen(yytext)+1, 1);
@@ -1359,21 +1359,21 @@ YY_RULE_SETUP
 	YY_BREAK
 case 19:
 YY_RULE_SETUP
-#line 146 "psycon.l"
+#line 147 "psycon.l"
 {	/* eat up a comment line 19 */
 	yylloc.last_column += yyleng;
 	}
 	YY_BREAK
 case 20:
 YY_RULE_SETUP
-#line 149 "psycon.l"
+#line 150 "psycon.l"
 {	/* eat up whitespace 20 */
 	yylloc.last_column += yyleng;
 	}
 	YY_BREAK
 case 21:
 YY_RULE_SETUP
-#line 152 "psycon.l"
+#line 153 "psycon.l"
 {
 	++yylloc.last_line;
 	yylloc.last_column = 1;
@@ -1382,7 +1382,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 22:
 YY_RULE_SETUP
-#line 157 "psycon.l"
+#line 158 "psycon.l"
 {	/* start of a string 22 */
 	yylloc.last_column += yyleng;
 	LexStringLen = 0;
@@ -1393,7 +1393,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 23:
 YY_RULE_SETUP
-#line 164 "psycon.l"
+#line 165 "psycon.l"
 {
 	yylloc.last_column += yyleng;
     if (str_mirror) strcat(str_mirror, yytext);
@@ -1403,7 +1403,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 24:
 YY_RULE_SETUP
-#line 170 "psycon.l"
+#line 171 "psycon.l"
 { /* Auto-complete a string 24 */
 	yylloc.last_column += yyleng;
     if (str_mirror) strcat(str_mirror, "\"");
@@ -1417,7 +1417,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 25:
 YY_RULE_SETUP
-#line 180 "psycon.l"
+#line 181 "psycon.l"
 {
 	yylloc.last_column += yyleng;
 	yyleng = 1;
@@ -1428,7 +1428,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 26:
 YY_RULE_SETUP
-#line 187 "psycon.l"
+#line 188 "psycon.l"
 {	/* end of a string 26 */
 	yylloc.last_column += yyleng;
 	yy_pop_state();
@@ -1440,12 +1440,12 @@ YY_RULE_SETUP
 	YY_BREAK
 case 27:
 YY_RULE_SETUP
-#line 195 "psycon.l"
+#line 196 "psycon.l"
 ; /* Now all command line input has this string at the end. Without this rule, syntax error will occur with a correct statement.*/
 	YY_BREAK
 case 28:
 YY_RULE_SETUP
-#line 196 "psycon.l"
+#line 197 "psycon.l"
 {
 	yylloc.last_column += yyleng;
     if (str_mirror) strcat(str_mirror, yytext);
@@ -1454,7 +1454,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 29:
 YY_RULE_SETUP
-#line 201 "psycon.l"
+#line 202 "psycon.l"
 ECHO;
 	YY_BREAK
 #line 1461 "psycon.yy.c"
@@ -2351,7 +2351,7 @@ int main()
 	return 0;
 	}
 #endif
-#line 201 "psycon.l"
+#line 202 "psycon.l"
 
 int appendLexString(void)
 {

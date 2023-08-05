@@ -118,6 +118,7 @@
       <ConformanceMode>true</ConformanceMode>
       <DisableSpecificWarnings>4996; 4244; 4267</DisableSpecificWarnings>
       <AdditionalIncludeDirectories>$(ProjectDir); $(ProjectDir)\include\;$(ProjectDir)..\include\</AdditionalIncludeDirectories>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -168,6 +169,8 @@
     <ClCompile Include="lame\lame_main.c" />
     <ClCompile Include="lame\parse.c" />
     <ClCompile Include="lame\timestatus.c" />
+    <ClCompile Include="modules\sys\run.cpp" />
+    <ClCompile Include="shell.cpp" />
     <ClCompile Include="skope_flow.cpp" />
     <ClCompile Include="skope_process.cpp" />
     <ClCompile Include="AuxFunc.cpp" />
